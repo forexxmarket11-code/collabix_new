@@ -26,14 +26,16 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { UserSession, AccountStatus } from '../types';
-import { subscribeToUsersForAdmin, updateUserAccountStatus } from '../firebase';
+import { subscribeToUsersForAdmin, updateUserAccountStatus, isCurrentUserAdmin } from '../firebase';
 
 interface AdminUserApprovalsProps {
   onPendingCountChange?: (count: number) => void;
+  onUnauthorized?: () => void;
 }
 
 export const AdminUserApprovals: React.FC<AdminUserApprovalsProps> = ({
   onPendingCountChange,
+  onUnauthorized,
 }) => {
   const [users, setUsers] = useState<UserSession[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,6 +59,10 @@ export const AdminUserApprovals: React.FC<AdminUserApprovalsProps> = ({
   };
 
   useEffect(() => {
+    if (!isCurrentUserAdmin()) {
+      onUnauthorized?.();
+      return;
+    }
     setLoading(true);
     const unsubscribe = subscribeToUsersForAdmin((fetchedUsers) => {
       setUsers(fetchedUsers);
@@ -69,9 +75,13 @@ export const AdminUserApprovals: React.FC<AdminUserApprovalsProps> = ({
     });
 
     return () => unsubscribe();
-  }, [onPendingCountChange]);
+  }, [onPendingCountChange, onUnauthorized]);
 
   const handleApprove = async (user: UserSession) => {
+    if (!isCurrentUserAdmin()) {
+      onUnauthorized?.();
+      return;
+    }
     if (!user.uid) return;
     setIsProcessing(user.uid);
     try {
@@ -80,7 +90,11 @@ export const AdminUserApprovals: React.FC<AdminUserApprovalsProps> = ({
       if (selectedUser?.uid === user.uid) {
         setSelectedUser({ ...selectedUser, accountStatus: 'approved', rejectionReason: '' });
       }
-    } catch (err) {
+    } catch (err: any) {
+      if (err?.code === 'auth/not-admin') {
+        onUnauthorized?.();
+        return;
+      }
       console.error('Tasdiqlashda xatolik:', err);
       showToast('Xatolik yuz berdi. Iltimos qayta urinib koʻring', 'error');
     } finally {
@@ -89,11 +103,19 @@ export const AdminUserApprovals: React.FC<AdminUserApprovalsProps> = ({
   };
 
   const handleOpenRejectModal = (user: UserSession) => {
+    if (!isCurrentUserAdmin()) {
+      onUnauthorized?.();
+      return;
+    }
     setRejectingUser(user);
     setRejectReason(user.rejectionReason || '');
   };
 
   const handleConfirmReject = async () => {
+    if (!isCurrentUserAdmin()) {
+      onUnauthorized?.();
+      return;
+    }
     if (!rejectingUser?.uid) return;
     setIsProcessing(rejectingUser.uid);
     try {
@@ -104,7 +126,11 @@ export const AdminUserApprovals: React.FC<AdminUserApprovalsProps> = ({
       }
       setRejectingUser(null);
       setRejectReason('');
-    } catch (err) {
+    } catch (err: any) {
+      if (err?.code === 'auth/not-admin') {
+        onUnauthorized?.();
+        return;
+      }
       console.error('Rad etishda xatolik:', err);
       showToast('Xatolik yuz berdi. Iltimos qayta urinib koʻring', 'error');
     } finally {

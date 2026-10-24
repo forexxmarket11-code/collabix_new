@@ -24,7 +24,7 @@ import {
   HelpCircle,
 } from 'lucide-react';
 import { UserSession } from '../types';
-import { submitPaymentRequest, activateProSubscription } from '../firebase';
+import { submitPaymentRequest } from '../firebase';
 
 interface ProUpgradeModalProps {
   isOpen: boolean;
@@ -57,6 +57,12 @@ export const ProUpgradeModal: React.FC<ProUpgradeModalProps> = ({
   if (!isOpen) return null;
 
   const handleStartPayment = () => {
+    if (!currentUser?.uid) {
+      if (onOpenRegisterModal) {
+        onOpenRegisterModal();
+        return;
+      }
+    }
     setStep('payment');
   };
 
@@ -70,20 +76,29 @@ export const ProUpgradeModal: React.FC<ProUpgradeModalProps> = ({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
-      setFormError('Iltimos, faqat rasm fayli (PNG, JPG, JPEG) yuklang.');
+    const isImage = file.type.startsWith('image/');
+    const isPdf = file.type === 'application/pdf';
+
+    if (!isImage && !isPdf) {
+      setFormError('Iltimos, faqat rasm (PNG, JPG, JPEG) yoki PDF fayl yuklang.');
       if (fileInputRef.current) fileInputRef.current.value = '';
       return;
     }
 
     if (file.size > 15 * 1024 * 1024) {
-      setFormError('Rasm hajmi juda katta (15 MB dan kichik skrinshot tanlang).');
+      setFormError('Fayl hajmi juda katta (15 MB dan kichik chek tanlang).');
       if (fileInputRef.current) fileInputRef.current.value = '';
       return;
     }
 
     setReceiptFile(file);
     setFormError(null);
+
+    if (isPdf) {
+      setReceiptPreview('pdf_selected');
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (event) => {
       const result = event.target?.result;
@@ -129,13 +144,16 @@ export const ProUpgradeModal: React.FC<ProUpgradeModalProps> = ({
   const handleSubmitPayment = async () => {
     if (isProcessing) return;
 
-    if (!receiptFile && !receiptPreview) {
-      setFormError('Iltimos, oʻtkazilgan toʻlov cheki yoki screenshotini yuklang.');
+    if (!currentUser?.uid) {
+      setFormError('Toʻlov chekini yuborish uchun avval tizimga kiring yoki roʻyxatdan oʻting.');
+      if (onOpenRegisterModal) {
+        onOpenRegisterModal();
+      }
       return;
     }
 
-    if (!currentUser && !nonLoggedInName.trim()) {
-      setFormError('Iltimos, ismingizni kiriting.');
+    if (!receiptFile && !receiptPreview) {
+      setFormError('Iltimos, oʻtkazilgan toʻlov cheki yoki screenshotini yuklang.');
       return;
     }
 
@@ -145,11 +163,11 @@ export const ProUpgradeModal: React.FC<ProUpgradeModalProps> = ({
 
     let uiGuardTimer: ReturnType<typeof setTimeout> | null = null;
     try {
-      const userId = currentUser?.uid || ('guest_' + Math.random().toString(36).substring(2, 9));
-      const userName = currentUser?.name || nonLoggedInName.trim() || 'Foydalanuvchi';
-      const userPhone = currentUser?.contact || (nonLoggedInPhone.trim() !== '+998' ? nonLoggedInPhone.trim() : '');
-      const userEmail = currentUser?.email || '';
-      const userRole = currentUser?.role || 'brend';
+      const userId = currentUser.uid;
+      const userName = currentUser.name || nonLoggedInName.trim() || 'Foydalanuvchi';
+      const userPhone = currentUser.phoneNumber || currentUser.contact || (nonLoggedInPhone.trim() !== '+998' ? nonLoggedInPhone.trim() : '');
+      const userEmail = currentUser.email || '';
+      const userRole = currentUser.role || 'brend';
 
       const uiTimeoutPromise = new Promise<never>((_, reject) => {
         uiGuardTimer = setTimeout(() => {
@@ -165,7 +183,7 @@ export const ProUpgradeModal: React.FC<ProUpgradeModalProps> = ({
           userEmail,
           userRole,
           screenshotFile: receiptFile,
-          screenshotDataUrl: receiptPreview || undefined,
+          screenshotDataUrl: receiptPreview && receiptPreview !== 'pdf_selected' ? receiptPreview : undefined,
         }),
         uiTimeoutPromise,
       ]);
@@ -596,7 +614,7 @@ export const ProUpgradeModal: React.FC<ProUpgradeModalProps> = ({
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/*,application/pdf"
                 onChange={handleFileChange}
                 className="hidden"
                 id="receipt-file-input"
@@ -614,31 +632,35 @@ export const ProUpgradeModal: React.FC<ProUpgradeModalProps> = ({
                     Chek yoki screenshotni yuklash uchun bosing
                   </span>
                   <span className="text-[11px] text-slate-500 dark:text-slate-400 font-body block mt-0.5">
-                    PNG, JPG, JPEG formatlarida rasm qabul qilinadi
+                    PNG, JPG, JPEG yoki PDF (15 MB gacha) qabul qilinadi
                   </span>
                 </div>
               ) : (
                 <div className="relative p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 flex items-center gap-3">
-                  <div className="w-16 h-16 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 shrink-0 bg-black/5">
-                    <img
-                      src={receiptPreview}
-                      alt="Toʻlov cheki"
-                      className="w-full h-full object-cover"
-                    />
+                  <div className="w-16 h-16 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 shrink-0 bg-black/5 flex items-center justify-center">
+                    {receiptPreview === 'pdf_selected' ? (
+                      <span className="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400">PDF</span>
+                    ) : (
+                      <img
+                        src={receiptPreview}
+                        alt="Toʻlov cheki"
+                        className="w-full h-full object-cover"
+                      />
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <span className="text-xs font-heading font-bold text-slate-900 dark:text-white truncate block">
-                      {receiptFile?.name || 'Toʻlov cheki rasmi'}
+                      {receiptFile?.name || 'Toʻlov cheki'}
                     </span>
                     <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium block">
-                      ✓ Rasm muvaffaqiyatli tanlandi
+                      ✓ Fayl muvaffaqiyatli tanlandi
                     </span>
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
                       className="text-[11px] font-heading font-semibold text-indigo-600 dark:text-indigo-400 hover:underline mt-0.5"
                     >
-                      Boshqa rasm tanlash
+                      Boshqa fayl tanlash
                     </button>
                   </div>
                   <button

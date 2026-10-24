@@ -14,13 +14,20 @@ import {
   User,
   AlertCircle,
 } from 'lucide-react';
-import { submitAgencyApplication } from '../firebase';
+import { submitAgencyApplication, auth } from '../firebase';
+import { UserSession } from '../types';
 
 interface AgencyPageProps {
   onBackToHome: () => void;
+  currentUser?: UserSession | null;
+  onOpenRegister?: () => void;
 }
 
-export const AgencyPage: React.FC<AgencyPageProps> = ({ onBackToHome }) => {
+export const AgencyPage: React.FC<AgencyPageProps> = ({
+  onBackToHome,
+  currentUser,
+  onOpenRegister,
+}) => {
   const [agencyName, setAgencyName] = useState('');
   const [contactPerson, setContactPerson] = useState('');
   const [phoneOrEmail, setPhoneOrEmail] = useState('');
@@ -34,6 +41,14 @@ export const AgencyPage: React.FC<AgencyPageProps> = ({ onBackToHome }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
+
+    if (!auth.currentUser && !currentUser?.uid) {
+      setErrorMessage("Ariza yuborish uchun avval tizimga kiring yoki roʻyxatdan oʻting.");
+      if (onOpenRegister) {
+        onOpenRegister();
+      }
+      return;
+    }
 
     if (!agencyName.trim()) {
       setErrorMessage("Iltimos, agentlik nomini kiriting");
@@ -64,9 +79,9 @@ export const AgencyPage: React.FC<AgencyPageProps> = ({ onBackToHome }) => {
       setPhoneOrEmail('');
       setWebsiteOrInstagram('');
       setNotes('');
-    } catch (err) {
+    } catch (err: any) {
       console.error("Agentlik arizasini topshirishda xatolik:", err);
-      setErrorMessage("Arizani yuborishda xatolik yuz berdi. Iltimos, qayta urinib koʻring.");
+      setErrorMessage(err?.message || "Arizani yuborishda xatolik yuz berdi. Iltimos, qayta urinib koʻring.");
     } finally {
       setIsSubmitting(false);
     }

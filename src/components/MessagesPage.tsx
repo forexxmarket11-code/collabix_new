@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { UserSession } from '../types';
 import {
+  onFirebaseAuthReady,
   subscribeToUserConversations,
   subscribeToConversationMessages,
   sendMessageToFirestore,
@@ -87,21 +88,32 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser }) => {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  const [authUid, setAuthUid] = useState<string | null>(null);
+
+  useEffect(() => {
+    const unsub = onFirebaseAuthReady((uid) => {
+      setAuthUid(uid);
+    });
+    return () => unsub();
+  }, []);
+
   // Ensure window stays scrolled to top when entering messages page
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, []);
 
-  // Real-time subscription to conversations from Firestore
+  // Real-time subscription to conversations from Firestore (waits for Firebase Auth readiness)
   useEffect(() => {
-    if (!currentUser?.uid) {
-      setConversations([]);
-      setActiveChatId('');
+    if (!currentUser?.uid || !authUid || authUid !== currentUser.uid) {
+      if (!currentUser?.uid) {
+        setConversations([]);
+        setActiveChatId('');
+      }
       return;
     }
 
     const unsub = subscribeToUserConversations(
-      currentUser.uid,
+      authUid,
       (convs) => {
         setConversations(convs);
         setActiveChatId((prev) => {
@@ -115,18 +127,18 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser }) => {
     );
 
     return () => unsub();
-  }, [currentUser?.uid]);
+  }, [currentUser?.uid, authUid]);
 
   // Real-time subscription to messages for active conversation
   useEffect(() => {
-    if (!activeChatId) return;
+    if (!activeChatId || !authUid) return;
 
     const unsub = subscribeToConversationMessages(
       activeChatId,
       (msgs) => {
         const formattedMsgs: ChatMessage[] = msgs.map((m) => ({
           id: m.id,
-          sender: m.senderId === currentUser?.uid ? 'me' : 'them',
+          sender: m.senderId === authUid ? 'me' : 'them',
           text: m.text,
           time: m.time || '',
           date: m.date || 'Bugun',
@@ -146,7 +158,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser }) => {
     );
 
     return () => unsub();
-  }, [activeChatId, currentUser?.uid]);
+  }, [activeChatId, authUid]);
 
   // Get active conversation object
   const activeConversation = conversations.find((c) => c.id === activeChatId);

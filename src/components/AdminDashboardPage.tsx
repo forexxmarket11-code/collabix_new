@@ -30,6 +30,9 @@ import {
   Legend,
 } from 'recharts';
 import {
+  ADMIN_UID,
+  isCurrentUserAdmin,
+  onFirebaseAuthReady,
   fetchUsersStatistics,
   fetchRevenueStatistics,
   fetchReferralStatistics,
@@ -49,9 +52,10 @@ import { Building2 } from 'lucide-react';
 interface AdminDashboardPageProps {
   onLogout: () => void;
   onGoToSite: () => void;
+  onUnauthorized?: () => void;
 }
 
-export function AdminDashboardPage({ onLogout, onGoToSite }: AdminDashboardPageProps) {
+export function AdminDashboardPage({ onLogout, onGoToSite, onUnauthorized }: AdminDashboardPageProps) {
   const [activeTab, setActiveTab] = useState<'approvals' | 'payment_requests' | 'reports' | 'cancellations' | 'agency_applications'>('approvals');
   const [pendingCount, setPendingCount] = useState<number>(0);
   const [paymentRequestsCount, setPaymentRequestsCount] = useState<number>(0);
@@ -64,7 +68,28 @@ export function AdminDashboardPage({ onLogout, onGoToSite }: AdminDashboardPageP
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
+  const handleUnauthorized = useCallback(() => {
+    if (onUnauthorized) {
+      onUnauthorized();
+    } else {
+      onLogout();
+    }
+  }, [onUnauthorized, onLogout]);
+
+  useEffect(() => {
+    const unsub = onFirebaseAuthReady((uid) => {
+      if (uid !== ADMIN_UID) {
+        handleUnauthorized();
+      }
+    });
+    return () => unsub();
+  }, [handleUnauthorized]);
+
   const loadStats = useCallback(async (isManualRefresh = false) => {
+    if (!isCurrentUserAdmin()) {
+      handleUnauthorized();
+      return;
+    }
     if (isManualRefresh) {
       setIsRefreshing(true);
     } else {
@@ -81,13 +106,17 @@ export function AdminDashboardPage({ onLogout, onGoToSite }: AdminDashboardPageP
       setRevenueStats(revData);
       setReferralStats(refData);
     } catch (err: any) {
+      if (err?.code === 'auth/not-admin') {
+        handleUnauthorized();
+        return;
+      }
       console.error("Foydalanuvchilar va hisobotlar statistikasini yuklashda Firestore xatosi:", err);
       setError("Firestore ma'lumotlarini yuklashda xatolik yuz berdi.");
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, []);
+  }, [handleUnauthorized]);
 
   useEffect(() => {
     loadStats();
@@ -267,12 +296,18 @@ export function AdminDashboardPage({ onLogout, onGoToSite }: AdminDashboardPageP
 
         {/* Tab 1: User Approvals */}
         {activeTab === 'approvals' && (
-          <AdminUserApprovals onPendingCountChange={setPendingCount} />
+          <AdminUserApprovals
+            onPendingCountChange={setPendingCount}
+            onUnauthorized={handleUnauthorized}
+          />
         )}
 
         {/* Tab: Manual Payment Requests */}
         {activeTab === 'payment_requests' && (
-          <AdminPaymentRequests onCountChange={setPaymentRequestsCount} />
+          <AdminPaymentRequests
+            onCountChange={setPaymentRequestsCount}
+            onUnauthorized={handleUnauthorized}
+          />
         )}
 
         {/* Tab 2: General Reports & Statistics */}
@@ -804,7 +839,10 @@ export function AdminDashboardPage({ onLogout, onGoToSite }: AdminDashboardPageP
 
         {/* Tab 3: Agency Applications & Leads */}
         {activeTab === 'agency_applications' && (
-          <AdminAgencyApplications onCountChange={setAgencyCount} />
+          <AdminAgencyApplications
+            onCountChange={setAgencyCount}
+            onUnauthorized={handleUnauthorized}
+          />
         )}
 
         {/* Tab 4: Cancellation Reasons & Insights */}

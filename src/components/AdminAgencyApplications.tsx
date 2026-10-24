@@ -16,14 +16,16 @@ import {
   MessageSquare,
 } from 'lucide-react';
 import { AgencyApplication, AgencyApplicationStatus } from '../types';
-import { subscribeToAgencyApplications, updateAgencyApplicationStatus } from '../firebase';
+import { subscribeToAgencyApplications, updateAgencyApplicationStatus, isCurrentUserAdmin } from '../firebase';
 
 interface AdminAgencyApplicationsProps {
   onCountChange?: (pendingCount: number) => void;
+  onUnauthorized?: () => void;
 }
 
 export const AdminAgencyApplications: React.FC<AdminAgencyApplicationsProps> = ({
   onCountChange,
+  onUnauthorized,
 }) => {
   const [applications, setApplications] = useState<AgencyApplication[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -34,6 +36,10 @@ export const AdminAgencyApplications: React.FC<AdminAgencyApplicationsProps> = (
 
   // Subscribe to real-time Firestore updates
   useEffect(() => {
+    if (!isCurrentUserAdmin()) {
+      onUnauthorized?.();
+      return;
+    }
     setIsLoading(true);
     const unsubscribe = subscribeToAgencyApplications(
       (loadedApps) => {
@@ -53,10 +59,14 @@ export const AdminAgencyApplications: React.FC<AdminAgencyApplicationsProps> = (
     );
 
     return () => unsubscribe();
-  }, [onCountChange]);
+  }, [onCountChange, onUnauthorized]);
 
   // Handle status update
   const handleStatusChange = async (appId: string, newStatus: AgencyApplicationStatus) => {
+    if (!isCurrentUserAdmin()) {
+      onUnauthorized?.();
+      return;
+    }
     setUpdatingId(appId);
     try {
       await updateAgencyApplicationStatus(appId, newStatus);
@@ -67,9 +77,14 @@ export const AdminAgencyApplications: React.FC<AdminAgencyApplicationsProps> = (
       };
       setToastMessage(`Status "${statusNames[newStatus]}" holatiga oʻzgartirildi.`);
       setTimeout(() => setToastMessage(null), 3000);
-    } catch (err) {
+    } catch (err: any) {
+      if (err?.code === 'auth/not-admin') {
+        onUnauthorized?.();
+        return;
+      }
       console.error("Statusni yangilashda xatolik:", err);
-      alert("Statusni oʻzgartirishda xatolik yuz berdi.");
+      setToastMessage("Statusni oʻzgartirishda xatolik yuz berdi.");
+      setTimeout(() => setToastMessage(null), 3000);
     } finally {
       setUpdatingId(null);
     }

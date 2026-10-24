@@ -6,7 +6,7 @@
       "type": "object",
       "properties": {
         "uid": { "type": "string" },
-        "name": { "type": "string" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 200 },
         "email": { "type": "string" },
         "role": { "type": "string", "enum": ["bloger", "brend"] },
         "contact": { "type": "string" },
@@ -26,11 +26,12 @@
         "profileCompletion": { "type": "number" },
         "trialStartDate": { "type": "string" },
         "trialEndDate": { "type": "string" },
-        "subscriptionStatus": { "type": "string", "enum": ["trial", "active", "cancelled"] },
+        "subscriptionStatus": { "type": "string", "enum": ["free", "none", "trial", "active", "cancelled"] },
         "reminderSent": { "type": "boolean" },
         "subscriptionPlanPrice": { "type": "number" },
         "accountStatus": { "type": "string", "enum": ["pending", "approved", "rejected"] },
         "rejectionReason": { "type": "string" },
+        "verified": { "type": "boolean" },
         "referredBy": { "type": "string" },
         "referralCount": { "type": "number" }
       },
@@ -42,7 +43,9 @@
       "type": "object",
       "properties": {
         "id": { "type": "string" },
-        "taskTitle": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "brandId": { "type": "string" },
+        "taskTitle": { "type": "string", "minLength": 1, "maxLength": 300 },
         "description": { "type": "string" },
         "formats": { "type": "array" },
         "categories": { "type": "array" },
@@ -58,7 +61,6 @@
         "deadline": { "type": "string" },
         "brandName": { "type": "string" },
         "brandAvatar": { "type": "string" },
-        "brandId": { "type": "string" },
         "status": { "type": "string", "enum": ["open", "in_progress", "completed", "cancelled", "yangi", "qabul_qilindi", "rad_etildi"] },
         "creatorStatus": { "type": "string", "enum": ["yangi", "qabul_qilindi", "rad_etildi"] },
         "rejectionReason": { "type": "string" },
@@ -68,7 +70,7 @@
         "createdAtMillis": { "type": "number" },
         "applications": { "type": "array" }
       },
-      "required": ["taskTitle", "description", "recipientType"]
+      "required": ["taskTitle", "description", "recipientType", "brandId"]
     },
     "Conversation": {
       "title": "Conversation",
@@ -98,7 +100,7 @@
         "createdAt": { "type": "string" },
         "isRead": { "type": "boolean" }
       },
-      "required": ["conversationId", "senderId", "text"]
+      "required": ["senderId"]
     },
     "Notification": {
       "title": "Notification",
@@ -107,6 +109,7 @@
       "properties": {
         "id": { "type": "string" },
         "userId": { "type": "string" },
+        "recipientId": { "type": "string" },
         "type": { "type": "string" },
         "title": { "type": "string" },
         "briefTitle": { "type": "string" },
@@ -120,12 +123,58 @@
       },
       "required": ["userId", "type", "message", "read"]
     },
+    "PaymentRequest": {
+      "title": "PaymentRequest",
+      "description": "Manual card payment verification request with receipt",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "userPhone": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "userRole": { "type": "string" },
+        "amount": { "type": "number" },
+        "screenshotUrl": { "type": "string" },
+        "sana": { "type": "string" },
+        "createdAtMillis": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] }
+      },
+      "required": ["ownerId", "userId", "amount", "screenshotUrl", "status"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Platform payment transaction record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "userId": { "type": "string" },
+        "amount": { "type": "number" },
+        "status": { "type": "string" }
+      },
+      "required": ["ownerId", "userId"]
+    },
+    "Referral": {
+      "title": "Referral",
+      "description": "Referral tracking record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "userId": { "type": "string" },
+        "referredUserId": { "type": "string" }
+      },
+      "required": ["ownerId", "userId"]
+    },
     "Cancellation": {
       "title": "Cancellation",
       "description": "Subscription cancellation feedback and reason records",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
+        "ownerId": { "type": "string" },
         "userId": { "type": "string" },
         "userName": { "type": "string" },
         "userEmail": { "type": "string" },
@@ -135,7 +184,7 @@
         "reason": { "type": "string" },
         "reasonDetails": { "type": "string" }
       },
-      "required": ["userId", "userName", "cancelledAt", "reason"]
+      "required": ["ownerId", "userId", "userName", "cancelledAt", "reason"]
     },
     "AgencyApplication": {
       "title": "AgencyApplication",
@@ -143,6 +192,8 @@
       "type": "object",
       "properties": {
         "id": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "userId": { "type": "string" },
         "agencyName": { "type": "string" },
         "contactPerson": { "type": "string" },
         "phoneOrEmail": { "type": "string" },
@@ -152,7 +203,7 @@
         "createdAtMillis": { "type": "number" },
         "notes": { "type": "string" }
       },
-      "required": ["agencyName", "contactPerson", "phoneOrEmail", "status"]
+      "required": ["ownerId", "userId", "agencyName", "contactPerson", "phoneOrEmail", "status"]
     }
   },
   "firestore": {
@@ -175,6 +226,18 @@
     "/notifications/{notificationId}": {
       "schema": "Notification",
       "description": "User notifications for direct and open briefs"
+    },
+    "/paymentRequests/{requestId}": {
+      "schema": "PaymentRequest",
+      "description": "Manual card payment verification requests"
+    },
+    "/transactions/{transactionId}": {
+      "schema": "Transaction",
+      "description": "Payment transaction records"
+    },
+    "/referrals/{referralId}": {
+      "schema": "Referral",
+      "description": "Referral program records"
     },
     "/cancellations/{cancellationId}": {
       "schema": "Cancellation",

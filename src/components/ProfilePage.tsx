@@ -40,7 +40,6 @@ import { TopPlacementModal } from './TopPlacementModal';
 import {
   formatUzbekDate,
   getDaysRemainingInTrial,
-  updateSubscriptionStatus,
 } from '../firebase';
 
 interface ProfilePageProps {
@@ -109,23 +108,12 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 
   const handleReactivateSubscription = async () => {
     if (!user.uid) return;
-    setIsReactivating(true);
-    setSubActionFeedback(null);
-    try {
-      await updateSubscriptionStatus(user.uid, 'active');
-      const updated: UserSession = {
-        ...user,
-        subscriptionStatus: 'active',
-      };
-      onUpdateUser(updated);
-      setSubActionFeedback("Pro rejimingiz muvaffaqiyatli qayta faollashtirildi! 59 000 soʻmlik oylik obunangiz faol.");
-      setTimeout(() => setSubActionFeedback(null), 5000);
-    } catch (err) {
-      console.error(err);
-      setSubActionFeedback("Pro rejimni faollashtirishda xatolik yuz berdi.");
-    } finally {
-      setIsReactivating(false);
+    if (onOpenProModal) {
+      onOpenProModal();
+      return;
     }
+    setIsReactivating(false);
+    setSubActionFeedback("Pro rejimni qayta faollashtirish uchun toʻlov chekini yuboring.");
   };
 
   return (

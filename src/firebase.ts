@@ -93,6 +93,44 @@ export const db = initializeFirestore(app, {
   ignoreUndefinedProperties: true,
 });
 
+export const ADMIN_UID = 'iNS0otBw1ZalMMhyYUntV1W5ADF3';
+
+export function isCurrentUserAdmin(): boolean {
+  return Boolean(auth.currentUser && auth.currentUser.uid === ADMIN_UID);
+}
+
+export function requireAdminAuth(): void {
+  if (!isCurrentUserAdmin()) {
+    const err: any = new Error('Faqat vakolatli administrator ushbu amalni bajara oladi.');
+    err.code = 'auth/not-admin';
+    throw err;
+  }
+}
+
+/**
+ * Authenticate administrator strictly via Firebase Auth and verify UID === ADMIN_UID.
+ * Converts username "sobirovv" internally to "sobirovv@collabix.uz".
+ */
+export async function loginAdmin(loginInput: string, password: string): Promise<FirebaseUser> {
+  const trimmedLogin = loginInput.trim();
+  const normalizedEmail =
+    trimmedLogin.toLowerCase() === 'sobirovv'
+      ? 'sobirovv@collabix.uz'
+      : trimmedLogin;
+
+  const userCredential = await signInWithEmailAndPassword(auth, normalizedEmail, password);
+  const fbUser = userCredential.user;
+
+  if (fbUser.uid !== ADMIN_UID) {
+    await signOut(auth);
+    const err: any = new Error('Sizda administrator huquqi mavjud emas.');
+    err.code = 'auth/not-admin';
+    throw err;
+  }
+
+  return fbUser;
+}
+
 /**
  * Format Firebase Auth Error codes into friendly, clear Uzbek messages
  */
@@ -202,7 +240,6 @@ export async function registerUser(
     city: 'Toshkent, Oʻzbekiston',
     profileCompletion: initialCompletion,
     subscriptionStatus: 'free',
-    subscriptionPlanPrice: 59000,
     accountStatus: 'pending',
   };
 
@@ -365,6 +402,9 @@ export function subscribeToCreatorDocument(
  */
 export async function incrementCreatorViews(creatorId: string): Promise<void> {
   if (!creatorId || creatorId === 'creator-profile' || creatorId === 'profil') return;
+  if (!auth.currentUser || (auth.currentUser.uid !== creatorId && !isCurrentUserAdmin())) {
+    return;
+  }
   try {
     const userDocRef = doc(db, 'users', creatorId);
     await updateDoc(userDocRef, {
@@ -668,7 +708,40 @@ export function sanitizeFirestoreData<T = any>(val: any): T {
 /**
  * Save / Update user profile in Firestore
  */
+const PROTECTED_USER_FIELDS = new Set([
+  'uid',
+  'role',
+  'isAdmin',
+  'permissions',
+  'accountStatus',
+  'status',
+  'rejectionReason',
+  'verified',
+  'isVerified',
+  'subscriptionStatus',
+  'isPro',
+  'proStatus',
+  'trialStartDate',
+  'trialEndDate',
+  'subscriptionPlanPrice',
+  'topPlacementUntil',
+  'paymentStatus',
+  'paidAmount',
+  'balance',
+  'unlockedContactsCount',
+  'unlockedCreators',
+  'referralCount',
+  'createdAt',
+]);
+
+/**
+ * Save / Update user profile in Firestore
+ */
 export async function saveUserProfile(uid: string, profile: Partial<UserSession>): Promise<void> {
+  if (!auth.currentUser || (auth.currentUser.uid !== uid && !isCurrentUserAdmin())) {
+    throw new Error('Profilni tahrirlash uchun oʻz hisobingizga kiring.');
+  }
+
   const docRef = doc(db, 'users', uid);
 
   // Recalculate profile completion if fields were provided
@@ -677,8 +750,31 @@ export async function saveUserProfile(uid: string, profile: Partial<UserSession>
     profileCompletion = calculateProfileCompletion(profile);
   }
 
+  const filteredProfile: Record<string, any> = {};
+  const adminMode = isCurrentUserAdmin();
+
+  for (const [key, value] of Object.entries(profile)) {
+    if (!adminMode && PROTECTED_USER_FIELDS.has(key)) {
+      continue;
+    }
+    filteredProfile[key] = value;
+  }
+
+  if (!adminMode) {
+    try {
+      const existingSnap = await getDoc(docRef);
+      if (!existingSnap.exists()) {
+        filteredProfile.uid = uid;
+        filteredProfile.role = profile.role === 'brend' ? 'brend' : 'bloger';
+        filteredProfile.accountStatus = 'pending';
+        filteredProfile.subscriptionStatus = 'free';
+        filteredProfile.createdAt = serverTimestamp();
+      }
+    } catch {}
+  }
+
   const rawPayload = {
-    ...profile,
+    ...filteredProfile,
     profileCompletion,
     updatedAt: serverTimestamp(),
   };
@@ -733,6 +829,7 @@ export async function updateSubscriptionStatus(
   uid: string,
   status: SubscriptionStatus
 ): Promise<void> {
+  requireAdminAuth();
   const docRef = doc(db, 'users', uid);
   await setDoc(
     docRef,
@@ -747,7 +844,9 @@ export async function updateSubscriptionStatus(
     const currentStr = localStorage.getItem('collabix_user');
     if (currentStr) {
       const parsed = JSON.parse(currentStr);
-      localStorage.setItem('collabix_user', JSON.stringify({ ...parsed, subscriptionStatus: status }));
+      if (parsed.uid === uid) {
+        localStorage.setItem('collabix_user', JSON.stringify({ ...parsed, subscriptionStatus: status }));
+      }
     }
   } catch {}
 }
@@ -764,14 +863,20 @@ export async function recordSubscriptionCancellation(params: {
   reason: string;
   reasonDetails?: string;
 }): Promise<CancellationRecord> {
+  const actualUid = auth.currentUser?.uid || params.userId;
+  if (!actualUid) {
+    throw new Error('Obunani bekor qilish uchun tizimga kiring.');
+  }
+
   const now = new Date();
   const cancelledAt = now.toISOString();
   const cancelledAtMillis = now.getTime();
-  const id = `cancel_${cancelledAtMillis}_${params.userId ? params.userId.slice(0, 6) : 'guest'}`;
+  const id = `cancel_${cancelledAtMillis}_${actualUid.slice(0, 6)}`;
 
   const cancellationRecord: CancellationRecord = {
     id,
-    userId: params.userId,
+    userId: actualUid,
+    ownerId: actualUid,
     userName: params.userName || "Noma'lum foydalanuvchi",
     userEmail: params.userEmail || '',
     userRole: params.userRole || '',
@@ -790,24 +895,22 @@ export async function recordSubscriptionCancellation(params: {
     console.error("Firestore'ga bekor qilish ma'lumotlarini saqlashda xatolik:", err);
   }
 
-  // 2. Update user's subscriptionStatus to 'cancelled' and save reason in user doc
-  if (params.userId) {
-    try {
-      const userDocRef = doc(db, 'users', params.userId);
-      await setDoc(
-        userDocRef,
-        {
-          subscriptionStatus: 'cancelled',
-          cancellationReason: params.reason,
-          cancellationDetails: params.reasonDetails?.trim() || '',
-          cancelledAt,
-          updatedAt: serverTimestamp(),
-        },
-        { merge: true }
-      );
-    } catch (err) {
-      console.error("Foydalanuvchi hujjatiga bekor qilish holatini yozishda xatolik:", err);
+  // 2. Save cancellation feedback on user doc (only admin modifies protected subscriptionStatus)
+  try {
+    const userDocRef = doc(db, 'users', actualUid);
+    const userUpdates: Record<string, any> = {
+      cancellationRequested: true,
+      cancellationReason: params.reason,
+      cancellationDetails: params.reasonDetails?.trim() || '',
+      cancelledAt,
+      updatedAt: serverTimestamp(),
+    };
+    if (isCurrentUserAdmin()) {
+      userUpdates.subscriptionStatus = 'cancelled';
     }
+    await setDoc(userDocRef, userUpdates, { merge: true });
+  } catch (err) {
+    console.error("Foydalanuvchi hujjatiga bekor qilish holatini yozishda xatolik:", err);
   }
 
   // 3. Update localStorage
@@ -837,6 +940,11 @@ export function subscribeToCancellationRecords(
   callback: (records: CancellationRecord[]) => void,
   onError?: (error: Error) => void
 ): () => void {
+  if (!isCurrentUserAdmin()) {
+    callback([]);
+    if (onError) onError(new Error('Faqat administrator koʻrishi mumkin.'));
+    return () => {};
+  }
   const cancellationsCol = collection(db, 'cancellations');
   return onSnapshot(
     cancellationsCol,
@@ -846,6 +954,7 @@ export function subscribeToCancellationRecords(
         return {
           id: docSnap.id,
           userId: data.userId || '',
+          ownerId: data.ownerId || data.userId || '',
           userName: data.userName || "Noma'lum foydalanuvchi",
           userEmail: data.userEmail || '',
           userRole: data.userRole || '',
@@ -872,6 +981,7 @@ export function subscribeToCancellationRecords(
  * Fetch one-off subscription cancellations list
  */
 export async function fetchCancellationRecords(): Promise<CancellationRecord[]> {
+  if (!isCurrentUserAdmin()) return [];
   try {
     const cancellationsCol = collection(db, 'cancellations');
     const snapshot = await getDocs(cancellationsCol);
@@ -880,6 +990,7 @@ export async function fetchCancellationRecords(): Promise<CancellationRecord[]> 
       return {
         id: docSnap.id,
         userId: data.userId || '',
+        ownerId: data.ownerId || data.userId || '',
         userName: data.userName || "Noma'lum foydalanuvchi",
         userEmail: data.userEmail || '',
         userRole: data.userRole || '',
@@ -900,11 +1011,12 @@ export async function fetchCancellationRecords(): Promise<CancellationRecord[]> 
 }
 
 /**
- * Activate Pro mode with 59 000 so'm monthly subscription
+ * Activate Pro mode with 59 000 so'm monthly subscription (Admin only)
  */
 export async function activateProSubscription(
   uid: string
 ): Promise<{ trialStartDate: string; trialEndDate: string; subscriptionStatus: SubscriptionStatus; subscriptionPlanPrice: number }> {
+  requireAdminAuth();
   const now = new Date();
   const trialStartDate = now.toISOString();
   const trialEndDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
@@ -929,14 +1041,16 @@ export async function activateProSubscription(
     const currentStr = localStorage.getItem('collabix_user');
     if (currentStr) {
       const parsed = JSON.parse(currentStr);
-      localStorage.setItem('collabix_user', JSON.stringify({
-        ...parsed,
-        trialStartDate,
-        trialEndDate,
-        subscriptionStatus,
-        subscriptionPlanPrice,
-        reminderSent: false,
-      }));
+      if (parsed.uid === uid) {
+        localStorage.setItem('collabix_user', JSON.stringify({
+          ...parsed,
+          trialStartDate,
+          trialEndDate,
+          subscriptionStatus,
+          subscriptionPlanPrice,
+          reminderSent: false,
+        }));
+      }
     }
   } catch {}
 
@@ -947,6 +1061,7 @@ export async function activateProSubscription(
  * Mark that the trial expiration reminder has been sent / acknowledged
  */
 export async function markReminderSent(uid: string): Promise<void> {
+  if (!auth.currentUser || (auth.currentUser.uid !== uid && !isCurrentUserAdmin())) return;
   const docRef = doc(db, 'users', uid);
   await setDoc(
     docRef,
@@ -967,13 +1082,14 @@ export async function markReminderSent(uid: string): Promise<void> {
 }
 
 /**
- * Set demo trial days remaining for instant testing of the reminder banner
+ * Set demo trial days remaining (Admin only)
  */
 export async function setDemoTrialDaysRemaining(
   uid: string,
   daysRemaining: number,
   resetReminder: boolean = true
 ): Promise<{ trialStartDate: string; trialEndDate: string; reminderSent: boolean }> {
+  requireAdminAuth();
   const now = new Date();
   const trialStartDate = new Date(now.getTime() - (30 - daysRemaining) * 24 * 60 * 60 * 1000).toISOString();
   const trialEndDate = new Date(now.getTime() + daysRemaining * 24 * 60 * 60 * 1000).toISOString();
@@ -996,13 +1112,15 @@ export async function setDemoTrialDaysRemaining(
     const currentStr = localStorage.getItem('collabix_user');
     if (currentStr) {
       const parsed = JSON.parse(currentStr);
-      localStorage.setItem('collabix_user', JSON.stringify({
-        ...parsed,
-        trialStartDate,
-        trialEndDate,
-        subscriptionStatus: 'trial',
-        reminderSent,
-      }));
+      if (parsed.uid === uid) {
+        localStorage.setItem('collabix_user', JSON.stringify({
+          ...parsed,
+          trialStartDate,
+          trialEndDate,
+          subscriptionStatus: 'trial',
+          reminderSent,
+        }));
+      }
     }
   } catch {}
 
@@ -1013,6 +1131,7 @@ export async function setDemoTrialDaysRemaining(
  * Fetch users statistics directly from Firestore 'users' collection
  */
 export async function fetchUsersStatistics(): Promise<UsersStatistics> {
+  requireAdminAuth();
   try {
     const usersCol = collection(db, 'users');
     const snap = await getDocs(usersCol);
@@ -1145,6 +1264,7 @@ export async function updateUserAccountStatus(
   status: 'pending' | 'approved' | 'rejected',
   rejectionReason?: string
 ): Promise<void> {
+  requireAdminAuth();
   const docRef = doc(db, 'users', userId);
   const data: Record<string, any> = {
     accountStatus: status,
@@ -1162,16 +1282,31 @@ export async function updateUserAccountStatus(
  * User action: Resubmit profile for admin approval after fixing information
  */
 export async function resubmitForApproval(userId: string): Promise<void> {
+  if (!auth.currentUser || (auth.currentUser.uid !== userId && !isCurrentUserAdmin())) {
+    throw new Error('Faqat oʻz profilingizni qayta yuborishingiz mumkin.');
+  }
   const docRef = doc(db, 'users', userId);
-  await setDoc(
-    docRef,
-    {
-      accountStatus: 'pending',
-      rejectionReason: '',
-      updatedAt: serverTimestamp(),
-    },
-    { merge: true }
-  );
+  if (isCurrentUserAdmin()) {
+    await setDoc(
+      docRef,
+      {
+        accountStatus: 'pending',
+        rejectionReason: '',
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+  } else {
+    await setDoc(
+      docRef,
+      {
+        resubmittedForReview: true,
+        resubmittedAt: new Date().toISOString(),
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+  }
 }
 
 /**
@@ -1180,6 +1315,10 @@ export async function resubmitForApproval(userId: string): Promise<void> {
 export function subscribeToUsersForAdmin(
   callback: (users: UserSession[]) => void
 ): () => void {
+  if (!isCurrentUserAdmin()) {
+    callback([]);
+    return () => {};
+  }
   const usersCol = collection(db, 'users');
   return onSnapshot(
     usersCol,
@@ -1206,6 +1345,7 @@ export function subscribeToUsersForAdmin(
  * Fetch all users list once for Admin Panel
  */
 export async function fetchUsersForAdmin(): Promise<UserSession[]> {
+  if (!isCurrentUserAdmin()) return [];
   try {
     const usersCol = collection(db, 'users');
     const snap = await getDocs(usersCol);
@@ -1236,6 +1376,7 @@ export function onAuthUserChanged(callback: (user: UserSession | null, fbUser: F
     }
 
     if (fbUser) {
+      const isSuperAdmin = fbUser.uid === ADMIN_UID;
       // Attach real-time snapshot listener on the user's document in Firestore
       const userDocRef = doc(db, 'users', fbUser.uid);
       docUnsubscribe = onSnapshot(
@@ -1246,18 +1387,9 @@ export function onAuthUserChanged(callback: (user: UserSession | null, fbUser: F
             const fullProfile: UserSession = {
               uid: fbUser.uid,
               ...data,
-              accountStatus: data.accountStatus || 'approved',
+              accountStatus: isSuperAdmin ? 'approved' : (data.accountStatus || 'approved'),
+              subscriptionStatus: data.subscriptionStatus || 'free',
             };
-
-            // Set default Pro / subscription fields if not initialized
-            if (!fullProfile.subscriptionStatus) {
-              const now = new Date();
-              fullProfile.trialStartDate = now.toISOString();
-              fullProfile.trialEndDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
-              fullProfile.subscriptionStatus = 'active';
-              fullProfile.reminderSent = false;
-              fullProfile.subscriptionPlanPrice = 59000;
-            }
 
             callback(fullProfile, fbUser);
             try {
@@ -1272,7 +1404,7 @@ export function onAuthUserChanged(callback: (user: UserSession | null, fbUser: F
               contact: fbUser.email || '',
               role: 'bloger',
               registeredAt: new Date().toLocaleDateString('uz-UZ'),
-              accountStatus: 'pending',
+              accountStatus: isSuperAdmin ? 'approved' : 'pending',
               subscriptionStatus: 'free',
             };
             callback(fallback, fbUser);
@@ -1285,7 +1417,7 @@ export function onAuthUserChanged(callback: (user: UserSession | null, fbUser: F
           // Fallback fetch
           fetchUserProfile(fbUser.uid).then((prof) => {
             if (prof) {
-              callback({ ...prof, accountStatus: prof.accountStatus || 'approved' }, fbUser);
+              callback({ ...prof, accountStatus: isSuperAdmin ? 'approved' : (prof.accountStatus || 'approved') }, fbUser);
             }
           }).catch(() => {});
         }
@@ -1414,6 +1546,7 @@ export function subscribeToApprovedCreators(
  * Fetch real revenue statistics calculated from Firestore users collection
  */
 export async function fetchRevenueStatistics(): Promise<RevenueStatistics> {
+  requireAdminAuth();
   try {
     const usersCol = collection(db, 'users');
     const snap = await getDocs(usersCol);
@@ -1530,6 +1663,7 @@ export async function fetchRevenueStatistics(): Promise<RevenueStatistics> {
  * Fetch real referral statistics calculated from Firestore
  */
 export async function fetchReferralStatistics(): Promise<ReferralStatistics> {
+  requireAdminAuth();
   try {
     const usersCol = collection(db, 'users');
     const snap = await getDocs(usersCol);
@@ -1675,7 +1809,7 @@ export function subscribeToBriefs(
       (/test/i.test(taskTitle) && taskTitle.length < 8 && desc.length < 8);
 
     if (isSpamGibberish) {
-      if (auth.currentUser) {
+      if (isCurrentUserAdmin()) {
         deleteDoc(doc(db, 'briefs', id)).catch(() => {});
       }
       return null;
@@ -1805,12 +1939,19 @@ export function subscribeToBriefs(
  * Create a new Brief in Firestore 'briefs' collection
  */
 export async function createBriefInFirestore(brief: BriefData): Promise<string> {
+  const ownerUid = auth.currentUser?.uid;
+  if (!ownerUid) {
+    throw new Error('Brif yaratish uchun avval tizimga kiring.');
+  }
+
   const briefId = brief.id || `brief_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
   const docRef = doc(db, 'briefs', briefId);
 
   const rawPayload = {
     ...brief,
     id: briefId,
+    brandId: ownerUid,
+    ownerId: ownerUid,
     creatorStatus: brief.creatorStatus || 'yangi',
     status: brief.status || 'open',
     createdAtMillis: brief.createdAtMillis || Date.now(),
@@ -1833,7 +1974,7 @@ export async function createBriefInFirestore(brief: BriefData): Promise<string> 
         title: 'Yangi shaxsiy brif',
         briefTitle: brief.taskTitle,
         briefId: briefId,
-        senderId: brief.brandId || '',
+        senderId: ownerUid,
         senderName: brief.brandName || 'Brend',
         senderAvatar: brief.brandAvatar,
         message: `${brief.brandName || 'Brend'} sizga yangi brif yubordi: "${brief.taskTitle}"`,
@@ -2415,15 +2556,23 @@ export async function sendMessageToFirestore(
 export async function createNotificationInFirestore(
   notification: Omit<NotificationItem, 'id'> & { id?: string }
 ): Promise<string> {
+  if (!auth.currentUser) {
+    return '';
+  }
   const notifId = notification.id || `notif_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
   const notifRef = doc(db, 'notifications', notifId);
-  const payload: NotificationItem = {
+  const rawPayload: Record<string, any> = {
     ...notification,
     id: notifId,
+    recipientId: notification.userId,
+    senderId: auth.currentUser.uid,
     read: notification.read ?? false,
     createdAt: notification.createdAt || new Date().toISOString(),
     createdAtMillis: notification.createdAtMillis || Date.now(),
   };
+  const payload = Object.fromEntries(
+    Object.entries(rawPayload).filter(([_, v]) => v !== undefined)
+  );
 
   await setDoc(notifRef, payload);
   return notifId;
@@ -2561,6 +2710,11 @@ export async function submitAgencyApplication(data: {
   websiteOrInstagram?: string;
   notes?: string;
 }): Promise<string> {
+  const actualUid = auth.currentUser?.uid;
+  if (!actualUid) {
+    throw new Error('Ariza yuborish uchun avval tizimga kiring.');
+  }
+
   const applicationId = `agency_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
   const docRef = doc(db, 'agencyApplications', applicationId);
 
@@ -2569,6 +2723,8 @@ export async function submitAgencyApplication(data: {
 
   const payload: AgencyApplication & { serverCreatedAt: any } = {
     id: applicationId,
+    userId: actualUid,
+    ownerId: actualUid,
     agencyName: data.agencyName.trim(),
     contactPerson: data.contactPerson.trim(),
     phoneOrEmail: data.phoneOrEmail.trim(),
@@ -2591,6 +2747,11 @@ export function subscribeToAgencyApplications(
   callback: (apps: AgencyApplication[]) => void,
   onError?: (err: any) => void
 ): () => void {
+  if (!isCurrentUserAdmin()) {
+    callback([]);
+    if (onError) onError(new Error('Faqat administrator koʻrishi mumkin.'));
+    return () => {};
+  }
   const appsCol = collection(db, 'agencyApplications');
 
   return onSnapshot(
@@ -2601,6 +2762,8 @@ export function subscribeToAgencyApplications(
         const d = docSnap.data() as any;
         items.push({
           id: docSnap.id,
+          userId: d.userId || d.ownerId || '',
+          ownerId: d.ownerId || d.userId || '',
           agencyName: d.agencyName || 'Nomaʼlum agentlik',
           contactPerson: d.contactPerson || '',
           phoneOrEmail: d.phoneOrEmail || '',
@@ -2628,14 +2791,12 @@ export function subscribeToAgencyApplications(
 /**
  * Update Agency Application Status by Admin
  */
-/**
- * Update Agency Application Status by Admin
- */
 export async function updateAgencyApplicationStatus(
   applicationId: string,
   status: AgencyApplicationStatus,
   notes?: string
 ): Promise<void> {
+  requireAdminAuth();
   const docRef = doc(db, 'agencyApplications', applicationId);
   const updates: Record<string, any> = {
     status: status,
@@ -2803,35 +2964,58 @@ function dataUrlToBlob(dataUrl: string): Blob | null {
 }
 
 /**
- * Upload receipt screenshot to Firebase Storage with cancellable timeout and compressed Base64 fallback.
+ * Upload receipt screenshot or PDF to Firebase Storage under payment_receipts/{uid}/...
+ * with cancellable timeout and compressed Base64 fallback for images.
  */
 export async function uploadPaymentReceipt(file: File, userId: string): Promise<string> {
-  console.log('[uploadPaymentReceipt] Boshlandi. Fayl:', file.name, 'Hajmi:', file.size);
-
-  // 1. Avval rasmni yengil JPEG formatga siqamiz
-  let base64Preview = '';
-  try {
-    base64Preview = await compressImageFile(file, 800, 0.68);
-    if (base64Preview && base64Preview.length > 650000) {
-      const smaller = await compressImageFile(file, 560, 0.52);
-      if (smaller) base64Preview = smaller;
-    }
-  } catch (err) {
-    console.warn('[uploadPaymentReceipt] compressImageFile muammo:', err);
+  const actualUid = auth.currentUser?.uid || userId;
+  if (!auth.currentUser?.uid) {
+    throw new Error("Chek yuklash uchun avval tizimga kiring.");
   }
 
-  // 2. Firebase Storage mavjud bo'lsa, kichik hajmli blobni 2.5 soniya ichida yuklab ko'ramiz;
-  // ulgurmasa uploadTask.cancel() orqali fon yuklashni darhol to'xtatamiz (internetni band qilmaslik uchun)
+  const isPdf = file.type === 'application/pdf';
+  const isImage = file.type.startsWith('image/');
+  if (!isImage && !isPdf) {
+    throw new Error("Faqat rasm (JPG, PNG) yoki PDF formatdagi chek yuklash mumkin.");
+  }
+
+  if (file.size > 15 * 1024 * 1024) {
+    throw new Error("Fayl hajmi 15 MB dan oshmasligi kerak.");
+  }
+
+  console.log('[uploadPaymentReceipt] Boshlandi. Fayl:', file.name, 'Hajmi:', file.size);
+
+  // 1. Rasm bo'lsa, yengil JPEG formatga siqamiz
+  let base64Preview = '';
+  if (isImage) {
+    try {
+      base64Preview = await compressImageFile(file, 800, 0.68);
+      if (base64Preview && base64Preview.length > 650000) {
+        const smaller = await compressImageFile(file, 560, 0.52);
+        if (smaller) base64Preview = smaller;
+      }
+    } catch (err) {
+      console.warn('[uploadPaymentReceipt] compressImageFile muammo:', err);
+    }
+  }
+
+  // 2. Firebase Storage: payment_receipts/{uid}/... papkasiga yuklash
   const currentStorage = storage || getSafeStorage();
   if (currentStorage) {
     let uploadTask: ReturnType<typeof uploadBytesResumable> | null = null;
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
     try {
-      const uploadPayload = (base64Preview && dataUrlToBlob(base64Preview)) || file;
-      if (uploadPayload.size <= 2 * 1024 * 1024) {
+      const uploadPayload = isPdf
+        ? file
+        : (base64Preview && dataUrlToBlob(base64Preview)) || file;
+      const contentType = isPdf ? 'application/pdf' : 'image/jpeg';
+      const ext = isPdf ? 'pdf' : 'jpg';
+
+      if (uploadPayload.size <= 15 * 1024 * 1024) {
         const timestamp = Date.now();
-        const storageRef = ref(currentStorage, `payment_receipts/${userId}_${timestamp}.jpg`);
-        uploadTask = uploadBytesResumable(storageRef, uploadPayload, { contentType: 'image/jpeg' });
+        const storagePath = `payment_receipts/${actualUid}/${timestamp}_receipt.${ext}`;
+        const storageRef = ref(currentStorage, storagePath);
+        uploadTask = uploadBytesResumable(storageRef, uploadPayload, { contentType });
 
         const uploadPromise = new Promise<string>((resolve, reject) => {
           uploadTask!.on(
@@ -2849,10 +3033,11 @@ export async function uploadPaymentReceipt(file: File, userId: string): Promise<
           );
         });
 
+        const timeoutMs = isPdf ? 10000 : 5000;
         const timeoutPromise = new Promise<never>((_, reject) => {
           timeoutId = setTimeout(() => {
-            reject(new Error('Storage upload 2.5s timeout'));
-          }, 2500);
+            reject(new Error(`Storage upload ${timeoutMs}ms timeout`));
+          }, timeoutMs);
         });
 
         const downloadUrl = await Promise.race([uploadPromise, timeoutPromise]);
@@ -2867,8 +3052,12 @@ export async function uploadPaymentReceipt(file: File, userId: string): Promise<
           uploadTask.cancel();
         } catch {}
       }
-      console.warn('[uploadPaymentReceipt] Storage yuklanmadi, siqilgan Base64 ishlatiladi:', storageErr);
+      console.warn('[uploadPaymentReceipt] Storage yuklanmadi, fallback tekshirilmoqda:', storageErr);
     }
+  }
+
+  if (isPdf) {
+    throw new Error("PDF chekni serverga yuklab bo'lmadi. Iltimos, chekning skrinshot (JPG/PNG) rasmini yuklang.");
   }
 
   return base64Preview;
@@ -2890,8 +3079,13 @@ export async function submitPaymentRequest(params: {
     throw new Error("Internet aloqasi yo'q. Iltimos, internetingizni tekshirib qayta urinib ko'ring.");
   }
 
+  const actualUid = auth.currentUser?.uid;
+  if (!actualUid) {
+    throw new Error("To'lov so'rovini yuborish uchun avval tizimga kiring.");
+  }
+
   console.log('[submitPaymentRequest] Chaqirildi:', {
-    userId: params.userId,
+    userId: actualUid,
     userName: params.userName,
     hasFile: !!params.screenshotFile,
     hasPreview: !!params.screenshotDataUrl,
@@ -2901,14 +3095,17 @@ export async function submitPaymentRequest(params: {
 
   if (params.screenshotFile) {
     try {
-      screenshotUrl = await uploadPaymentReceipt(params.screenshotFile, params.userId || 'guest');
-    } catch (uploadErr) {
+      screenshotUrl = await uploadPaymentReceipt(params.screenshotFile, actualUid);
+    } catch (uploadErr: any) {
       console.warn('[submitPaymentRequest] uploadPaymentReceipt xatosi:', uploadErr);
+      if (params.screenshotFile.type === 'application/pdf') {
+        throw uploadErr;
+      }
     }
   }
 
   if (!screenshotUrl && params.screenshotDataUrl) {
-    if (params.screenshotDataUrl.startsWith('data:') && params.screenshotDataUrl.length > 500000) {
+    if (params.screenshotDataUrl.startsWith('data:image/') && params.screenshotDataUrl.length > 500000) {
       const compressed = await compressDataUrl(params.screenshotDataUrl, 600, 0.55);
       screenshotUrl = compressed || params.screenshotDataUrl;
     } else {
@@ -2917,7 +3114,7 @@ export async function submitPaymentRequest(params: {
   }
 
   // Firestore hujjat limiti 1MB bo'lgani uchun base64 juda katta bo'lsa qayta siqamiz yoki aniq xabar beramiz
-  if (screenshotUrl && screenshotUrl.startsWith('data:') && screenshotUrl.length > 750000) {
+  if (screenshotUrl && screenshotUrl.startsWith('data:image/') && screenshotUrl.length > 750000) {
     const tighter = params.screenshotFile
       ? await compressImageFile(params.screenshotFile, 480, 0.45)
       : await compressDataUrl(screenshotUrl, 480, 0.45);
@@ -2927,11 +3124,11 @@ export async function submitPaymentRequest(params: {
   }
 
   if (!screenshotUrl) {
-    throw new Error("Chek rasmini o'qib bo'lmadi. Iltimos, PNG yoki JPG formatdagi rasm yuklang.");
+    throw new Error("Chek rasmini o'qib bo'lmadi. Iltimos, PNG, JPG yoki PDF formatdagi chek yuklang.");
   }
 
   if (screenshotUrl.startsWith('data:') && screenshotUrl.length > 900000) {
-    throw new Error("Chek rasmi hajmi juda katta yoki formati qo'llab-quvvatlanmadi. Iltimos, oddiy JPG/PNG skrinshot yuklang.");
+    throw new Error("Chek fayli hajmi juda katta. Iltimos, kichikroq JPG/PNG skrinshot yuklang.");
   }
 
   console.log("[submitPaymentRequest] Firestore 'paymentRequests' kolleksiyasiga saqlanmoqda...");
@@ -2942,10 +3139,11 @@ export async function submitPaymentRequest(params: {
   let docRef;
   try {
     const addDocPromise = addDoc(paymentRequestsCol, {
-      userId: params.userId || '',
+      userId: actualUid,
+      ownerId: actualUid,
       userName: params.userName || "Noma'lum foydalanuvchi",
       userPhone: params.userPhone || '',
-      userEmail: params.userEmail || '',
+      userEmail: params.userEmail || auth.currentUser?.email || '',
       userRole: params.userRole || '',
       amount: 59000,
       screenshotUrl: screenshotUrl || '',
@@ -3003,9 +3201,10 @@ export async function submitPaymentRequest(params: {
 }
 
 /**
- * Fetch all payment requests from 'paymentRequests' collection
+ * Fetch all payment requests from 'paymentRequests' collection (Admin only)
  */
 export async function fetchPaymentRequests(): Promise<PaymentRequest[]> {
+  if (!isCurrentUserAdmin()) return [];
   try {
     const requestsCol = collection(db, 'paymentRequests');
     const snapshot = await getDocs(requestsCol);
@@ -3014,6 +3213,7 @@ export async function fetchPaymentRequests(): Promise<PaymentRequest[]> {
       return {
         id: d.id,
         userId: data.userId || '',
+        ownerId: data.ownerId || data.userId || '',
         userName: data.userName || "Noma'lum foydalanuvchi",
         userPhone: data.userPhone || '',
         userEmail: data.userEmail || '',
@@ -3039,12 +3239,17 @@ export async function fetchPaymentRequests(): Promise<PaymentRequest[]> {
 }
 
 /**
- * Real-time listener for payment requests
+ * Real-time listener for payment requests (Admin only)
  */
 export function subscribeToPaymentRequests(
   callback: (requests: PaymentRequest[]) => void,
   onError?: (err: any) => void
 ): () => void {
+  if (!isCurrentUserAdmin()) {
+    callback([]);
+    if (onError) onError(new Error('Faqat administrator koʻrishi mumkin.'));
+    return () => {};
+  }
   const requestsCol = collection(db, 'paymentRequests');
   return onSnapshot(
     requestsCol,
@@ -3054,6 +3259,7 @@ export function subscribeToPaymentRequests(
         return {
           id: d.id,
           userId: data.userId || '',
+          ownerId: data.ownerId || data.userId || '',
           userName: data.userName || "Noma'lum foydalanuvchi",
           userPhone: data.userPhone || '',
           userEmail: data.userEmail || '',
@@ -3087,6 +3293,7 @@ export async function approvePaymentRequest(
   userId: string,
   reviewerName: string = 'Admin'
 ): Promise<void> {
+  requireAdminAuth();
   const reqRef = doc(db, 'paymentRequests', requestId);
   const now = new Date();
   await updateDoc(reqRef, {
@@ -3141,6 +3348,7 @@ export async function rejectPaymentRequest(
   reason?: string,
   reviewerName: string = 'Admin'
 ): Promise<void> {
+  requireAdminAuth();
   const reqRef = doc(db, 'paymentRequests', requestId);
   const now = new Date();
   await updateDoc(reqRef, {
@@ -3153,13 +3361,38 @@ export async function rejectPaymentRequest(
 }
 
 /**
- * Fetch latest payment request for specific user
+ * Fetch latest payment request for specific user (scoped to owner or admin)
  */
 export async function fetchUserLatestPaymentRequest(userId: string): Promise<PaymentRequest | null> {
-  if (!userId) return null;
+  const targetUid = userId || auth.currentUser?.uid || '';
+  if (!targetUid || !auth.currentUser) return null;
+  if (auth.currentUser.uid !== targetUid && !isCurrentUserAdmin()) return null;
+
   try {
-    const all = await fetchPaymentRequests();
-    const userReqs = all.filter((r) => r.userId === userId);
+    const q = query(collection(db, 'paymentRequests'), where('userId', '==', targetUid));
+    const snapshot = await getDocs(q);
+    const userReqs: PaymentRequest[] = snapshot.docs.map((d) => {
+      const data = d.data();
+      return {
+        id: d.id,
+        userId: data.userId || '',
+        ownerId: data.ownerId || data.userId || '',
+        userName: data.userName || "Noma'lum foydalanuvchi",
+        userPhone: data.userPhone || '',
+        userEmail: data.userEmail || '',
+        userRole: data.userRole || '',
+        amount: data.amount || 59000,
+        screenshotUrl: data.screenshotUrl || '',
+        sana: data.sana || (data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : new Date().toISOString()),
+        createdAtMillis: data.createdAtMillis || 0,
+        status: (data.status as PaymentRequestStatus) || 'pending',
+        rejectionReason: data.rejectionReason || '',
+        approvedAt: data.approvedAt || '',
+        rejectedAt: data.rejectedAt || '',
+        reviewedBy: data.reviewedBy || '',
+      };
+    });
+    userReqs.sort((a, b) => (b.createdAtMillis || 0) - (a.createdAtMillis || 0));
     return userReqs[0] || null;
   } catch {
     return null;

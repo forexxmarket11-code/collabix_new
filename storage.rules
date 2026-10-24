@@ -1,15 +1,66 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    // Payment receipts: allow read and write for proof screenshots
-    match /payment_receipts/{allPaths=**} {
-      allow read: if true;
-      allow write: if true;
+    function isSignedIn() {
+      return request.auth != null;
     }
-    // Default fallback
-    match /{allPaths=**} {
-      allow read: if true;
-      allow write: if request.auth != null;
+
+    function isAdmin() {
+      return request.auth != null && request.auth.uid == "iNS0otBw1ZalMMhyYUntV1W5ADF3";
+    }
+
+    // 1. Payment receipts:
+    // - Upload only by signed-in user into own folder (payment_receipts/{uid}/...), image or PDF, <= 15 MB
+    // - Read strictly restricted to owner and admin
+    match /payment_receipts/{uid}/{receiptPath=**} {
+      allow read: if isSignedIn() && (request.auth.uid == uid || isAdmin());
+      allow write: if isAdmin() || (
+        isSignedIn()
+        && request.auth.uid == uid
+        && request.resource != null
+        && request.resource.size <= 15 * 1024 * 1024
+        && (
+          request.resource.contentType.matches('image/.*') ||
+          request.resource.contentType == 'application/pdf'
+        )
+      );
+    }
+
+    // Block direct root writes inside /payment_receipts/{file} outside /{uid}/
+    match /payment_receipts/{directFile} {
+      allow read, write: if isAdmin();
+    }
+
+    // 2. All other files (excluding payment_receipts):
+    // - Public read; signed-in upload <= 10 MB, image or video only
+    match /{folder}/{allPaths=**} {
+      allow read: if folder != 'payment_receipts';
+      allow write: if folder != 'payment_receipts' && (
+        isAdmin() || (
+          isSignedIn()
+          && request.resource != null
+          && request.resource.size <= 10 * 1024 * 1024
+          && (
+            request.resource.contentType.matches('image/.*') ||
+            request.resource.contentType.matches('video/.*')
+          )
+        )
+      );
+    }
+
+    match /{rootFile} {
+      allow read: if rootFile != 'payment_receipts';
+      allow write: if rootFile != 'payment_receipts' && (
+        isAdmin() || (
+          isSignedIn()
+          && request.resource != null
+          && request.resource.size <= 10 * 1024 * 1024
+          && (
+            request.resource.contentType.matches('image/.*') ||
+            request.resource.contentType.matches('video/.*')
+          )
+        )
+      );
     }
   }
 }

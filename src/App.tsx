@@ -27,10 +27,11 @@ import { PendingApprovalPage } from './components/PendingApprovalPage';
 import { PWAInstallPrompt } from './components/PWAInstallPrompt';
 import { PageType, UserSession, BriefData, CatalogCreator, BriefApplication, NotificationItem } from './types';
 import {
+  auth,
+  ADMIN_UID,
   onFirebaseAuthReady,
   onAuthUserChanged,
   logoutUser,
-  updateSubscriptionStatus,
   markReminderSent,
   subscribeToBriefs,
   createBriefInFirestore,
@@ -112,14 +113,6 @@ export default function App() {
     handle?: string;
   } | null>(null);
 
-  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(() => {
-    try {
-      return sessionStorage.getItem('collabix_admin_auth') === 'true';
-    } catch {
-      return false;
-    }
-  });
-
   const [currentUser, setCurrentUser] = useState<UserSession | null>(() => {
     try {
       const saved = localStorage.getItem('collabix_user');
@@ -140,8 +133,13 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
+  const isAdminAuthenticated = isAuthReady && authUid === ADMIN_UID;
+
   const isUserRestricted = Boolean(
-    currentUser && (currentUser.accountStatus === 'pending' || currentUser.accountStatus === 'rejected')
+    authUid !== ADMIN_UID &&
+      currentUser?.uid !== ADMIN_UID &&
+      currentUser &&
+      (currentUser.accountStatus === 'pending' || currentUser.accountStatus === 'rejected')
   );
 
   // Real-time Firestore subscription to notifications for current authenticated user
@@ -250,10 +248,10 @@ export default function App() {
         } catch {
           // ignore
         }
-        if (userProfile.accountStatus === 'approved') {
+        if (userProfile.uid === ADMIN_UID || userProfile.accountStatus === 'approved') {
           setCurrentPage((prev) => (prev === 'pending-approval' ? 'home' : prev));
         } else if (userProfile.accountStatus === 'pending' || userProfile.accountStatus === 'rejected') {
-          setCurrentPage((prev) => (prev === 'edit-profile' ? 'edit-profile' : 'pending-approval'));
+          setCurrentPage((prev) => (prev === 'edit-profile' || prev === 'admin' ? prev : 'pending-approval'));
         }
       } else {
         setCurrentUser(null);
@@ -285,7 +283,11 @@ export default function App() {
           localUser = savedUserStr ? JSON.parse(savedUserStr) : null;
         } catch {}
         const activeUser = currentUser || localUser;
-        if (activeUser && (activeUser.accountStatus === 'pending' || activeUser.accountStatus === 'rejected')) {
+        if (
+          activeUser &&
+          activeUser.uid !== ADMIN_UID &&
+          (activeUser.accountStatus === 'pending' || activeUser.accountStatus === 'rejected')
+        ) {
           if (hash === '#edit-profile' || hash === '#tahrirlash') {
             target = 'edit-profile';
           } else {
@@ -358,7 +360,7 @@ export default function App() {
   }, [currentUser]);
 
   const handlePageChange = (page: PageType) => {
-    if (isUserRestricted && page !== 'edit-profile' && page !== 'pending-approval') {
+    if (isUserRestricted && page !== 'edit-profile' && page !== 'pending-approval' && page !== 'admin') {
       page = 'pending-approval';
     }
 
@@ -460,16 +462,20 @@ export default function App() {
   const unreadNotificationsCount = notifications.filter((n) => !n.read).length;
 
   const handleAdminLoginSuccess = () => {
-    setIsAdminAuthenticated(true);
+    if (auth.currentUser?.uid === ADMIN_UID) {
+      setAuthUid(ADMIN_UID);
+      setIsAuthReady(true);
+    }
   };
 
-  const handleAdminLogout = () => {
+  const handleAdminLogout = async () => {
     try {
-      sessionStorage.removeItem('collabix_admin_auth');
-    } catch {
-      // ignore
+      await logoutUser();
+    } catch (err) {
+      console.error('Admin chiqish xatosi:', err);
     }
-    setIsAdminAuthenticated(false);
+    setAuthUid(null);
+    setCurrentUser(null);
   };
 
   const handleGoHome = () => {
@@ -544,14 +550,19 @@ export default function App() {
     }
   };
 
-  // Completely isolated Admin Portal - not shown anywhere in public nav/footer/bottom dock
+  // Completely isolated Admin Portal - strictly requires Firebase Auth UID === ADMIN_UID
   if (currentPage === 'admin') {
     return (
       <div className="min-h-screen bg-[#F8FAFD] dark:bg-[#0B0F19] text-slate-900 dark:text-slate-100 flex flex-col antialiased selection:bg-indigo-600 selection:text-white transition-colors duration-300">
-        {isAdminAuthenticated ? (
+        {!isAuthReady ? (
+          <div className="min-h-screen flex items-center justify-center">
+            <div className="w-6 h-6 border-2 border-indigo-600/30 border-t-indigo-600 rounded-full animate-spin" />
+          </div>
+        ) : isAdminAuthenticated ? (
           <AdminDashboardPage
             onLogout={handleAdminLogout}
             onGoToSite={handleGoHome}
+            onUnauthorized={handleAdminLogout}
           />
         ) : (
           <AdminLoginPage
@@ -730,7 +741,11 @@ export default function App() {
         )}
 
         {!isUserRestricted && currentPage === 'agency' && (
-          <AgencyPage onBackToHome={handleGoHome} />
+          <AgencyPage
+            onBackToHome={handleGoHome}
+            currentUser={currentUser}
+            onOpenRegister={handleStart}
+          />
         )}
 
         {!isUserRestricted && currentPage === 'home' && (

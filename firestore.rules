@@ -6,77 +6,325 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // Helper functions
+    // Core Authentication & Authorization Helpers
     function isSignedIn() {
       return request.auth != null;
+    }
+
+    function isAdmin() {
+      return request.auth != null && request.auth.uid == "iNS0otBw1ZalMMhyYUntV1W5ADF3";
     }
 
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    // Users Collection: Publicly readable for creator catalog and admin statistics,
-    // writable by users for profile updates and administrators for account approval verification
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isRecordOwner(data) {
+      return isSignedIn() && (
+        (('ownerId' in data) && data.ownerId == request.auth.uid) ||
+        (('userId' in data) && data.userId == request.auth.uid)
+      );
+    }
+
+    // Protected fields on /users/{userId} that ONLY admin can modify
+    function hasProtectedUserFieldChanges() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasAny([
+        'uid',
+        'role',
+        'isAdmin',
+        'permissions',
+        'accountStatus',
+        'status',
+        'rejectionReason',
+        'verified',
+        'isVerified',
+        'subscriptionStatus',
+        'isPro',
+        'proStatus',
+        'trialStartDate',
+        'trialEndDate',
+        'subscriptionPlanPrice',
+        'topPlacementUntil',
+        'paymentStatus',
+        'paidAmount',
+        'balance',
+        'unlockedContactsCount',
+        'unlockedCreators',
+        'referralCount'
+      ]);
+    }
+
+    function isValidInitialUserCreate(userId) {
+      let data = request.resource.data;
+      return data.uid == userId
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 200
+        && data.role in ['bloger', 'brend']
+        && (!('accountStatus' in data) || data.accountStatus == 'pending')
+        && (!('status' in data) || data.status == 'pending')
+        && (!('verified' in data) || data.verified == false)
+        && (!('isVerified' in data) || data.isVerified == false)
+        && (!('subscriptionStatus' in data) || data.subscriptionStatus in ['free', 'none'])
+        && (!('isPro' in data) || data.isPro == false)
+        && (!('proStatus' in data) || data.proStatus in ['free', 'none'])
+        && !('trialStartDate' in data)
+        && !('trialEndDate' in data)
+        && (!('topPlacementUntil' in data) || data.topPlacementUntil == null)
+        && (!('unlockedContactsCount' in data) || data.unlockedContactsCount == 0)
+        && !('unlockedCreators' in data)
+        && !('paymentStatus' in data)
+        && !('paidAmount' in data)
+        && !('balance' in data)
+        && (!('referralCount' in data) || data.referralCount == 0)
+        && !('isAdmin' in data)
+        && !('permissions' in data);
+    }
+
+    // 1. Users Collection:
+    // - Read open to everyone (for public creator catalog)
+    // - Write only own document (without modifying status, verified, Pro, payment, or role) or admin
     match /users/{userId} {
-      allow read: if true;
-      allow write: if true;
+      allow get, list: if request.time != null;
+
+      allow create: if isAdmin() || (
+        isOwner(userId)
+        && isValidId(userId)
+        && isValidInitialUserCreate(userId)
+      );
+
+      allow update: if isAdmin() || (
+        isOwner(userId)
+        && isValidId(userId)
+        && !hasProtectedUserFieldChanges()
+        && (!('name' in request.resource.data) || (
+          request.resource.data.name is string
+          && request.resource.data.name.size() >= 1
+          && request.resource.data.name.size() <= 200
+        ))
+      );
+
+      allow delete: if isAdmin();
     }
 
-    // Briefs Collection: Open briefs are publicly readable; direct briefs are strictly readable only by sender or recipient
-    match /briefs/{briefId} {
-      allow read: if resource == null
-                  || resource.data.recipientType == 'open'
-                  || (isSignedIn() && (
-                        resource.data.brandId == request.auth.uid ||
-                        resource.data.selectedCreatorId == request.auth.uid
-                     ));
-      allow write: if true;
+    // 2. Conversations & Messages:
+    // - Strictly accessible only to conversation participants and admin
+    function isConversationParticipant(conversationId) {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/conversations/$(conversationId))
+        && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
     }
 
-    // Conversations and messages
     match /conversations/{conversationId} {
-      allow read: if true;
-      allow write: if true;
+      allow get: if isAdmin() || (
+        isSignedIn() && (
+          (resource == null && request.auth.uid in conversationId.split('_')) ||
+          (resource != null && resource.data.participants is list && request.auth.uid in resource.data.participants)
+        )
+      );
+
+      allow list: if isAdmin() || (
+        isSignedIn()
+        && resource.data.participants is list
+        && request.auth.uid in resource.data.participants
+      );
+
+      allow create: if isAdmin() || (
+        isSignedIn()
+        && isValidId(conversationId)
+        && request.resource.data.participants is list
+        && request.resource.data.participants.size() >= 2
+        && request.resource.data.participants.size() <= 10
+        && request.auth.uid in request.resource.data.participants
+      );
+
+      allow update: if isAdmin() || (
+        isSignedIn()
+        && resource.data.participants is list
+        && request.auth.uid in resource.data.participants
+        && request.resource.data.participants == resource.data.participants
+      );
+
+      allow delete: if isAdmin();
 
       match /messages/{messageId} {
-        allow read: if true;
-        allow write: if true;
+        allow get, list: if isAdmin() || isConversationParticipant(conversationId);
+
+        allow create: if isAdmin() || (
+          isValidId(messageId)
+          && isConversationParticipant(conversationId)
+          && request.resource.data.senderId == request.auth.uid
+        );
+
+        allow update: if isAdmin() || (
+          isValidId(messageId)
+          && isConversationParticipant(conversationId)
+          && request.resource.data.senderId == resource.data.senderId
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead', 'updatedAt'])
+        );
+
+        allow delete: if isAdmin();
       }
     }
 
-    // Transactions and referrals
+    // 3. Briefs Collection:
+    // - Open briefs visible to everyone; direct briefs visible to owner, targeted creator, or admin
+    // - Create only for signed-in users (setting own brandId/ownerId)
+    // - Edit/delete only by owner or admin; targeted creator can accept/reject direct briefs; signed-in creators can apply to open briefs
+    function isBriefOwner(data) {
+      return isSignedIn() && (
+        (('brandId' in data) && data.brandId == request.auth.uid) ||
+        (('ownerId' in data) && data.ownerId == request.auth.uid)
+      );
+    }
+
+    function isTargetedCreator(data) {
+      return isSignedIn()
+        && ('selectedCreatorId' in data)
+        && data.selectedCreatorId == request.auth.uid;
+    }
+
+    match /briefs/{briefId} {
+      allow get: if isAdmin() || (
+        resource != null && (
+          resource.data.recipientType == 'open'
+          || isBriefOwner(resource.data)
+          || isTargetedCreator(resource.data)
+        )
+      );
+
+      allow list: if isAdmin()
+        || resource.data.recipientType == 'open'
+        || isBriefOwner(resource.data)
+        || isTargetedCreator(resource.data);
+
+      allow create: if isAdmin() || (
+        isSignedIn()
+        && isValidId(briefId)
+        && isBriefOwner(request.resource.data)
+        && request.resource.data.recipientType in ['open', 'direct']
+        && request.resource.data.taskTitle is string
+        && request.resource.data.taskTitle.size() >= 1
+        && request.resource.data.taskTitle.size() <= 300
+      );
+
+      allow update: if isAdmin() || (
+        isSignedIn()
+        && isValidId(briefId)
+        && (
+          // Owner editing own brief without changing ownership
+          (isBriefOwner(resource.data) && request.resource.data.brandId == resource.data.brandId) ||
+          // Targeted creator accepting or rejecting a direct brief sent to them
+          (isTargetedCreator(resource.data)
+            && request.resource.data.creatorStatus in ['qabul_qilindi', 'rad_etildi']
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'creatorStatus',
+              'status',
+              'respondedAt',
+              'respondedAtMillis',
+              'updatedAt',
+              'creatorPhoneNumber',
+              'creatorTelegramUsername',
+              'brandPhoneNumber',
+              'brandTelegramUsername',
+              'rejectionReason'
+            ])
+          ) ||
+          // Signed-in creator submitting an application to an open brief
+          (resource.data.recipientType == 'open'
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['applications', 'updatedAt'])
+            && request.resource.data.applications is list
+            && request.resource.data.applications.size() <= 200
+          )
+        )
+      );
+
+      allow delete: if isAdmin() || isBriefOwner(resource.data);
+    }
+
+    // 4. Payment Requests, Transactions, Cancellations, Agency Applications, Referrals:
+    // - Create by signed-in owner; read only by owner and admin; update/delete strictly admin-only
+    match /paymentRequests/{requestId} {
+      allow get, list: if isAdmin() || isRecordOwner(resource.data);
+      allow create: if isAdmin() || (
+        isSignedIn()
+        && isValidId(requestId)
+        && isRecordOwner(request.resource.data)
+        && request.resource.data.status == 'pending'
+      );
+      allow update, delete: if isAdmin();
+    }
+
     match /transactions/{transactionId} {
-      allow read: if true;
-      allow write: if true;
+      allow get, list: if isAdmin() || isRecordOwner(resource.data);
+      allow create: if isAdmin() || (
+        isSignedIn()
+        && isValidId(transactionId)
+        && isRecordOwner(request.resource.data)
+      );
+      allow update, delete: if isAdmin();
+    }
+
+    match /cancellations/{cancellationId} {
+      allow get, list: if isAdmin() || isRecordOwner(resource.data);
+      allow create: if isAdmin() || (
+        isSignedIn()
+        && isValidId(cancellationId)
+        && isRecordOwner(request.resource.data)
+      );
+      allow update, delete: if isAdmin();
+    }
+
+    match /agencyApplications/{applicationId} {
+      allow get, list: if isAdmin() || isRecordOwner(resource.data);
+      allow create: if isAdmin() || (
+        isSignedIn()
+        && isValidId(applicationId)
+        && isRecordOwner(request.resource.data)
+        && request.resource.data.status == 'yangi'
+      );
+      allow update, delete: if isAdmin();
     }
 
     match /referrals/{referralId} {
-      allow read: if true;
-      allow write: if true;
+      allow get, list: if isAdmin() || isRecordOwner(resource.data);
+      allow create: if isAdmin() || (
+        isSignedIn()
+        && isValidId(referralId)
+        && isRecordOwner(request.resource.data)
+      );
+      allow update, delete: if isAdmin();
     }
 
-    // Notifications Collection
+    // 5. Notifications Collection:
+    // - Read only by recipient or admin; create by signed-in users; update/delete by recipient or admin
+    function isNotificationRecipient(data) {
+      return isSignedIn() && (
+        (('userId' in data) && data.userId == request.auth.uid) ||
+        (('recipientId' in data) && data.recipientId == request.auth.uid)
+      );
+    }
+
     match /notifications/{notificationId} {
-      allow read: if true;
-      allow write: if true;
-    }
+      allow get, list: if isAdmin() || isNotificationRecipient(resource.data);
 
-    // Cancellations Collection (Pro cancellation reasons and feedback)
-    match /cancellations/{cancellationId} {
-      allow read: if true;
-      allow write: if true;
-    }
+      allow create: if isAdmin() || (
+        isSignedIn()
+        && isValidId(notificationId)
+        && request.resource.data.userId is string
+        && request.resource.data.userId.size() >= 1
+        && request.resource.data.userId.size() <= 128
+        && (!('senderId' in request.resource.data) || request.resource.data.senderId == '' || request.resource.data.senderId == request.auth.uid)
+      );
 
-    // Agency Applications Collection (Marketing agency partnership program)
-    match /agencyApplications/{applicationId} {
-      allow read: if true;
-      allow write: if true;
-    }
+      allow update: if isAdmin() || (
+        isNotificationRecipient(resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'updatedAt'])
+      );
 
-    // Payment Requests Collection (Manual card payment confirmation and receipts)
-    match /paymentRequests/{requestId} {
-      allow read: if true;
-      allow write: if true;
+      allow delete: if isAdmin() || isNotificationRecipient(resource.data);
     }
   }
 }

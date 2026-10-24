@@ -24,14 +24,23 @@ import {
   approvePaymentRequest,
   rejectPaymentRequest,
   formatUzbekDate,
+  isCurrentUserAdmin,
 } from '../firebase';
+
+function isPdfReceiptUrl(url?: string): boolean {
+  if (!url) return false;
+  const lower = url.toLowerCase();
+  return lower.startsWith('data:application/pdf') || lower.includes('.pdf');
+}
 
 interface AdminPaymentRequestsProps {
   onCountChange?: (pendingCount: number) => void;
+  onUnauthorized?: () => void;
 }
 
 export const AdminPaymentRequests: React.FC<AdminPaymentRequestsProps> = ({
   onCountChange,
+  onUnauthorized,
 }) => {
   const [requests, setRequests] = useState<PaymentRequest[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -40,7 +49,7 @@ export const AdminPaymentRequests: React.FC<AdminPaymentRequestsProps> = ({
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Modal for viewing full receipt image
+  // Modal for viewing full receipt image or PDF
   const [previewImage, setPreviewImage] = useState<{ url: string; title: string } | null>(null);
 
   // Modal for rejecting request with optional reason
@@ -49,6 +58,10 @@ export const AdminPaymentRequests: React.FC<AdminPaymentRequestsProps> = ({
 
   // Real-time Firestore subscription
   useEffect(() => {
+    if (!isCurrentUserAdmin()) {
+      onUnauthorized?.();
+      return;
+    }
     setIsLoading(true);
     const unsubscribe = subscribeToPaymentRequests(
       (loadedRequests) => {
@@ -67,18 +80,27 @@ export const AdminPaymentRequests: React.FC<AdminPaymentRequestsProps> = ({
     );
 
     return () => unsubscribe();
-  }, [onCountChange]);
+  }, [onCountChange, onUnauthorized]);
 
   // Handle Approve
   const handleApprove = async (req: PaymentRequest) => {
+    if (!isCurrentUserAdmin()) {
+      onUnauthorized?.();
+      return;
+    }
     setActionLoadingId(req.id);
     try {
       await approvePaymentRequest(req.id, req.userId);
       setToastMessage(`✓ ${req.userName} toʻlovi tasdiqlandi va 30 kunlik Pro rejim faollashtirildi!`);
       setTimeout(() => setToastMessage(null), 4000);
     } catch (err: any) {
+      if (err?.code === 'auth/not-admin') {
+        onUnauthorized?.();
+        return;
+      }
       console.error('Toʻlovni tasdiqlashda xatolik:', err);
-      alert('Tasdiqlashda xatolik yuz berdi. Qaytadan urinib koʻring.');
+      setToastMessage('Tasdiqlashda xatolik yuz berdi. Qaytadan urinib koʻring.');
+      setTimeout(() => setToastMessage(null), 4000);
     } finally {
       setActionLoadingId(null);
     }
@@ -86,6 +108,10 @@ export const AdminPaymentRequests: React.FC<AdminPaymentRequestsProps> = ({
 
   // Handle Reject Confirm
   const handleConfirmReject = async () => {
+    if (!isCurrentUserAdmin()) {
+      onUnauthorized?.();
+      return;
+    }
     if (!rejectingItem) return;
     setActionLoadingId(rejectingItem.id);
     try {
@@ -95,8 +121,13 @@ export const AdminPaymentRequests: React.FC<AdminPaymentRequestsProps> = ({
       setRejectingItem(null);
       setRejectionReason('');
     } catch (err: any) {
+      if (err?.code === 'auth/not-admin') {
+        onUnauthorized?.();
+        return;
+      }
       console.error('Toʻlovni rad etishda xatolik:', err);
-      alert('Rad etishda xatolik yuz berdi.');
+      setToastMessage('Rad etishda xatolik yuz berdi.');
+      setTimeout(() => setToastMessage(null), 4000);
     } finally {
       setActionLoadingId(null);
     }
@@ -274,7 +305,7 @@ export const AdminPaymentRequests: React.FC<AdminPaymentRequestsProps> = ({
               >
                 {/* User & Request Info */}
                 <div className="flex items-start gap-3.5 min-w-0 flex-1">
-                  {/* Thumbnail / Receipt Image Button */}
+                  {/* Thumbnail / Receipt Image or PDF Button */}
                   <div className="relative group shrink-0">
                     {req.screenshotUrl ? (
                       <button
@@ -286,13 +317,20 @@ export const AdminPaymentRequests: React.FC<AdminPaymentRequestsProps> = ({
                           })
                         }
                         className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 relative cursor-pointer hover:ring-2 hover:ring-indigo-500 transition-all block"
-                        title="Rasmni katta koʻrinishda ochish"
+                        title="Chekni katta koʻrinishda ochish"
                       >
-                        <img
-                          src={req.screenshotUrl}
-                          alt="Chek rasmi"
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                        />
+                        {isPdfReceiptUrl(req.screenshotUrl) ? (
+                          <div className="w-full h-full flex flex-col items-center justify-center bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-mono font-bold text-xs">
+                            <span>PDF</span>
+                            <span className="text-[10px] font-normal">Chek</span>
+                          </div>
+                        ) : (
+                          <img
+                            src={req.screenshotUrl}
+                            alt="Chek rasmi"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                          />
+                        )}
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
                           <ZoomIn className="w-5 h-5" />
                         </div>
@@ -448,11 +486,19 @@ export const AdminPaymentRequests: React.FC<AdminPaymentRequestsProps> = ({
             </div>
 
             <div className="max-h-[75vh] overflow-auto rounded-xl bg-slate-950 flex items-center justify-center p-2">
-              <img
-                src={previewImage.url}
-                alt={previewImage.title}
-                className="max-h-[70vh] w-auto object-contain rounded-lg shadow-md"
-              />
+              {isPdfReceiptUrl(previewImage.url) ? (
+                <iframe
+                  src={previewImage.url}
+                  title={previewImage.title}
+                  className="w-full h-[70vh] rounded-lg bg-white"
+                />
+              ) : (
+                <img
+                  src={previewImage.url}
+                  alt={previewImage.title}
+                  className="max-h-[70vh] w-auto object-contain rounded-lg shadow-md"
+                />
+              )}
             </div>
 
             <div className="mt-4 flex justify-between items-center">

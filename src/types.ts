@@ -89,6 +89,8 @@ export type AgencyApplicationStatus = 'yangi' | 'boglanildi' | 'hamkor_boldi';
 
 export interface AgencyApplication {
   id: string;
+  userId?: string;
+  ownerId?: string;
   agencyName: string;
   contactPerson: string;
   phoneOrEmail: string;
@@ -144,6 +146,7 @@ export interface BriefData {
   brandName?: string;
   brandAvatar?: string;
   brandId?: string;
+  ownerId?: string;
   brandPhoneNumber?: string;
   brandTelegramUsername?: string;
   attachedFiles?: { name: string; size: string; type: string }[];
@@ -202,6 +205,8 @@ export interface UserSession {
   subscriptionStatus?: SubscriptionStatus;
   reminderSent?: boolean;
   subscriptionPlanPrice?: number;
+  cancellationReason?: string;
+  handle?: string;
   accountStatus?: AccountStatus;
   rejectionReason?: string;
   rating?: number;
@@ -336,6 +341,7 @@ export type CancellationReasonType = typeof CANCELLATION_REASONS[number];
 export interface CancellationRecord {
   id: string;
   userId: string;
+  ownerId?: string;
   userName: string;
   userEmail?: string;
   userRole?: string;
@@ -351,6 +357,7 @@ export type PaymentRequestStatus = 'pending' | 'approved' | 'rejected';
 export interface PaymentRequest {
   id: string;
   userId: string;
+  ownerId?: string;
   userName: string;
   userPhone?: string;
   userEmail?: string;
