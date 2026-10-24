@@ -328,25 +328,24 @@ export async function registerUser(
     }
     console.log("[registerUser] Firestore'ga yangi foydalanuvchi hujjati muvaffaqiyatli saqlandi! UID:", fbUser.uid);
 
-    // 2. Yangi ro'yxatdan o'tgan foydalanuvchi haqida Telegram API orqali adminga xabar yuborish
+    // 2. Yangi ro'yxatdan o'tgan foydalanuvchi haqida server orqali adminga Telegram xabar yuborish
     try {
       const realName = fullName.trim() || "Noma'lum foydalanuvchi";
       const realRole = role === 'brend' ? 'brend' : 'bloger';
-      console.log("[registerUser] Telegram API'ga so'rov yuborilmoqda: Ism =", realName, "Turi =", realRole);
 
-      const response = await fetch('https://api.telegram.org/bot8766687220:AAEnASe4ekqnyo13ZIpeW5KujNOK6mC3Kn0/sendMessage', {
+      await fetch('/api/telegram', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          chat_id: '8788020177',
-          text: `👤 Yangi foydalanuvchi ro'yxatdan o'tdi!\nIsm: ${realName}\nTuri: ${realRole}`,
+          type: 'new_user',
+          data: {
+            name: realName,
+            role: realRole,
+          },
         }),
       });
-
-      const tgResult = await response.json().catch(() => ({}));
-      console.log("[registerUser] Telegram API javobi:", response.status, tgResult);
-    } catch (error: any) {
-      console.error("[registerUser] Telegram API so'rovida xatolik:", error);
+    } catch {
+      // Xato bo'lsa jim o'tkazib yuboriladi (sayt ishlashi to'xtamaydi)
     }
   } catch (firestoreErr) {
     console.error("Firestore ga profil saqlashda xatolik:", firestoreErr);
@@ -3426,7 +3425,7 @@ export async function submitPaymentRequest(params: {
 
   console.log("[submitPaymentRequest] Firestore'ga muvaffaqiyatli saqlandi! Doc ID:", docRef.id);
 
-  // Yangi to'lov so'rovi kelganda Telegram API orqali adminga xabar yuborish (4s timeout bilan, foydalanuvchini kutdirib qo'ymaslik uchun)
+  // Yangi to'lov so'rovi kelganda server orqali adminga Telegram xabar yuborish (4s timeout bilan, foydalanuvchini kutdirib qo'ymaslik uchun)
   const tgController = typeof AbortController !== 'undefined' ? new AbortController() : null;
   const tgTimer = setTimeout(() => {
     try {
@@ -3436,22 +3435,21 @@ export async function submitPaymentRequest(params: {
 
   try {
     const realName = (params.userName || '').trim() || "Noma'lum foydalanuvchi";
-    console.log("[submitPaymentRequest] Telegram API'ga so'rov yuborilmoqda: Foydalanuvchi =", realName);
 
-    const response = await fetch('https://api.telegram.org/bot8766687220:AAEnASe4ekqnyo13ZIpeW5KujNOK6mC3Kn0/sendMessage', {
+    await fetch('/api/telegram', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        chat_id: '8788020177',
-        text: `💳 Yangi to'lov so'rovi!\nFoydalanuvchi: ${realName}\nSumma: 59 000 so'm`,
+        type: 'payment_request',
+        data: {
+          userName: realName,
+          amount: "59 000 so'm",
+        },
       }),
       ...(tgController ? { signal: tgController.signal } : {}),
     });
-
-    const tgResult = await response.json().catch(() => ({}));
-    console.log('[submitPaymentRequest] Telegram API javobi:', response.status, tgResult);
-  } catch (error: any) {
-    console.error("[submitPaymentRequest] Telegram API so'rovida xatolik:", error);
+  } catch {
+    // Xato bo'lsa jim o'tkazib yuboriladi (sayt ishlashi to'xtamaydi)
   } finally {
     clearTimeout(tgTimer);
   }

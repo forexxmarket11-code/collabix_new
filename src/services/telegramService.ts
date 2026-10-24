@@ -1,45 +1,35 @@
 /**
- * Telegram Bot Notification Service for Collabix Admin
- * Bot: @Collabix_tolov_bot
- * Bot token: 8766687220:AAEnASe4ekqnyo13ZIpeW5KujNOK6mC3Kn0
- * Chat ID: 8788020177
+ * Telegram Notification Client Service for Collabix Admin
+ * Routes all notifications through the secure /api/telegram serverless endpoint.
  */
 
-const TELEGRAM_BOT_TOKEN = '8766687220:AAEnASe4ekqnyo13ZIpeW5KujNOK6mC3Kn0';
-const TELEGRAM_ADMIN_CHAT_ID = '8788020177';
-const TELEGRAM_API_URL = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+export type TelegramNotificationType = 'new_user' | 'payment_request' | 'test';
 
-/**
- * Sends a message to the Admin Telegram chat with full logging and error isolation
- */
-export async function sendTelegramAdminNotification(text: string): Promise<boolean> {
+async function postTelegramNotification(
+  type: TelegramNotificationType,
+  data: Record<string, string>
+): Promise<boolean> {
   try {
-    console.log('[Telegram Notification] Soʻrov yuborilmoqda...', text);
-    const response = await fetch(TELEGRAM_API_URL, {
+    const response = await fetch('/api/telegram', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        chat_id: TELEGRAM_ADMIN_CHAT_ID,
-        text: text,
-      }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type, data }),
       keepalive: true,
     });
 
-    const data = await response.json().catch(() => ({}));
-
-    if (!response.ok) {
-      console.warn('[Telegram Notification] Xabar yuborishda xatolik:', response.status, data);
-      return false;
-    }
-
-    console.log('[Telegram Notification] Xabar muvaffaqiyatli yetkazildi! Message ID:', data?.result?.message_id);
-    return true;
-  } catch (error) {
-    console.warn('[Telegram Notification] Tarmoq yoki API xatoligi:', error);
+    return response.ok;
+  } catch {
+    // Xato bo'lsa jim o'tkazib yuboriladi (sayt ishlashi to'xtamaydi)
     return false;
   }
+}
+
+/**
+ * Sends a test/custom message via the server-side Telegram endpoint
+ */
+export async function sendTelegramAdminNotification(text: string): Promise<boolean> {
+  const cleanText = (text || '').trim().slice(0, 200);
+  return postTelegramNotification('test', { text: cleanText });
 }
 
 /**
@@ -48,11 +38,11 @@ export async function sendTelegramAdminNotification(text: string): Promise<boole
 export async function notifyAdminNewPaymentRequest(userName: string): Promise<boolean> {
   try {
     const cleanName = (userName || '').trim() || "Noma'lum foydalanuvchi";
-    const message = `💳 Yangi to'lov so'rovi!\nFoydalanuvchi: ${cleanName}\nSumma: 59 000 so'm`;
-    console.log('[Telegram Notification] To\'lov so\'rovi tayyorlandi, yuborilmoqda: Foydalanuvchi =', cleanName);
-    return await sendTelegramAdminNotification(message);
-  } catch (err) {
-    console.warn('[Telegram Notification] notifyAdminNewPaymentRequest xatosi:', err);
+    return await postTelegramNotification('payment_request', {
+      userName: cleanName,
+      amount: "59 000 so'm",
+    });
+  } catch {
     return false;
   }
 }
@@ -60,15 +50,18 @@ export async function notifyAdminNewPaymentRequest(userName: string): Promise<bo
 /**
  * 2. Yangi ro'yxatdan o'tgan foydalanuvchi uchun yuboriladigan bildirishnoma
  */
-export async function notifyAdminNewUserRegistered(name: string, role: 'bloger' | 'brend' | string): Promise<boolean> {
+export async function notifyAdminNewUserRegistered(
+  name: string,
+  role: 'bloger' | 'brend' | string
+): Promise<boolean> {
   try {
-    const cleanName = (name || '').trim() || "Noma'lum";
+    const cleanName = (name || '').trim() || "Noma'lum foydalanuvchi";
     const roleText = role === 'brend' ? 'brend' : 'bloger';
-    const message = `👤 Yangi foydalanuvchi ro'yxatdan o'tdi!\nIsm: ${cleanName}\nTuri: ${roleText}`;
-    console.log('[Telegram Notification] Yangi foydalanuvchi tayyorlandi, yuborilmoqda: Ism =', cleanName, 'Turi =', roleText);
-    return await sendTelegramAdminNotification(message);
-  } catch (err) {
-    console.warn('[Telegram Notification] notifyAdminNewUserRegistered xatosi:', err);
+    return await postTelegramNotification('new_user', {
+      name: cleanName,
+      role: roleText,
+    });
+  } catch {
     return false;
   }
 }
