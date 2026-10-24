@@ -26,7 +26,7 @@ interface RegisterModalProps {
   isOpen: boolean;
   onClose: () => void;
   onOpenCatalog: () => void;
-  onSuccess?: (user: UserSession) => void;
+  onSuccess?: (user: UserSession, isNewRegistration?: boolean) => void;
   onGoToProfile?: () => void;
 }
 
@@ -196,7 +196,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
         const newUser = await registerUser(contactTrimmed, password, fullName, role);
         setSuccessMessage('Tabriklaymiz! Profilingiz tayyor 🎉');
         if (onSuccess) {
-          onSuccess(newUser);
+          onSuccess(newUser, true);
         }
         setTimeout(() => {
           setSuccessMessage(null);
@@ -217,7 +217,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
         const loggedInUser = await loginUser(contactTrimmed, password);
         onClose();
         if (onSuccess) {
-          onSuccess(loggedInUser);
+          onSuccess(loggedInUser, false);
         }
       } catch (err: any) {
         setErrorMessage(getUzbekAuthErrorMessage(err, isPhone));

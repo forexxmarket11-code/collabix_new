@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { CatalogCreator, CreatorCategory, UserSession } from '../types';
 import { subscribeToApprovedCreators } from '../firebase';
-import { checkProUserAndProceed } from '../utils/subscription';
+import { checkProUserAndProceed, isUserPro } from '../utils/subscription';
 
 interface CatalogPageProps {
   onBackToHome: () => void;
@@ -40,7 +40,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
   onViewCreatorProfile,
   onSendBrief,
 }) => {
-  const isPro = currentUser && (currentUser.subscriptionStatus === 'trial' || currentUser.subscriptionStatus === 'active');
+  const isPro = isUserPro(currentUser);
   
   // Real-time Firestore state for approved creators
   const [creators, setCreators] = useState<CatalogCreator[]>([]);

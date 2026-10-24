@@ -57,6 +57,12 @@ import {
   PaymentRequest,
   PaymentRequestStatus,
 } from './types';
+import {
+  isUserPro,
+  getBloggerCatalogReadiness,
+  isFilledSocialValue,
+  isFilledPriceValue,
+} from './utils/subscription';
 
 // Provided Firebase Configuration
 export const firebaseConfig = {
@@ -204,10 +210,23 @@ export function getUzbekAuthErrorMessage(error: any, isPhoneInput = false): stri
 
 /**
  * Calculate user profile completion percentage (0 - 100%)
- * Criteria checked: ism, bio, kategoriya, narx, ijtimoiy tarmoqlar (har biri 20%)
+ * Blogerlar uchun: rasm, bio (20+ belgi), kategoriya, ijtimoiy tarmoq, narx (har biri 20%)
+ * Brendlar uchun: ism, bio, kategoriya, byudjet, kontakt/ijtimoiy tarmoq (har biri 20%)
  */
 export function calculateProfileCompletion(user: Partial<UserSession>): number {
   if (!user) return 0;
+
+  if (user.role !== 'brend') {
+    const readiness = getBloggerCatalogReadiness(user, false);
+    let bloggerScore = 0;
+    if (readiness.hasAvatar) bloggerScore += 20;
+    if (readiness.hasBio) bloggerScore += 20;
+    if (readiness.hasCategory) bloggerScore += 20;
+    if (readiness.hasSocial) bloggerScore += 20;
+    if (readiness.hasPrice) bloggerScore += 20;
+    return Math.min(100, Math.max(0, bloggerScore));
+  }
+
   let score = 0;
 
   // 1. Ism (20%)
@@ -226,23 +245,19 @@ export function calculateProfileCompletion(user: Partial<UserSession>): number {
   }
 
   // 4. Narx / byudjet oralig'i (20%)
-  if (
-    user.priceRange &&
-    (Boolean(user.priceRange.min && user.priceRange.min.trim()) ||
-      Boolean(user.priceRange.max && user.priceRange.max.trim()))
-  ) {
+  if (isFilledPriceValue(user.priceRange?.min) || isFilledPriceValue(user.priceRange?.max)) {
     score += 20;
   }
 
   // 5. Ijtimoiy tarmoqlar va kontaktlar (20%)
   const hasSocial = Boolean(
-    (user.instagramHandle && user.instagramHandle.trim().length > 0) ||
-      (user.socialLinks?.instagram && user.socialLinks.instagram.trim().length > 0) ||
-      (user.socialLinks?.telegram && user.socialLinks.telegram.trim().length > 0) ||
-      (user.telegramUsername && user.telegramUsername.trim().length > 0) ||
+    isFilledSocialValue(user.instagramHandle) ||
+      isFilledSocialValue(user.socialLinks?.instagram) ||
+      isFilledSocialValue(user.socialLinks?.telegram) ||
+      isFilledSocialValue(user.telegramUsername) ||
       (user.phoneNumber && user.phoneNumber.trim().length > 0) ||
-      (user.socialLinks?.tiktok && user.socialLinks.tiktok.trim().length > 0) ||
-      (user.socialLinks?.youtube && user.socialLinks.youtube.trim().length > 0)
+      isFilledSocialValue(user.socialLinks?.tiktok) ||
+      isFilledSocialValue(user.socialLinks?.youtube)
   );
   if (hasSocial) {
     score += 20;
@@ -492,8 +507,8 @@ export function isContactUnlockedForUser(
     return { isUnlocked: false };
   }
 
-  // 1. Pro users have unlimited access
-  if (currentUser.subscriptionStatus === 'trial' || currentUser.subscriptionStatus === 'active') {
+  // 1. Pro users have unlimited access (active & unexpired)
+  if (isUserPro(currentUser)) {
     return { isUnlocked: true, source: 'pro' };
   }
 
@@ -1581,7 +1596,77 @@ export function userSessionToCatalogCreator(user: UserSession): CatalogCreator {
 }
 
 /**
- * Real-time subscription to active (non-rejected) creators from Firestore 'users' collection
+ * Subscribe in real-time to Firestore 'settings/catalog' document.
+ * Default value when document does not exist: { catalogProOnly: true }.
+ */
+export function subscribeToCatalogSettings(
+  callback: (settings: { catalogProOnly: boolean }) => void
+): () => void {
+  const settingsRef = doc(db, 'settings', 'catalog');
+
+  return onSnapshot(
+    settingsRef,
+    (snap) => {
+      if (snap.exists()) {
+        const data = snap.data() as any;
+        const catalogProOnly =
+          typeof data?.catalogProOnly === 'boolean'
+            ? data.catalogProOnly
+            : typeof data?.proOnly === 'boolean'
+            ? data.proOnly
+            : true;
+        callback({ catalogProOnly });
+      } else {
+        callback({ catalogProOnly: true });
+      }
+    },
+    () => {
+      getDoc(settingsRef)
+        .then((snap) => {
+          if (snap.exists()) {
+            const data = snap.data() as any;
+            const catalogProOnly =
+              typeof data?.catalogProOnly === 'boolean'
+                ? data.catalogProOnly
+                : typeof data?.proOnly === 'boolean'
+                ? data.proOnly
+                : true;
+            callback({ catalogProOnly });
+          } else {
+            callback({ catalogProOnly: true });
+          }
+        })
+        .catch(() => {
+          callback({ catalogProOnly: true });
+        });
+    }
+  );
+}
+
+/**
+ * Admin action: Update 'Katalog faqat Pro uchun' setting in Firestore 'settings/catalog'
+ */
+export async function updateCatalogProOnlySetting(catalogProOnly: boolean): Promise<void> {
+  requireAdminAuth();
+  const settingsRef = doc(db, 'settings', 'catalog');
+  await setDoc(
+    settingsRef,
+    {
+      catalogProOnly,
+      updatedAt: serverTimestamp(),
+      updatedBy: auth.currentUser?.uid || ADMIN_UID,
+    },
+    { merge: true }
+  );
+}
+
+/**
+ * Real-time subscription to catalog-eligible creators from Firestore 'users' collection
+ * Condition:
+ * - role === 'bloger' (or 'kreator')
+ * - accountStatus !== 'rejected'
+ * - Complete profile (avatar, bio >= 20, category, >=1 social link, price)
+ * - Active Pro subscription (unless settings/catalog has catalogProOnly === false)
  */
 export function subscribeToApprovedCreators(
   callback: (creators: CatalogCreator[], rawUsers: UserSession[]) => void,
@@ -1595,8 +1680,11 @@ export function subscribeToApprovedCreators(
   let retryTimer: ReturnType<typeof setTimeout> | null = null;
   let lastUid: string | null | undefined = undefined;
   let hasEmitted = false;
+  let catalogProOnly = true;
+  let latestDocs: any[] | null = null;
 
   const parseDocs = (docs: any[]) => {
+    latestDocs = docs;
     const approvedCreators: CatalogCreator[] = [];
     const rawApprovedUsers: UserSession[] = [];
 
@@ -1605,14 +1693,16 @@ export function subscribeToApprovedCreators(
       const uid = docSnap.id;
       const role = data.role || 'bloger';
       const isCreator = role === 'bloger' || (role as string) === 'kreator';
-      const isActive = data.accountStatus !== 'rejected';
+      if (!isCreator) return;
 
-      if (isCreator && isActive) {
-        const userObj: UserSession = {
-          ...data,
-          uid,
-          accountStatus: 'approved',
-        };
+      const userObj: UserSession = {
+        ...data,
+        uid,
+        accountStatus: data.accountStatus === 'rejected' ? 'rejected' : 'approved',
+      };
+
+      const readiness = getBloggerCatalogReadiness(userObj, catalogProOnly);
+      if (readiness.isVisibleInCatalog) {
         rawApprovedUsers.push(userObj);
         approvedCreators.push(userSessionToCatalogCreator(userObj));
       }
@@ -1621,6 +1711,15 @@ export function subscribeToApprovedCreators(
     hasEmitted = true;
     callback(approvedCreators, rawApprovedUsers);
   };
+
+  const settingsUnsub = subscribeToCatalogSettings((settings) => {
+    if (isDisposed) return;
+    const prev = catalogProOnly;
+    catalogProOnly = settings.catalogProOnly;
+    if (prev !== catalogProOnly && latestDocs !== null) {
+      parseDocs(latestDocs);
+    }
+  });
 
   const cleanupSnapshot = () => {
     if (retryTimer) {
@@ -1690,6 +1789,7 @@ export function subscribeToApprovedCreators(
 
   return () => {
     isDisposed = true;
+    settingsUnsub();
     authUnsub();
     cleanupSnapshot();
   };

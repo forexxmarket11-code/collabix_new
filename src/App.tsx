@@ -25,6 +25,7 @@ import { ProUpgradeModal } from './components/ProUpgradeModal';
 import { CreatorPublicProfilePage } from './components/CreatorPublicProfilePage';
 import { PendingApprovalPage } from './components/PendingApprovalPage';
 import { PWAInstallPrompt } from './components/PWAInstallPrompt';
+import { BloggerCatalogBanner } from './components/BloggerCatalogBanner';
 import { PageType, UserSession, BriefData, CatalogCreator, BriefApplication, NotificationItem } from './types';
 import {
   auth,
@@ -34,6 +35,7 @@ import {
   logoutUser,
   markReminderSent,
   subscribeToBriefs,
+  subscribeToCatalogSettings,
   createBriefInFirestore,
   applyToBriefInFirestore,
   getOrCreateConversation,
@@ -124,11 +126,19 @@ export default function App() {
 
   const [authUid, setAuthUid] = useState<string | null>(null);
   const [isAuthReady, setIsAuthReady] = useState<boolean>(false);
+  const [catalogProOnly, setCatalogProOnly] = useState<boolean>(true);
 
   useEffect(() => {
     const unsubscribe = onFirebaseAuthReady((uid) => {
       setAuthUid(uid);
       setIsAuthReady(true);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToCatalogSettings((settings) => {
+      setCatalogProOnly(settings.catalogProOnly);
     });
     return () => unsubscribe();
   }, []);
@@ -494,7 +504,7 @@ export default function App() {
     setIsRegisterModalOpen(true);
   };
 
-  const handleUserRegisterSuccess = (user: UserSession) => {
+  const handleUserRegisterSuccess = (user: UserSession, isNewRegistration?: boolean) => {
     setCurrentUser(user);
     try {
       localStorage.setItem('collabix_user', JSON.stringify(user));
@@ -503,6 +513,8 @@ export default function App() {
     }
     if (user.accountStatus === 'rejected') {
       handlePageChange('pending-approval');
+    } else if (isNewRegistration && user.role === 'bloger') {
+      handlePageChange('edit-profile');
     } else {
       handlePageChange('home');
     }
@@ -604,9 +616,22 @@ export default function App() {
           />
         )}
 
+        {/* Dismissible Catalog & Pro Reminder Banner for Bloggers */}
+        {!isUserRestricted && currentPage !== 'messages' && (
+          <BloggerCatalogBanner
+            user={currentUser}
+            catalogProOnly={catalogProOnly}
+            currentPage={currentPage}
+            onFillProfile={handleOpenEditProfile}
+            onOpenProModal={() => setIsProModalOpen(true)}
+          />
+        )}
+
         {currentPage === 'edit-profile' && (
           <EditProfilePage
             user={currentUser}
+            catalogProOnly={catalogProOnly}
+            onOpenProModal={() => setIsProModalOpen(true)}
             onSave={(updated) => {
               handleUpdateUser(updated);
               if (isUserRestricted) {

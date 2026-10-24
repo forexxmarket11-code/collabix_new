@@ -4,6 +4,7 @@ import { PageType, UserSession, NotificationItem } from '../types';
 import { ThemeToggle } from './ThemeToggle';
 import { NotificationDropdown } from './NotificationDropdown';
 import { PWAInstallButton } from './PWAInstallButton';
+import { isUserPro } from '../utils/subscription';
 
 interface NavbarProps {
   onStartClick: () => void;
@@ -37,7 +38,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const isRestricted = Boolean(currentUser && currentUser.accountStatus === 'rejected');
-  const isPro = currentUser && (currentUser.subscriptionStatus === 'trial' || currentUser.subscriptionStatus === 'active') && !isRestricted;
+  const isPro = Boolean(isUserPro(currentUser) && !isRestricted);
 
   const handleNavClick = (sectionId: string) => {
     if (currentPage !== 'home' && onHomeClick) {

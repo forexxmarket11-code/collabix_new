@@ -28,9 +28,12 @@ import {
 } from 'lucide-react';
 import { UserSession, CreatorMediaItem } from '../types';
 import { saveUserProfile, fetchUserProfile, calculateProfileCompletion } from '../firebase';
+import { getBloggerCatalogReadiness } from '../utils/subscription';
 
 interface EditProfilePageProps {
   user: UserSession | null;
+  catalogProOnly?: boolean;
+  onOpenProModal?: () => void;
   onSave: (updated: UserSession) => void;
   onBack: () => void;
   onOpenRegister: () => void;
@@ -117,6 +120,8 @@ function compressImage(file: File, maxWidth = 800, maxHeight = 800, quality = 0.
 
 export const EditProfilePage: React.FC<EditProfilePageProps> = ({
   user,
+  catalogProOnly = true,
+  onOpenProModal,
   onSave,
   onBack,
   onOpenRegister,
@@ -127,9 +132,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
 
   // 2. Basic Info state
   const [name, setName] = useState<string>(user?.name || '');
-  const [instagramHandle, setInstagramHandle] = useState<string>(
-    user?.instagramHandle || (user?.name ? `@${user.name.toLowerCase().replace(/\s+/g, '')}` : '')
-  );
+  const [instagramHandle, setInstagramHandle] = useState<string>(user?.instagramHandle || '');
   const [city, setCity] = useState<string>(user?.city?.split(',')[0] || 'Toshkent');
   const [gender, setGender] = useState<'erkak' | 'ayol' | ''>(user?.gender || '');
   const [languages, setLanguages] = useState<string[]>(
@@ -142,19 +145,17 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
   );
   const [telegramUsername, setTelegramUsername] = useState<string>(
     user?.telegramUsername ||
-      (user?.socialLinks?.telegram
+      (user?.socialLinks?.telegram && user.socialLinks.telegram !== 'https://t.me/'
         ? user.socialLinks.telegram.replace(/^https?:\/\/t\.me\//, '').replace(/^@/, '')
         : '')
   );
 
   // 3. Bio state
-  const [bio, setBio] = useState<string>(
-    user?.bio || 'Lifestyle, moda va sayohat boʻyicha kreativ videolar yaratuvchi bloger.'
-  );
+  const [bio, setBio] = useState<string>(user?.bio || '');
 
   // 4. Categories & Content Types
   const [categories, setCategories] = useState<string[]>(
-    user?.categories && user.categories.length > 0 ? user.categories : ['Blogger']
+    user?.categories && user.categories.length > 0 ? user.categories : []
   );
   const [contentTypes, setContentTypes] = useState<string[]>(
     user?.contentTypes && user.contentTypes.length > 0
@@ -163,13 +164,17 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
   );
 
   // 5. Pricing
-  const [priceMin, setPriceMin] = useState<string>(user?.priceRange?.min || '500 000');
-  const [priceMax, setPriceMax] = useState<string>(user?.priceRange?.max || '2 500 000');
+  const [priceMin, setPriceMin] = useState<string>(
+    user?.priceRange?.min && user.priceRange.min !== '0' ? user.priceRange.min : ''
+  );
+  const [priceMax, setPriceMax] = useState<string>(
+    user?.priceRange?.max && user.priceRange.max !== '0' ? user.priceRange.max : ''
+  );
 
   // 6. Social Links
   const [socialLinks, setSocialLinks] = useState({
     instagram: user?.socialLinks?.instagram || 'https://instagram.com/',
-    instagramFollowers: user?.socialLinks?.instagramFollowers || '45 000',
+    instagramFollowers: user?.socialLinks?.instagramFollowers || '',
     tiktok: user?.socialLinks?.tiktok || 'https://tiktok.com/@',
     tiktokFollowers: user?.socialLinks?.tiktokFollowers || '',
     youtube: user?.socialLinks?.youtube || '',
@@ -320,9 +325,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
 
   const toggleCategory = (catId: string) => {
     if (categories.includes(catId)) {
-      if (categories.length > 1) {
-        setCategories(categories.filter((c) => c !== catId));
-      }
+      setCategories(categories.filter((c) => c !== catId));
     } else {
       setCategories([...categories, catId]);
     }
@@ -476,9 +479,6 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
     if (!name.trim()) {
       newErrors.name = 'Toʻliq ism kiritilishi shart';
     }
-    if (categories.length === 0) {
-      newErrors.categories = 'Kamida bitta kategoriya tanlanishi shart';
-    }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -491,7 +491,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
 
     const cleanCategories = Array.isArray(categories)
       ? categories.flat(Infinity).filter((c) => typeof c === 'string' && c.trim().length > 0)
-      : ['Blogger'];
+      : [];
     const cleanLanguages = Array.isArray(languages)
       ? languages.flat(Infinity).filter((l) => typeof l === 'string' && l.trim().length > 0)
       : ['Oʻzbek'];
@@ -506,7 +506,13 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
       title: String(item.title || ''),
     }));
 
+    const cleanPhone = phoneNumber.trim();
+    const cleanTg = telegramUsername.trim().replace(/^@/, '').replace(/^https?:\/\/t\.me\//, '');
+    const cleanInstaHandle = instagramHandle.trim() === '@' ? '' : instagramHandle.trim();
+
     const completion = calculateProfileCompletion({
+      role: user?.role || 'bloger',
+      avatar: avatar.trim() || undefined,
       name: name.trim(),
       bio: bio.trim(),
       categories: cleanCategories,
@@ -514,7 +520,9 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
         min: priceMin.trim(),
         max: priceMax.trim(),
       },
-      instagramHandle: instagramHandle.trim(),
+      instagramHandle: cleanInstaHandle,
+      telegramUsername: cleanTg || undefined,
+      phoneNumber: cleanPhone || undefined,
       socialLinks: {
         ...socialLinks,
         instagramEnabled: enabledSocials.instagram,
@@ -524,9 +532,6 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
       },
     });
 
-    const cleanPhone = phoneNumber.trim();
-    const cleanTg = telegramUsername.trim().replace(/^@/, '').replace(/^https?:\/\/t\.me\//, '');
-
     const updatedUser: UserSession = {
       ...(user || ({} as UserSession)),
       name: name.trim(),
@@ -535,14 +540,14 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
       avatar: avatar.trim() || undefined,
       city: city.trim(),
       bio: bio.trim(),
-      instagramHandle: instagramHandle.trim(),
+      instagramHandle: cleanInstaHandle,
       gender: gender,
       languages: cleanLanguages,
       categories: cleanCategories,
       contentTypes: cleanContentTypes,
       priceRange: {
-        min: priceMin.trim() || '0',
-        max: priceMax.trim() || '0',
+        min: priceMin.trim(),
+        max: priceMax.trim(),
       },
       socialLinks: {
         ...socialLinks,
@@ -633,14 +638,21 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
         </p>
       </div>
 
-      {/* Profile Completion Indicator */}
+      {/* Blogger Catalog Visibility 6-Step Checklist & Profile Completion Indicator */}
       {(() => {
-        const liveScore = calculateProfileCompletion({
+        const cleanTgDraft = telegramUsername.trim().replace(/^@/, '').replace(/^https?:\/\/t\.me\//, '');
+        const cleanInstaDraft = instagramHandle.trim() === '@' ? '' : instagramHandle.trim();
+        const draftUser: Partial<UserSession> = {
+          ...user,
+          role: user.role || 'bloger',
+          avatar: avatar.trim() || undefined,
           name: name.trim(),
           bio: bio.trim(),
           categories: categories,
           priceRange: { min: priceMin.trim(), max: priceMax.trim() },
-          instagramHandle: instagramHandle.trim(),
+          instagramHandle: cleanInstaDraft,
+          telegramUsername: cleanTgDraft || undefined,
+          phoneNumber: phoneNumber.trim() || undefined,
           socialLinks: {
             ...socialLinks,
             instagramEnabled: enabledSocials.instagram,
@@ -648,39 +660,121 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
             youtubeEnabled: enabledSocials.youtube,
             telegramEnabled: enabledSocials.telegram,
           },
-        });
+        };
+
+        const liveScore = calculateProfileCompletion(draftUser);
+        const liveReadiness = getBloggerCatalogReadiness(draftUser, catalogProOnly);
+        const isBloggerUser = user.role !== 'brend';
+
+        const scrollToSection = (sectionId: string) => {
+          const el = document.getElementById(sectionId);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        };
+
+        const steps = [
+          {
+            key: 'avatar',
+            label: 'Rasm',
+            done: liveReadiness.hasAvatar,
+            onClick: () => scrollToSection('section-avatar-heading'),
+          },
+          {
+            key: 'bio',
+            label: 'Bio',
+            done: liveReadiness.hasBio,
+            onClick: () => scrollToSection('section-bio-heading'),
+          },
+          {
+            key: 'category',
+            label: 'Kategoriya',
+            done: liveReadiness.hasCategory,
+            onClick: () => scrollToSection('section-niche-heading'),
+          },
+          {
+            key: 'social',
+            label: 'Ijtimoiy tarmoq',
+            done: liveReadiness.hasSocial,
+            onClick: () => scrollToSection('section-socials-heading'),
+          },
+          {
+            key: 'price',
+            label: 'Narx',
+            done: liveReadiness.hasPrice,
+            onClick: () => scrollToSection('section-pricing-heading'),
+          },
+          {
+            key: 'pro',
+            label: 'Pro rejim',
+            done: liveReadiness.hasPro,
+            onClick: () => {
+              if (onOpenProModal) {
+                onOpenProModal();
+              }
+            },
+          },
+        ];
+
         return (
-          <div className="mb-8 p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#1A1A24] border border-slate-200/90 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="space-y-1.5 flex-1">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-heading font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                  <CheckCircle2 className={`w-4 h-4 ${liveScore === 100 ? 'text-emerald-500' : 'text-indigo-600 dark:text-indigo-400'}`} />
-                  <span>Profil toʻldirilganlik darajasi</span>
+          <div
+            id="blogger-onboarding-checklist"
+            className="mb-8 p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white dark:bg-[#1A1A24] border border-slate-200/90 dark:border-slate-800 shadow-xs space-y-4"
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="space-y-1 flex-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs sm:text-sm font-heading font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                    <CheckCircle2 className={`w-4 h-4 ${liveReadiness.isVisibleInCatalog ? 'text-emerald-500' : 'text-indigo-600 dark:text-indigo-400'}`} />
+                    <span>
+                      {isBloggerUser
+                        ? 'Katalogda koʻrinish qadamlari'
+                        : 'Profil toʻldirilganlik darajasi'}
+                    </span>
+                  </span>
+                  <span className="text-xs font-heading font-extrabold text-indigo-600 dark:text-indigo-400">
+                    {liveScore}%
+                  </span>
+                </div>
+                <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full transition-all duration-500 rounded-full ${
+                      liveScore === 100 ? 'bg-emerald-500' : 'bg-gradient-to-r from-indigo-600 to-purple-600'
+                    }`}
+                    style={{ width: `${liveScore}%` }}
+                  />
+                </div>
+              </div>
+
+              {isBloggerUser && liveReadiness.isVisibleInCatalog && (
+                <span className="shrink-0 px-3 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-xs font-heading font-bold border border-emerald-200 dark:border-emerald-800 self-start sm:self-auto">
+                  Katalogda faol ✅
                 </span>
-                <span className="text-xs font-heading font-extrabold text-indigo-600 dark:text-indigo-400">
-                  {liveScore}%
-                </span>
-              </div>
-              <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                <div
-                  className={`h-full transition-all duration-500 rounded-full ${
-                    liveScore === 100 ? 'bg-emerald-500' : 'bg-gradient-to-r from-indigo-600 to-purple-600'
-                  }`}
-                  style={{ width: `${liveScore}%` }}
-                />
-              </div>
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-body text-slate-500 dark:text-slate-400 pt-0.5">
-                <span className={name.trim() ? 'text-emerald-600 dark:text-emerald-400 font-medium' : ''}>• Ism</span>
-                <span className={bio.trim() ? 'text-emerald-600 dark:text-emerald-400 font-medium' : ''}>• Bio</span>
-                <span className={categories.length > 0 ? 'text-emerald-600 dark:text-emerald-400 font-medium' : ''}>• Kategoriya</span>
-                <span className={(priceMin.trim() || priceMax.trim()) ? 'text-emerald-600 dark:text-emerald-400 font-medium' : ''}>• Narx</span>
-                <span className={(instagramHandle.trim() || socialLinks.instagram || socialLinks.telegram || socialLinks.tiktok || socialLinks.youtube) ? 'text-emerald-600 dark:text-emerald-400 font-medium' : ''}>• Ijtimoiy tarmoqlar</span>
-              </div>
+              )}
             </div>
-            {liveScore === 100 && (
-              <span className="shrink-0 px-3 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-xs font-heading font-bold border border-emerald-200 dark:border-emerald-800 self-start sm:self-auto">
-                100% Toʻliq profil
-              </span>
+
+            {isBloggerUser && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 pt-1">
+                {steps.map((step) => (
+                  <button
+                    key={step.key}
+                    type="button"
+                    onClick={step.onClick}
+                    className={`px-3 py-2.5 rounded-xl border text-left text-xs font-heading font-semibold transition-all cursor-pointer flex items-center gap-2 ${
+                      step.done
+                        ? 'bg-emerald-50/80 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/80 text-emerald-800 dark:text-emerald-300'
+                        : step.key === 'pro'
+                        ? 'bg-indigo-50/70 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-800/80 text-indigo-800 dark:text-indigo-300 hover:bg-indigo-100/70 dark:hover:bg-indigo-900/50'
+                        : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-indigo-300 dark:hover:border-indigo-700'
+                    }`}
+                  >
+                    <span className="text-sm leading-none shrink-0" aria-hidden="true">
+                      {step.done ? '✅' : '⬜'}
+                    </span>
+                    <span className="truncate">{step.label}</span>
+                  </button>
+                ))}
+              </div>
             )}
           </div>
         );
@@ -1034,15 +1128,21 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
             </h2>
             <span
               className={`text-xs font-mono font-medium ${
-                bio.length > 450 ? 'text-amber-600 font-bold' : 'text-slate-400'
+                bio.trim().length > 0 && bio.trim().length < 20
+                  ? 'text-amber-600 dark:text-amber-400 font-bold'
+                  : bio.length > 450
+                  ? 'text-amber-600 font-bold'
+                  : bio.trim().length >= 20
+                  ? 'text-emerald-600 dark:text-emerald-400 font-semibold'
+                  : 'text-slate-400'
               }`}
             >
-              {bio.length}/500
+              {bio.trim().length}/500 (kamida 20 ta belgi)
             </span>
           </div>
 
           <p className="text-xs text-slate-500 dark:text-slate-400 font-body mb-3">
-            Oʻzingiz, auditoriyangiz va qanday mavzularda kontent yaratishingiz haqida qisqacha maʼlumot bering.
+            Oʻzingiz, auditoriyangiz va qanday mavzularda kontent yaratishingiz haqida qisqacha maʼlumot bering (katalogda koʻrinish uchun kamida 20 ta belgi kiriting).
           </p>
 
           <textarea

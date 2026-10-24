@@ -41,6 +41,7 @@ import {
   formatUzbekDate,
   getDaysRemainingInTrial,
 } from '../firebase';
+import { isUserPro } from '../utils/subscription';
 
 interface ProfilePageProps {
   user: UserSession | null;
@@ -95,10 +96,8 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   const isBlogger = user.role === 'bloger';
 
   const subscriptionStatus = user.subscriptionStatus || 'free';
-  const isTrial = subscriptionStatus === 'trial';
   const isCancelled = subscriptionStatus === 'cancelled';
-  const isActive = subscriptionStatus === 'active';
-  const isPro = isTrial || isActive;
+  const isPro = isUserPro(user);
   const isFree = !isPro && !isCancelled;
 
   const trialEndDate = user.trialEndDate;

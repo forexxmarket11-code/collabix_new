@@ -286,7 +286,11 @@ export const ProUpgradeModal: React.FC<ProUpgradeModalProps> = ({
               </div>
 
               {/* KATEGORIYA: KO'RINISH */}
-              <div className="p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 flex flex-col justify-between">
+              <div
+                className={`p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 flex flex-col justify-between ${
+                  currentUser?.role === 'bloger' ? 'order-first' : ''
+                }`}
+              >
                 <div>
                   <div className="flex items-center gap-2 mb-2.5">
                     <div className="w-7 h-7 rounded-lg bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-400 flex items-center justify-center shrink-0">
@@ -297,6 +301,10 @@ export const ProUpgradeModal: React.FC<ProUpgradeModalProps> = ({
                     </span>
                   </div>
                   <ul className="space-y-2">
+                    <li className="flex items-start gap-2 text-xs sm:text-[13px] text-slate-800 dark:text-slate-200 font-body font-semibold">
+                      <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5 stroke-[2.5]" />
+                      <span>Katalogda koʻrinish — brendlar sizni topadi</span>
+                    </li>
                     <li className="flex items-start gap-2 text-xs sm:text-[13px] text-slate-700 dark:text-slate-300 font-body">
                       <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5 stroke-[2.5]" />
                       <span>Profilingiz katalogda "Pro" nishoni bilan ajralib turadi</span>

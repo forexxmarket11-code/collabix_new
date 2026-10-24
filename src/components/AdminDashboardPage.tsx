@@ -36,6 +36,8 @@ import {
   fetchUsersStatistics,
   fetchRevenueStatistics,
   fetchReferralStatistics,
+  subscribeToCatalogSettings,
+  updateCatalogProOnlySetting,
 } from '../firebase';
 import {
   UsersStatistics,
@@ -67,6 +69,8 @@ export function AdminDashboardPage({ onLogout, onGoToSite, onUnauthorized }: Adm
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [catalogProOnly, setCatalogProOnly] = useState<boolean>(true);
+  const [isSavingCatalogSetting, setIsSavingCatalogSetting] = useState<boolean>(false);
 
   const handleUnauthorized = useCallback(() => {
     if (onUnauthorized) {
@@ -84,6 +88,35 @@ export function AdminDashboardPage({ onLogout, onGoToSite, onUnauthorized }: Adm
     });
     return () => unsub();
   }, [handleUnauthorized]);
+
+  useEffect(() => {
+    const unsub = subscribeToCatalogSettings((settings) => {
+      setCatalogProOnly(settings.catalogProOnly);
+    });
+    return () => unsub();
+  }, []);
+
+  const handleToggleCatalogProOnly = async () => {
+    if (!isCurrentUserAdmin()) {
+      handleUnauthorized();
+      return;
+    }
+    const nextVal = !catalogProOnly;
+    setCatalogProOnly(nextVal);
+    setIsSavingCatalogSetting(true);
+    try {
+      await updateCatalogProOnlySetting(nextVal);
+    } catch (err: any) {
+      setCatalogProOnly(!nextVal);
+      if (err?.code === 'auth/not-admin') {
+        handleUnauthorized();
+      } else {
+        console.error('Katalog sozlamasini saqlashda xatolik:', err);
+      }
+    } finally {
+      setIsSavingCatalogSetting(false);
+    }
+  };
 
   const loadStats = useCallback(async (isManualRefresh = false) => {
     if (!isCurrentUserAdmin()) {
@@ -294,9 +327,75 @@ export function AdminDashboardPage({ onLogout, onGoToSite, onUnauthorized }: Adm
           </div>
         </div>
 
+        {/* Catalog Pro-Only Admin Setting Card */}
+        <div
+          id="admin-catalog-pro-setting-card"
+          className="bg-white dark:bg-[#1A1A24] rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+        >
+          <div className="flex items-start sm:items-center gap-3.5 min-w-0">
+            <div
+              className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                catalogProOnly
+                  ? 'bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800'
+                  : 'bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800'
+              }`}
+            >
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm sm:text-base font-heading font-extrabold text-slate-900 dark:text-white">
+                  Katalog faqat Pro uchun
+                </span>
+                <span
+                  className={`text-[11px] font-heading font-bold px-2 py-0.5 rounded-md ${
+                    catalogProOnly
+                      ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                      : 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800'
+                  }`}
+                >
+                  {catalogProOnly ? 'YOQIQ' : 'OʻCHIQ'}
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-body mt-0.5 leading-relaxed">
+                {catalogProOnly
+                  ? 'Faqat profili toʻliq va faol Pro obunasi bor blogerlar katalogda koʻrinadi.'
+                  : 'Pro sharti vaqtincha oʻchirilgan — profili toʻliq barcha faol blogerlar katalogda koʻrinadi.'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-2.5 shrink-0">
+            {isSavingCatalogSetting && (
+              <Loader2 className="w-4 h-4 animate-spin text-indigo-600 dark:text-indigo-400" />
+            )}
+            <button
+              type="button"
+              role="switch"
+              id="toggle-catalog-pro-only"
+              aria-checked={catalogProOnly}
+              aria-label="Katalog faqat Pro uchun"
+              disabled={isSavingCatalogSetting}
+              onClick={handleToggleCatalogProOnly}
+              className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500/40 disabled:opacity-60 ${
+                catalogProOnly
+                  ? 'bg-gradient-to-r from-indigo-600 to-purple-600'
+                  : 'bg-slate-300 dark:bg-slate-700'
+              }`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                  catalogProOnly ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+        </div>
+
         {/* Tab 1: User Approvals */}
         {activeTab === 'approvals' && (
           <AdminUserApprovals
+            catalogProOnly={catalogProOnly}
             onPendingCountChange={setPendingCount}
             onUnauthorized={handleUnauthorized}
           />

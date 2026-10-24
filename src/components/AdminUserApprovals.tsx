@@ -17,14 +17,22 @@ import {
   Loader2,
 } from 'lucide-react';
 import { UserSession } from '../types';
-import { subscribeToUsersForAdmin, updateUserAccountStatus, isCurrentUserAdmin } from '../firebase';
+import {
+  subscribeToUsersForAdmin,
+  updateUserAccountStatus,
+  isCurrentUserAdmin,
+  calculateProfileCompletion,
+} from '../firebase';
+import { getBloggerCatalogReadiness } from '../utils/subscription';
 
 interface AdminUserApprovalsProps {
+  catalogProOnly?: boolean;
   onPendingCountChange?: (count: number) => void;
   onUnauthorized?: () => void;
 }
 
 export const AdminUserApprovals: React.FC<AdminUserApprovalsProps> = ({
+  catalogProOnly = true,
   onPendingCountChange,
   onUnauthorized,
 }) => {
@@ -281,6 +289,14 @@ export const AdminUserApprovals: React.FC<AdminUserApprovalsProps> = ({
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {filteredUsers.map((u) => {
                   const isBlocked = u.accountStatus === 'rejected';
+                  const isBlogger = u.role !== 'brend';
+                  const bloggerReadiness = isBlogger
+                    ? getBloggerCatalogReadiness(u, catalogProOnly)
+                    : null;
+                  const completionPercent =
+                    typeof u.profileCompletion === 'number'
+                      ? u.profileCompletion
+                      : calculateProfileCompletion(u);
 
                   return (
                     <tr
@@ -303,9 +319,28 @@ export const AdminUserApprovals: React.FC<AdminUserApprovalsProps> = ({
                             </div>
                           )}
                           <div className="min-w-0">
-                            <p className="font-heading font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors truncate">
-                              {u.name || 'Ismsiz foydalanuvchi'}
-                            </p>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="font-heading font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors truncate">
+                                {u.name || 'Ismsiz foydalanuvchi'}
+                              </p>
+                              {isBlogger && bloggerReadiness && (
+                                <span
+                                  className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-heading font-bold shrink-0 ${
+                                    bloggerReadiness.adminStatus === 'in_catalog'
+                                      ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                                      : bloggerReadiness.adminStatus === 'no_pro'
+                                      ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800'
+                                      : 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800'
+                                  }`}
+                                >
+                                  {bloggerReadiness.adminStatus === 'in_catalog'
+                                    ? 'Katalogda ✅'
+                                    : bloggerReadiness.adminStatus === 'no_pro'
+                                    ? 'Pro yoʻq 💳'
+                                    : 'Toʻliq emas ⚠️'}
+                                </span>
+                              )}
+                            </div>
                             <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
                               {u.contact || u.email}
                             </p>
@@ -343,7 +378,7 @@ export const AdminUserApprovals: React.FC<AdminUserApprovalsProps> = ({
                             )}
                             <span className="text-slate-300 dark:text-slate-600">•</span>
                             <span className="font-medium text-indigo-600 dark:text-indigo-400">
-                              {u.profileCompletion || 30}% toʻldirilgan
+                              {completionPercent}% toʻldirilgan
                             </span>
                           </div>
                           {u.bio && (
@@ -478,8 +513,8 @@ export const AdminUserApprovals: React.FC<AdminUserApprovalsProps> = ({
             </div>
 
             {/* Current Status Indicator */}
-            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700 flex items-center justify-between">
-              <div className="flex items-center gap-2 text-xs">
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700 flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-2 text-xs flex-wrap">
                 <span className="text-slate-500 dark:text-slate-400 font-medium">Hisob holati:</span>
                 {selectedUser.accountStatus === 'rejected' ? (
                   <span className="font-bold text-rose-700 dark:text-rose-300 bg-rose-100 dark:bg-rose-950/60 px-2 py-0.5 rounded-md">
@@ -490,9 +525,31 @@ export const AdminUserApprovals: React.FC<AdminUserApprovalsProps> = ({
                     Faol
                   </span>
                 )}
+                {selectedUser.role !== 'brend' && (() => {
+                  const r = getBloggerCatalogReadiness(selectedUser, catalogProOnly);
+                  return (
+                    <span
+                      className={`font-bold px-2 py-0.5 rounded-md ${
+                        r.adminStatus === 'in_catalog'
+                          ? 'bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300'
+                          : r.adminStatus === 'no_pro'
+                          ? 'bg-indigo-100 dark:bg-indigo-950/70 text-indigo-800 dark:text-indigo-300'
+                          : 'bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300'
+                      }`}
+                    >
+                      {r.adminStatus === 'in_catalog'
+                        ? 'Katalogda ✅'
+                        : r.adminStatus === 'no_pro'
+                        ? 'Pro yoʻq 💳'
+                        : 'Toʻliq emas ⚠️'}
+                    </span>
+                  );
+                })()}
               </div>
               <span className="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400">
-                {selectedUser.profileCompletion || 30}% toʻldirilgan
+                {typeof selectedUser.profileCompletion === 'number'
+                  ? selectedUser.profileCompletion
+                  : calculateProfileCompletion(selectedUser)}% toʻldirilgan
               </span>
             </div>
 
