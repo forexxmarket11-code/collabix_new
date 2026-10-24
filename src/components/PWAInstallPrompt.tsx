@@ -102,12 +102,12 @@ export const PWAInstallPrompt: React.FC = () => {
             <div className="min-w-0">
               <h4 className="font-heading font-bold text-sm text-white tracking-tight flex items-center gap-1.5 truncate">
                 <span>Collabix Ilovasi</span>
-                <span className="text-[9px] uppercase font-mono font-bold px-1.5 py-0.5 rounded-full bg-gradient-to-r from-[#5B3DF0]/30 to-[#FF6B5B]/30 text-white/90 border border-white/15">
+                <span className="hidden sm:inline text-[9px] uppercase font-mono font-bold px-1.5 py-0.5 rounded-full bg-gradient-to-r from-[#5B3DF0]/30 to-[#FF6B5B]/30 text-white/90 border border-white/15">
                   PWA
                 </span>
               </h4>
-              <p className="text-[11px] sm:text-xs text-slate-200/90 leading-snug line-clamp-2 sm:line-clamp-1 mt-0.5">
-                Tezkor kirish uchun ilovani o'rnating
+              <p className="text-[11px] sm:text-xs text-slate-200/90 leading-snug truncate mt-0.5">
+                {isIOS ? "Ekranga qo'shing" : "Tez va qulay ishlash"}
               </p>
             </div>
           </div>

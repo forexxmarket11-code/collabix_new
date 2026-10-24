@@ -68,19 +68,35 @@ export const ProUpgradeModal: React.FC<ProUpgradeModalProps> = ({
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (!file.type.startsWith('image/')) {
-        setFormError('Iltimos, faqat rasm fayli (PNG, JPG, JPEG) yuklang.');
-        return;
-      }
-      setReceiptFile(file);
-      setFormError(null);
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setReceiptPreview(event.target?.result as string);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setFormError('Iltimos, faqat rasm fayli (PNG, JPG, JPEG) yuklang.');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
     }
+
+    if (file.size > 15 * 1024 * 1024) {
+      setFormError('Rasm hajmi juda katta (15 MB dan kichik skrinshot tanlang).');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    setReceiptFile(file);
+    setFormError(null);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = event.target?.result;
+      if (typeof result === 'string' && result.length > 0) {
+        setReceiptPreview(result);
+      } else {
+        setFormError('Rasmni oʻqishda xatolik yuz berdi. Boshqa skrinshot tanlab koʻring.');
+      }
+    };
+    reader.onerror = () => {
+      setFormError('Rasmni oʻqishda xatolik yuz berdi. Iltimos, boshqa rasm tanlang.');
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleRemoveReceipt = () => {
@@ -91,7 +107,28 @@ export const ProUpgradeModal: React.FC<ProUpgradeModalProps> = ({
     }
   };
 
+  const getReadablePaymentError = (err: any): string => {
+    const code = String(err?.code || '').toLowerCase();
+    const rawMsg = String(err?.message || '');
+
+    if (code.includes('permission-denied') || rawMsg.toLowerCase().includes('missing or insufficient permissions')) {
+      return "Ma'lumotlar bazasiga yozishga ruxsat berilmadi (Firestore ruxsatlari). Iltimos, akkauntingizga qayta kirib urinib ko'ring yoki adminga murojaat qiling.";
+    }
+    if (code.includes('unavailable') || rawMsg.toLowerCase().includes('offline') || rawMsg.toLowerCase().includes('network')) {
+      return "Internet aloqasi uzildi yoki beqaror. Internetingizni tekshirib, qaytadan urinib ko'ring.";
+    }
+    if (code.includes('resource-exhausted') || rawMsg.toLowerCase().includes('quota')) {
+      return "Server band yoki limitga yetdi. Iltimos, birozdan so'ng qayta urinib ko'ring.";
+    }
+    if (rawMsg && !rawMsg.toLowerCase().includes('firebase')) {
+      return rawMsg;
+    }
+    return "So'rovni yuborishda xatolik yuz berdi. Internet aloqangizni tekshirib, qaytadan urinib ko'ring.";
+  };
+
   const handleSubmitPayment = async () => {
+    if (isProcessing) return;
+
     if (!receiptFile && !receiptPreview) {
       setFormError('Iltimos, oʻtkazilgan toʻlov cheki yoki screenshotini yuklang.');
       return;
@@ -106,6 +143,7 @@ export const ProUpgradeModal: React.FC<ProUpgradeModalProps> = ({
     setFormError(null);
     console.log('[handleSubmitPayment] Soʻrov yuborish boshlandi...');
 
+    let uiGuardTimer: ReturnType<typeof setTimeout> | null = null;
     try {
       const userId = currentUser?.uid || ('guest_' + Math.random().toString(36).substring(2, 9));
       const userName = currentUser?.name || nonLoggedInName.trim() || 'Foydalanuvchi';
@@ -113,25 +151,34 @@ export const ProUpgradeModal: React.FC<ProUpgradeModalProps> = ({
       const userEmail = currentUser?.email || '';
       const userRole = currentUser?.role || 'brend';
 
-      console.log('[handleSubmitPayment] Parametrlar:', { userId, userName, userPhone, userRole });
-
-      await submitPaymentRequest({
-        userId,
-        userName,
-        userPhone,
-        userEmail,
-        userRole,
-        screenshotFile: receiptFile,
-        screenshotDataUrl: receiptPreview || undefined,
+      const uiTimeoutPromise = new Promise<never>((_, reject) => {
+        uiGuardTimer = setTimeout(() => {
+          reject(new Error("Yuklash vaqti cho'zilib ketdi. Internetingizni tekshirib, qaytadan urinib ko'ring."));
+        }, 16000);
       });
 
+      await Promise.race([
+        submitPaymentRequest({
+          userId,
+          userName,
+          userPhone,
+          userEmail,
+          userRole,
+          screenshotFile: receiptFile,
+          screenshotDataUrl: receiptPreview || undefined,
+        }),
+        uiTimeoutPromise,
+      ]);
+
       console.log('[handleSubmitPayment] Soʻrov muvaffaqiyatli saqlandi!');
+      setIsProcessing(false);
       setStep('submitted');
     } catch (err: any) {
       console.error('[handleSubmitPayment] Toʻlov soʻrovini yuborishda xatolik:', err);
-      const message = err?.message || 'Server bilan ulanishda xatolik yuz berdi';
-      setFormError(`Xatolik yuz berdi: ${message}. Qaytadan urinib koʻring.`);
+      setIsProcessing(false);
+      setFormError(getReadablePaymentError(err));
     } finally {
+      if (uiGuardTimer) clearTimeout(uiGuardTimer);
       setIsProcessing(false);
     }
   };
@@ -653,16 +700,16 @@ export const ProUpgradeModal: React.FC<ProUpgradeModalProps> = ({
 
         {step === 'submitted' && (
           <div className="p-8 sm:p-10 text-center animate-in fade-in zoom-in-95 duration-200">
-            <div className="w-16 h-16 rounded-3xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800 flex items-center justify-center mx-auto shadow-md mb-4">
-              <Clock className="w-9 h-9 stroke-[2.2] animate-pulse" />
+            <div className="w-16 h-16 rounded-3xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center mx-auto shadow-md mb-4">
+              <CheckCircle2 className="w-9 h-9 stroke-[2.2]" />
             </div>
 
-            <span className="inline-block text-xs font-mono font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 mb-2">
-              Soʻrov qabul qilindi ⏳
+            <span className="inline-block text-xs font-mono font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 mb-2">
+              Soʻrov yuborildi ✓
             </span>
 
             <h3 className="font-heading font-extrabold text-2xl sm:text-3xl text-slate-900 dark:text-white">
-              Toʻlov soʻrovingiz yuborildi!
+              Soʻrov yuborildi
             </h3>
 
             <div className="mt-3 p-4 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800 text-slate-800 dark:text-slate-200 text-xs sm:text-sm font-body max-w-lg mx-auto leading-relaxed">

@@ -27,6 +27,7 @@ import { PendingApprovalPage } from './components/PendingApprovalPage';
 import { PWAInstallPrompt } from './components/PWAInstallPrompt';
 import { PageType, UserSession, BriefData, CatalogCreator, BriefApplication, NotificationItem } from './types';
 import {
+  onFirebaseAuthReady,
   onAuthUserChanged,
   logoutUser,
   updateSubscriptionStatus,
@@ -128,13 +129,27 @@ export default function App() {
     }
   });
 
+  const [authUid, setAuthUid] = useState<string | null>(null);
+  const [isAuthReady, setIsAuthReady] = useState<boolean>(false);
+
+  useEffect(() => {
+    const unsubscribe = onFirebaseAuthReady((uid) => {
+      setAuthUid(uid);
+      setIsAuthReady(true);
+    });
+    return () => unsubscribe();
+  }, []);
+
   const isUserRestricted = Boolean(
     currentUser && (currentUser.accountStatus === 'pending' || currentUser.accountStatus === 'rejected')
   );
 
-  // Real-time Firestore subscription to notifications for current logged-in user
+  // Real-time Firestore subscription to notifications for current authenticated user
   useEffect(() => {
-    if (!currentUser?.uid) {
+    if (!isAuthReady) {
+      return;
+    }
+    if (!authUid) {
       setNotifications([]);
       return;
     }
@@ -143,7 +158,7 @@ export default function App() {
     let prevUnreadCount = 0;
 
     const unsubscribe = subscribeToUserNotifications(
-      currentUser.uid,
+      authUid,
       (items) => {
         setNotifications(items);
 
@@ -163,21 +178,33 @@ export default function App() {
     );
 
     return () => unsubscribe();
-  }, [currentUser?.uid]);
+  }, [isAuthReady, authUid]);
 
-  // Real-time Firestore subscription to briefs (filtered to public open briefs + current user's direct briefs)
+  // Real-time Firestore subscription to briefs (waits for Firebase Auth readiness; skips guest home/catalog pages)
+  const shouldSubscribeBriefs =
+    isAuthReady && (Boolean(authUid) || currentPage === 'orders' || currentPage === 'creator-profile');
+
   useEffect(() => {
+    if (!shouldSubscribeBriefs) {
+      if (isAuthReady && !authUid) {
+        setUserBriefs([]);
+      }
+      return;
+    }
+
     const unsubscribe = subscribeToBriefs(
       (loadedBriefs) => {
         setUserBriefs(loadedBriefs);
       },
       (err) => {
-        console.error("Firestore briefs subscription error:", err);
+        if (err?.code !== 'permission-denied' && err?.code !== 'unavailable') {
+          console.warn("Firestore briefs subscription warning:", err?.message || err);
+        }
       },
-      currentUser?.uid
+      authUid || undefined
     );
     return () => unsubscribe();
-  }, [currentUser?.uid]);
+  }, [shouldSubscribeBriefs, authUid, isAuthReady]);
 
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isTrialBannerDismissedLocally, setIsTrialBannerDismissedLocally] = useState(false);
@@ -406,7 +433,12 @@ export default function App() {
 
   const handleBriefCreated = async (brief: BriefData) => {
     try {
-      await createBriefInFirestore(brief);
+      const savedId = await createBriefInFirestore(brief);
+      setUserBriefs((prev) => {
+        const nextBrief = { ...brief, id: savedId || brief.id };
+        const filtered = prev.filter((item) => item.id !== nextBrief.id);
+        return [nextBrief, ...filtered];
+      });
     } catch (err) {
       console.error("Firestore ga brif yozishda xatolik:", err);
     }

@@ -31,6 +31,7 @@ import {
   getStorage,
   ref,
   uploadBytes,
+  uploadBytesResumable,
   getDownloadURL,
 } from 'firebase/storage';
 import {
@@ -1630,6 +1631,16 @@ export async function fetchReferralStatistics(): Promise<ReferralStatistics> {
 }
 
 /**
+ * Lightweight listener that resolves as soon as Firebase Auth restores session state
+ */
+export function onFirebaseAuthReady(
+  callback: (uid: string | null) => void
+): () => void {
+  return onAuthStateChanged(auth, (fbUser) => {
+    callback(fbUser?.uid || null);
+  });
+}
+
 /**
  * Real-time subscription to Briefs collection in Firestore
  * - Open briefs ('open') are loaded for the public directory.
@@ -1664,7 +1675,9 @@ export function subscribeToBriefs(
       (/test/i.test(taskTitle) && taskTitle.length < 8 && desc.length < 8);
 
     if (isSpamGibberish) {
-      deleteDoc(doc(db, 'briefs', id)).catch(() => {});
+      if (auth.currentUser) {
+        deleteDoc(doc(db, 'briefs', id)).catch(() => {});
+      }
       return null;
     }
 
@@ -1693,7 +1706,7 @@ export function subscribeToBriefs(
 
   const unsubs: Array<() => void> = [];
 
-  // 1. Subscribe to all open briefs (accessible to everyone)
+  // 1. Subscribe to all open briefs
   try {
     const openQuery = query(briefsCol, where('recipientType', '==', 'open'));
     const unsubOpen = onSnapshot(
@@ -1707,29 +1720,32 @@ export function subscribeToBriefs(
         emitCombinedBriefs();
       },
       (error) => {
-        if (error?.code !== 'unavailable') {
+        const code = error?.code || '';
+        if (code !== 'unavailable' && code !== 'permission-denied') {
           console.warn("subscribeToBriefs (open) xatosi:", error?.message || error);
         }
-        if (onError) onError(error);
+        emitCombinedBriefs();
+        if (onError && code !== 'permission-denied' && code !== 'unavailable') {
+          onError(error);
+        }
       }
     );
     unsubs.push(unsubOpen);
   } catch (err) {
-    console.error("Open briefs subscription error:", err);
+    console.warn("Open briefs subscription warning:", err);
   }
 
-  // 2. If current user is logged in, subscribe ONLY to direct briefs where they are creator or brand
-  if (currentUserId && currentUserId.trim()) {
-    const cleanUid = currentUserId.trim();
-
+  // 2. If current user is authenticated in Firebase Auth, subscribe to briefs where they are creator or brand
+  const verifiedUid = auth.currentUser?.uid || '';
+  const cleanUid = (currentUserId || '').trim();
+  if (cleanUid && verifiedUid && cleanUid === verifiedUid) {
     try {
-      const creatorDirectQuery = query(
+      const creatorBriefsQuery = query(
         briefsCol,
-        where('recipientType', '==', 'direct'),
         where('selectedCreatorId', '==', cleanUid)
       );
       const unsubCreator = onSnapshot(
-        creatorDirectQuery,
+        creatorBriefsQuery,
         (snapshot) => {
           creatorDirectMap.clear();
           snapshot.docs.forEach((docSnap) => {
@@ -1739,24 +1755,25 @@ export function subscribeToBriefs(
           emitCombinedBriefs();
         },
         (error) => {
-          if (error?.code !== 'unavailable') {
-            console.warn("subscribeToBriefs (creator direct) xatosi:", error?.message || error);
+          const code = error?.code || '';
+          if (code !== 'unavailable' && code !== 'permission-denied') {
+            console.warn("subscribeToBriefs (creator) xatosi:", error?.message || error);
           }
+          emitCombinedBriefs();
         }
       );
       unsubs.push(unsubCreator);
     } catch (err) {
-      console.error("Creator direct briefs subscription error:", err);
+      console.warn("Creator briefs subscription warning:", err);
     }
 
     try {
-      const brandDirectQuery = query(
+      const brandBriefsQuery = query(
         briefsCol,
-        where('recipientType', '==', 'direct'),
         where('brandId', '==', cleanUid)
       );
       const unsubBrand = onSnapshot(
-        brandDirectQuery,
+        brandBriefsQuery,
         (snapshot) => {
           brandDirectMap.clear();
           snapshot.docs.forEach((docSnap) => {
@@ -1766,14 +1783,16 @@ export function subscribeToBriefs(
           emitCombinedBriefs();
         },
         (error) => {
-          if (error?.code !== 'unavailable') {
-            console.warn("subscribeToBriefs (brand direct) xatosi:", error?.message || error);
+          const code = error?.code || '';
+          if (code !== 'unavailable' && code !== 'permission-denied') {
+            console.warn("subscribeToBriefs (brand) xatosi:", error?.message || error);
           }
+          emitCombinedBriefs();
         }
       );
       unsubs.push(unsubBrand);
     } catch (err) {
-      console.error("Brand direct briefs subscription error:", err);
+      console.warn("Brand briefs subscription warning:", err);
     }
   }
 
@@ -2629,83 +2648,83 @@ export async function updateAgencyApplicationStatus(
 }
 
 /**
- * Compress an image file to a lightweight data URL (JPEG)
- * to ensure bulletproof delivery even if Storage or network conditions are constrained.
+ * Compress an image file or dataURL to a lightweight JPEG data URL
+ * so receipt uploads never exceed Firestore's 1MB limit or stall on mobile networks.
  */
 export function compressImageFile(file: File, maxWidth = 800, quality = 0.7): Promise<string> {
   return new Promise((resolve) => {
     let settled = false;
+    let objectUrl: string | null = null;
+
+    const cleanup = () => {
+      if (objectUrl) {
+        try {
+          URL.revokeObjectURL(objectUrl);
+        } catch {}
+        objectUrl = null;
+      }
+    };
+
     const safeResolve = (val: string) => {
       if (!settled) {
         settled = true;
+        cleanup();
         resolve(val);
       }
     };
 
-    // Safety timeout: Never hang longer than 1500ms
     const timer = setTimeout(() => {
-      console.warn("[compressImageFile] 1500ms timeout, reading fallback dataUrl");
-      try {
-        const fallbackReader = new FileReader();
-        fallbackReader.onload = () => safeResolve((fallbackReader.result as string) || '');
-        fallbackReader.onerror = () => safeResolve('');
-        fallbackReader.readAsDataURL(file);
-      } catch {
-        safeResolve('');
-      }
-    }, 1500);
+      console.warn('[compressImageFile] 4000ms timeout');
+      safeResolve('');
+    }, 4000);
 
-    try {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const rawUrl = event.target?.result as string;
-        if (!rawUrl) {
-          clearTimeout(timer);
+    const drawToJpeg = (img: HTMLImageElement) => {
+      try {
+        let width = img.naturalWidth || img.width;
+        let height = img.naturalHeight || img.height;
+        if (!width || !height) {
           safeResolve('');
           return;
         }
-
-        const img = new Image();
-        img.onload = () => {
-          clearTimeout(timer);
-          try {
-            let width = img.width;
-            let height = img.height;
-            if (width > maxWidth || height > maxWidth) {
-              if (width > height) {
-                height = Math.round((height * maxWidth) / width);
-                width = maxWidth;
-              } else {
-                width = Math.round((width * maxWidth) / height);
-                height = maxWidth;
-              }
-            }
-            const canvas = document.createElement('canvas');
-            canvas.width = Math.max(1, width);
-            canvas.height = Math.max(1, height);
-            const ctx = canvas.getContext('2d');
-            if (!ctx) {
-              safeResolve(rawUrl);
-              return;
-            }
-            ctx.drawImage(img, 0, 0, width, height);
-            const compressed = canvas.toDataURL('image/jpeg', quality);
-            safeResolve(compressed);
-          } catch {
-            safeResolve(rawUrl);
+        if (width > maxWidth || height > maxWidth) {
+          if (width > height) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          } else {
+            width = Math.round((width * maxWidth) / height);
+            height = maxWidth;
           }
-        };
-        img.onerror = () => {
-          clearTimeout(timer);
-          safeResolve(rawUrl);
-        };
-        img.src = rawUrl;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, width);
+        canvas.height = Math.max(1, height);
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          safeResolve('');
+          return;
+        }
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const compressed = canvas.toDataURL('image/jpeg', quality);
+        safeResolve(compressed);
+      } catch {
+        safeResolve('');
+      }
+    };
+
+    try {
+      objectUrl = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        clearTimeout(timer);
+        drawToJpeg(img);
       };
-      reader.onerror = () => {
+      img.onerror = () => {
         clearTimeout(timer);
         safeResolve('');
       };
-      reader.readAsDataURL(file);
+      img.src = objectUrl;
     } catch {
       clearTimeout(timer);
       safeResolve('');
@@ -2713,51 +2732,146 @@ export function compressImageFile(file: File, maxWidth = 800, quality = 0.7): Pr
   });
 }
 
+function compressDataUrl(dataUrl: string, maxWidth = 650, quality = 0.6): Promise<string> {
+  return new Promise((resolve) => {
+    if (!dataUrl || !dataUrl.startsWith('data:image/')) {
+      resolve('');
+      return;
+    }
+    let settled = false;
+    const done = (val: string) => {
+      if (!settled) {
+        settled = true;
+        resolve(val);
+      }
+    };
+    const timer = setTimeout(() => done(''), 3000);
+    const img = new Image();
+    img.onload = () => {
+      clearTimeout(timer);
+      try {
+        let width = img.naturalWidth || img.width;
+        let height = img.naturalHeight || img.height;
+        if (width > maxWidth || height > maxWidth) {
+          if (width > height) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          } else {
+            width = Math.round((width * maxWidth) / height);
+            height = maxWidth;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, width);
+        canvas.height = Math.max(1, height);
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          done('');
+          return;
+        }
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        done(canvas.toDataURL('image/jpeg', quality));
+      } catch {
+        done('');
+      }
+    };
+    img.onerror = () => {
+      clearTimeout(timer);
+      done('');
+    };
+    img.src = dataUrl;
+  });
+}
+
+function dataUrlToBlob(dataUrl: string): Blob | null {
+  try {
+    const parts = dataUrl.split(',');
+    if (parts.length < 2) return null;
+    const mimeMatch = parts[0].match(/:(.*?);/);
+    const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+    const bstr = atob(parts[1]);
+    const u8arr = new Uint8Array(bstr.length);
+    for (let i = 0; i < bstr.length; i++) {
+      u8arr[i] = bstr.charCodeAt(i);
+    }
+    return new Blob([u8arr], { type: mime });
+  } catch {
+    return null;
+  }
+}
+
 /**
- * Upload receipt screenshot to Firebase Storage with automatic compressed Base64 fallback.
+ * Upload receipt screenshot to Firebase Storage with cancellable timeout and compressed Base64 fallback.
  */
 export async function uploadPaymentReceipt(file: File, userId: string): Promise<string> {
-  console.log("[uploadPaymentReceipt] Boshlandi. Fayl:", file.name, "Hajmi:", file.size);
+  console.log('[uploadPaymentReceipt] Boshlandi. Fayl:', file.name, 'Hajmi:', file.size);
 
-  // 1. Zudlik bilan siqilgan Base64 tayyorlab olamiz (faqat 50-100ms ketadi)
+  // 1. Avval rasmni yengil JPEG formatga siqamiz
   let base64Preview = '';
   try {
-    base64Preview = await compressImageFile(file, 800, 0.7);
+    base64Preview = await compressImageFile(file, 800, 0.68);
+    if (base64Preview && base64Preview.length > 650000) {
+      const smaller = await compressImageFile(file, 560, 0.52);
+      if (smaller) base64Preview = smaller;
+    }
   } catch (err) {
-    console.warn("[uploadPaymentReceipt] compressImageFile muammo:", err);
+    console.warn('[uploadPaymentReceipt] compressImageFile muammo:', err);
   }
 
-  // 2. Firebase Storage mavjud bo'lsa, 2.5 soniya ichida yuklab ko'ramiz
+  // 2. Firebase Storage mavjud bo'lsa, kichik hajmli blobni 2.5 soniya ichida yuklab ko'ramiz;
+  // ulgurmasa uploadTask.cancel() orqali fon yuklashni darhol to'xtatamiz (internetni band qilmaslik uchun)
   const currentStorage = storage || getSafeStorage();
   if (currentStorage) {
+    let uploadTask: ReturnType<typeof uploadBytesResumable> | null = null;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
     try {
-      console.log("[uploadPaymentReceipt] Firebase Storage'ga yuklash urinilmoqda...");
-      const timestamp = Date.now();
-      const safeExt = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
-      const storageRef = ref(currentStorage, `payment_receipts/${userId}_${timestamp}.${safeExt}`);
-      
-      const uploadTaskPromise = (async () => {
-        const snapshot = await uploadBytes(storageRef, file);
-        return await getDownloadURL(snapshot.ref);
-      })();
+      const uploadPayload = (base64Preview && dataUrlToBlob(base64Preview)) || file;
+      if (uploadPayload.size <= 2 * 1024 * 1024) {
+        const timestamp = Date.now();
+        const storageRef = ref(currentStorage, `payment_receipts/${userId}_${timestamp}.jpg`);
+        uploadTask = uploadBytesResumable(storageRef, uploadPayload, { contentType: 'image/jpeg' });
 
-      const uploadTimeout = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("Storage upload 2.5s timeout")), 2500)
-      );
+        const uploadPromise = new Promise<string>((resolve, reject) => {
+          uploadTask!.on(
+            'state_changed',
+            undefined,
+            (err) => reject(err),
+            async () => {
+              try {
+                const url = await getDownloadURL(uploadTask!.snapshot.ref);
+                resolve(url);
+              } catch (err) {
+                reject(err);
+              }
+            }
+          );
+        });
 
-      const downloadUrl = await Promise.race([uploadTaskPromise, uploadTimeout]);
-      console.log("[uploadPaymentReceipt] Firebase Storage yuklash muvaffaqiyatli:", downloadUrl);
-      return downloadUrl;
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          timeoutId = setTimeout(() => {
+            reject(new Error('Storage upload 2.5s timeout'));
+          }, 2500);
+        });
+
+        const downloadUrl = await Promise.race([uploadPromise, timeoutPromise]);
+        if (timeoutId) clearTimeout(timeoutId);
+        console.log('[uploadPaymentReceipt] Firebase Storage yuklash muvaffaqiyatli:', downloadUrl);
+        return downloadUrl;
+      }
     } catch (storageErr) {
-      console.warn("[uploadPaymentReceipt] Storage yuklanmadi yoki timeout bo'ldi. Base64 ishlatiladi:", storageErr);
+      if (timeoutId) clearTimeout(timeoutId);
+      if (uploadTask) {
+        try {
+          uploadTask.cancel();
+        } catch {}
+      }
+      console.warn('[uploadPaymentReceipt] Storage yuklanmadi, siqilgan Base64 ishlatiladi:', storageErr);
     }
   }
 
-  if (base64Preview) {
-    return base64Preview;
-  }
-
-  return await compressImageFile(file, 700, 0.65);
+  return base64Preview;
 }
 
 /**
@@ -2772,7 +2886,11 @@ export async function submitPaymentRequest(params: {
   screenshotFile: File | null;
   screenshotDataUrl?: string;
 }): Promise<string> {
-  console.log("[submitPaymentRequest] Chaqirildi:", {
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    throw new Error("Internet aloqasi yo'q. Iltimos, internetingizni tekshirib qayta urinib ko'ring.");
+  }
+
+  console.log('[submitPaymentRequest] Chaqirildi:', {
     userId: params.userId,
     userName: params.userName,
     hasFile: !!params.screenshotFile,
@@ -2785,51 +2903,80 @@ export async function submitPaymentRequest(params: {
     try {
       screenshotUrl = await uploadPaymentReceipt(params.screenshotFile, params.userId || 'guest');
     } catch (uploadErr) {
-      console.warn("[submitPaymentRequest] uploadPaymentReceipt xatosi:", uploadErr);
+      console.warn('[submitPaymentRequest] uploadPaymentReceipt xatosi:', uploadErr);
     }
   }
 
   if (!screenshotUrl && params.screenshotDataUrl) {
-    screenshotUrl = params.screenshotDataUrl;
+    if (params.screenshotDataUrl.startsWith('data:') && params.screenshotDataUrl.length > 500000) {
+      const compressed = await compressDataUrl(params.screenshotDataUrl, 600, 0.55);
+      screenshotUrl = compressed || params.screenshotDataUrl;
+    } else {
+      screenshotUrl = params.screenshotDataUrl;
+    }
   }
 
-  // Agar base64 juda katta bo'lsa (Firestore doc limit 1MB dan oshmasligi uchun), qo'shimcha optimallashtiramiz
-  if (screenshotUrl && screenshotUrl.startsWith('data:') && screenshotUrl.length > 500000) {
-    console.log("[submitPaymentRequest] Rasm hajmi katta (" + Math.round(screenshotUrl.length / 1024) + " KB), qayta siqilmoqda...");
-    if (params.screenshotFile) {
-      try {
-        screenshotUrl = await compressImageFile(params.screenshotFile, 600, 0.6);
-      } catch {}
+  // Firestore hujjat limiti 1MB bo'lgani uchun base64 juda katta bo'lsa qayta siqamiz yoki aniq xabar beramiz
+  if (screenshotUrl && screenshotUrl.startsWith('data:') && screenshotUrl.length > 750000) {
+    const tighter = params.screenshotFile
+      ? await compressImageFile(params.screenshotFile, 480, 0.45)
+      : await compressDataUrl(screenshotUrl, 480, 0.45);
+    if (tighter && tighter.length <= 750000) {
+      screenshotUrl = tighter;
     }
+  }
+
+  if (!screenshotUrl) {
+    throw new Error("Chek rasmini o'qib bo'lmadi. Iltimos, PNG yoki JPG formatdagi rasm yuklang.");
+  }
+
+  if (screenshotUrl.startsWith('data:') && screenshotUrl.length > 900000) {
+    throw new Error("Chek rasmi hajmi juda katta yoki formati qo'llab-quvvatlanmadi. Iltimos, oddiy JPG/PNG skrinshot yuklang.");
   }
 
   console.log("[submitPaymentRequest] Firestore 'paymentRequests' kolleksiyasiga saqlanmoqda...");
   const now = new Date();
   const paymentRequestsCol = collection(db, 'paymentRequests');
 
-  const addDocPromise = addDoc(paymentRequestsCol, {
-    userId: params.userId || '',
-    userName: params.userName || "Noma'lum foydalanuvchi",
-    userPhone: params.userPhone || '',
-    userEmail: params.userEmail || '',
-    userRole: params.userRole || '',
-    amount: 59000,
-    screenshotUrl: screenshotUrl || '',
-    sana: now.toISOString(),
-    createdAtMillis: now.getTime(),
-    status: 'pending',
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  });
+  let firestoreTimer: ReturnType<typeof setTimeout> | null = null;
+  let docRef;
+  try {
+    const addDocPromise = addDoc(paymentRequestsCol, {
+      userId: params.userId || '',
+      userName: params.userName || "Noma'lum foydalanuvchi",
+      userPhone: params.userPhone || '',
+      userEmail: params.userEmail || '',
+      userRole: params.userRole || '',
+      amount: 59000,
+      screenshotUrl: screenshotUrl || '',
+      sana: now.toISOString(),
+      createdAtMillis: now.getTime(),
+      status: 'pending',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
 
-  const timeoutPromise = new Promise<never>((_, reject) =>
-    setTimeout(() => reject(new Error("Server bilan aloqa sekin yoki uzildi. Iltimos, qayta urinib ko'ring.")), 25000)
-  );
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      firestoreTimer = setTimeout(() => {
+        reject(new Error("Server bilan ulanish vaqti tugadi. Internet aloqangizni tekshirib, qayta urinib ko'ring."));
+      }, 10000);
+    });
 
-  const docRef = await Promise.race([addDocPromise, timeoutPromise]);
+    docRef = await Promise.race([addDocPromise, timeoutPromise]);
+  } finally {
+    if (firestoreTimer) clearTimeout(firestoreTimer);
+  }
+
   console.log("[submitPaymentRequest] Firestore'ga muvaffaqiyatli saqlandi! Doc ID:", docRef.id);
 
-  // 1. Yangi to'lov so'rovi kelganda Telegram API orqali adminga xabar yuborish
+  // Yangi to'lov so'rovi kelganda Telegram API orqali adminga xabar yuborish (4s timeout bilan, foydalanuvchini kutdirib qo'ymaslik uchun)
+  const tgController = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const tgTimer = setTimeout(() => {
+    try {
+      tgController?.abort();
+    } catch {}
+  }, 4000);
+
   try {
     const realName = (params.userName || '').trim() || "Noma'lum foydalanuvchi";
     console.log("[submitPaymentRequest] Telegram API'ga so'rov yuborilmoqda: Foydalanuvchi =", realName);
@@ -2841,12 +2988,15 @@ export async function submitPaymentRequest(params: {
         chat_id: '8788020177',
         text: `💳 Yangi to'lov so'rovi!\nFoydalanuvchi: ${realName}\nSumma: 59 000 so'm`,
       }),
+      ...(tgController ? { signal: tgController.signal } : {}),
     });
 
     const tgResult = await response.json().catch(() => ({}));
-    console.log("[submitPaymentRequest] Telegram API javobi:", response.status, tgResult);
+    console.log('[submitPaymentRequest] Telegram API javobi:', response.status, tgResult);
   } catch (error: any) {
     console.error("[submitPaymentRequest] Telegram API so'rovida xatolik:", error);
+  } finally {
+    clearTimeout(tgTimer);
   }
 
   return docRef.id;

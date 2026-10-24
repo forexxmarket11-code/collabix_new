@@ -2,7 +2,7 @@
   "relation": ["delegate_permission/common.handle_all_urls"],
   "target": {
     "namespace": "android_app",
-    "package_name": "Collabix.uz",
-    "sha256_cert_fingerprints": ["24:0C:A0:A7:51:56:E0:73:17:37:D8:89:EC:66:18:19:8F:68:23:B7:23:D7:4E:69:E2:58:C3:82:23:F7:72:9B"]
+    "package_name": "uz.collabix.app",
+    "sha256_cert_fingerprints": ["C7:FF:ED:4D:D1:21:33:25:75:87:31:C8:CF:01:54:47:6C:B4:76:F6:51:5F:DF:DD:FB:C3:DC:0B:C4:21:5B:BC"]
   }
 }]
