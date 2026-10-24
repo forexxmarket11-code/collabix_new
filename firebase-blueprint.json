@@ -1,0 +1,188 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile in Collabix platform",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["bloger", "brend"] },
+        "contact": { "type": "string" },
+        "registeredAt": { "type": "string" },
+        "avatar": { "type": "string" },
+        "bio": { "type": "string" },
+        "city": { "type": "string" },
+        "instagramHandle": { "type": "string" },
+        "gender": { "type": "string" },
+        "languages": { "type": "array" },
+        "categories": { "type": "array" },
+        "contentTypes": { "type": "array" },
+        "priceRange": { "type": "object" },
+        "socialLinks": { "type": "object" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" },
+        "profileCompletion": { "type": "number" },
+        "trialStartDate": { "type": "string" },
+        "trialEndDate": { "type": "string" },
+        "subscriptionStatus": { "type": "string", "enum": ["trial", "active", "cancelled"] },
+        "reminderSent": { "type": "boolean" },
+        "subscriptionPlanPrice": { "type": "number" },
+        "accountStatus": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "rejectionReason": { "type": "string" },
+        "referredBy": { "type": "string" },
+        "referralCount": { "type": "number" }
+      },
+      "required": ["uid", "name", "email", "role"]
+    },
+    "Brief": {
+      "title": "Brief",
+      "description": "Collabix marketing brief or campaign order",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "taskTitle": { "type": "string" },
+        "description": { "type": "string" },
+        "formats": { "type": "array" },
+        "categories": { "type": "array" },
+        "recipientType": { "type": "string", "enum": ["open", "direct"] },
+        "selectedCreatorId": { "type": "string" },
+        "selectedCreatorName": { "type": "string" },
+        "selectedCreatorAvatar": { "type": "string" },
+        "budgetMin": { "type": "string" },
+        "budgetMax": { "type": "string" },
+        "paymentType": { "type": "string", "enum": ["money", "barter"] },
+        "barterDescription": { "type": "string" },
+        "barterEstimatedValue": { "type": "string" },
+        "deadline": { "type": "string" },
+        "brandName": { "type": "string" },
+        "brandAvatar": { "type": "string" },
+        "brandId": { "type": "string" },
+        "status": { "type": "string", "enum": ["open", "in_progress", "completed", "cancelled", "yangi", "qabul_qilindi", "rad_etildi"] },
+        "creatorStatus": { "type": "string", "enum": ["yangi", "qabul_qilindi", "rad_etildi"] },
+        "rejectionReason": { "type": "string" },
+        "respondedAt": { "type": "string" },
+        "respondedAtMillis": { "type": "number" },
+        "createdAt": { "type": "string" },
+        "createdAtMillis": { "type": "number" },
+        "applications": { "type": "array" }
+      },
+      "required": ["taskTitle", "description", "recipientType"]
+    },
+    "Conversation": {
+      "title": "Conversation",
+      "description": "Real-time chat thread between brand and creator",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "participants": { "type": "array" },
+        "participantDetails": { "type": "object" },
+        "lastMessage": { "type": "string" },
+        "lastMessageTime": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["participants"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "Individual message in a conversation",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "conversationId": { "type": "string" },
+        "senderId": { "type": "string" },
+        "senderName": { "type": "string" },
+        "text": { "type": "string" },
+        "time": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "isRead": { "type": "boolean" }
+      },
+      "required": ["conversationId", "senderId", "text"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "User notification for new briefs and platform events",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "type": { "type": "string" },
+        "title": { "type": "string" },
+        "briefTitle": { "type": "string" },
+        "briefId": { "type": "string" },
+        "senderId": { "type": "string" },
+        "senderName": { "type": "string" },
+        "senderAvatar": { "type": "string" },
+        "message": { "type": "string" },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["userId", "type", "message", "read"]
+    },
+    "Cancellation": {
+      "title": "Cancellation",
+      "description": "Subscription cancellation feedback and reason records",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "userRole": { "type": "string" },
+        "cancelledAt": { "type": "string" },
+        "cancelledAtMillis": { "type": "number" },
+        "reason": { "type": "string" },
+        "reasonDetails": { "type": "string" }
+      },
+      "required": ["userId", "userName", "cancelledAt", "reason"]
+    },
+    "AgencyApplication": {
+      "title": "AgencyApplication",
+      "description": "Marketing agency partnership application",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "agencyName": { "type": "string" },
+        "contactPerson": { "type": "string" },
+        "phoneOrEmail": { "type": "string" },
+        "websiteOrInstagram": { "type": "string" },
+        "status": { "type": "string", "enum": ["yangi", "boglanildi", "hamkor_boldi"] },
+        "createdAt": { "type": "string" },
+        "createdAtMillis": { "type": "number" },
+        "notes": { "type": "string" }
+      },
+      "required": ["agencyName", "contactPerson", "phoneOrEmail", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile document keyed by Auth UID"
+    },
+    "/briefs/{briefId}": {
+      "schema": "Brief",
+      "description": "Direct and open briefs created by brands"
+    },
+    "/conversations/{conversationId}": {
+      "schema": "Conversation",
+      "description": "Chat thread between users"
+    },
+    "/conversations/{conversationId}/messages/{messageId}": {
+      "schema": "Message",
+      "description": "Messages within a conversation"
+    },
+    "/notifications/{notificationId}": {
+      "schema": "Notification",
+      "description": "User notifications for direct and open briefs"
+    },
+    "/cancellations/{cancellationId}": {
+      "schema": "Cancellation",
+      "description": "Subscription cancellation records and reasons for admin review"
+    },
+    "/agencyApplications/{applicationId}": {
+      "schema": "AgencyApplication",
+      "description": "Marketing agency partnership applications submitted via the agency page"
+    }
+  }
+}

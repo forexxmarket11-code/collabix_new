@@ -1,0 +1,685 @@
+import React, { useState, useEffect } from 'react';
+import {
+  User,
+  Building2,
+  Eye,
+  EyeOff,
+  ArrowRight,
+  ArrowLeft,
+  CheckCircle2,
+  AlertCircle,
+  Sparkles,
+  X,
+  Loader2,
+  Check,
+  ShieldCheck,
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { UserSession } from '../types';
+import { registerUser, loginUser, getUzbekAuthErrorMessage } from '../firebase';
+
+interface RegisterModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onOpenCatalog: () => void;
+  onSuccess?: (user: UserSession) => void;
+  onGoToProfile?: () => void;
+}
+
+export const RegisterModal: React.FC<RegisterModalProps> = ({
+  isOpen,
+  onClose,
+  onOpenCatalog,
+  onSuccess,
+  onGoToProfile,
+}) => {
+  // Wizard Step: 1 (Ism va familiya) | 2 (Login va parol)
+  const [step, setStep] = useState<1 | 2>(1);
+  const [direction, setDirection] = useState<1 | -1>(1);
+
+  // Role selector: 'bloger' or 'brend'
+  const [role, setRole] = useState<'bloger' | 'brend'>('bloger');
+
+  // Mode: 'register' or 'login'
+  const [isLoginMode, setIsLoginMode] = useState<boolean>(false);
+
+  // Step 1 fields
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+
+  // Step 2 fields
+  const [contact, setContact] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
+  // Password visibility toggles
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Status & Validation
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Lock background scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      const originalStyle = window.getComputedStyle(document.body).overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalStyle;
+      };
+    }
+  }, [isOpen]);
+
+  // Handle ESC key to close modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [isOpen, onClose]);
+
+  // Reset modal state when reopening or switching modes
+  const handleToggleMode = (loginMode: boolean) => {
+    setIsLoginMode(loginMode);
+    setStep(1);
+    setErrorMessage(null);
+  };
+
+  if (!isOpen) return null;
+
+  // Handler for Step 1 -> Step 2 validation
+  const handleProceedToStep2 = (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage(null);
+
+    const fName = firstName.trim();
+    const lName = lastName.trim();
+
+    if (role === 'bloger') {
+      if (!fName) {
+        setErrorMessage("Iltimos, ismingizni kiriting.");
+        return;
+      }
+      if (!lName) {
+        setErrorMessage("Iltimos, familiyangizni kiriting.");
+        return;
+      }
+    } else {
+      if (!fName) {
+        setErrorMessage("Iltimos, brendingiz yoki kompaniyangiz nomini kiriting.");
+        return;
+      }
+      if (!lName) {
+        setErrorMessage("Iltimos, masʼul shaxsning ism va familiyasini kiriting.");
+        return;
+      }
+    }
+
+    setDirection(1);
+    setStep(2);
+  };
+
+  // Handler for Step 2 "Orqaga" button
+  const handleBackToStep1 = () => {
+    setErrorMessage(null);
+    setDirection(-1);
+    setStep(1);
+  };
+
+  // Handler for Step 2 Registration Submit or Login Submit
+  const handleFinalSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage(null);
+
+    const emailTrimmed = contact.trim();
+
+    if (!emailTrimmed) {
+      setErrorMessage("Bogʻlanish uchun emailingizni kiriting.");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(emailTrimmed)) {
+      setErrorMessage("Email formati notoʻgʻri. Iltimos, haqiqiy email kiriting (masalan: foydalanuvchi@mail.uz).");
+      return;
+    }
+
+    if (!password) {
+      setErrorMessage("Hisobingizni himoyalash uchun parol kiriting.");
+      return;
+    }
+
+    if (!isLoginMode) {
+      // Step 2 Registration validations
+      if (password.length < 6) {
+        setErrorMessage("Parol kamida 6 belgidan iborat boʻlishi kerak.");
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        setErrorMessage("Kiritilgan parollar bir xil emas. Qaytadan tekshirib koʻring.");
+        return;
+      }
+
+      // Compute full name
+      const fName = firstName.trim();
+      const lName = lastName.trim();
+      const fullName = role === 'bloger'
+        ? `${fName} ${lName}`.trim()
+        : (lName ? `${fName} (${lName})` : fName);
+
+      setIsLoading(true);
+      try {
+        const newUser = await registerUser(emailTrimmed, password, fullName, role);
+        onClose();
+        if (onSuccess) {
+          onSuccess(newUser);
+        }
+      } catch (err: any) {
+        // Keeps user on Step 2 with existing inputs and shows helpful Uzbek error
+        setErrorMessage(getUzbekAuthErrorMessage(err));
+      } finally {
+        setIsLoading(false);
+      }
+    } else {
+      // Login flow
+      setIsLoading(true);
+      try {
+        const loggedInUser = await loginUser(emailTrimmed, password);
+        onClose();
+        if (onSuccess) {
+          onSuccess(loggedInUser);
+        }
+      } catch (err: any) {
+        setErrorMessage(getUzbekAuthErrorMessage(err));
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
+  return (
+    <div
+      id="register-modal-backdrop"
+      className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-6 pb-[calc(90px+env(safe-area-inset-bottom,0px))] sm:pb-6 bg-slate-900/60 dark:bg-slate-950/75 backdrop-blur-md overflow-y-auto transition-opacity duration-200"
+      onClick={onClose}
+      aria-modal="true"
+      role="dialog"
+    >
+      <div
+        id="register-modal-content"
+        className="relative w-full max-w-lg bg-white/98 dark:bg-slate-900/98 backdrop-blur-md border-2 border-slate-100 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-slate-900/20 my-auto transform transition-all duration-200 select-none overflow-hidden max-h-[88vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Close Button "X" */}
+        <button
+          type="button"
+          id="btn-close-register-modal"
+          onClick={onClose}
+          className="absolute top-5 right-5 p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer z-10"
+          aria-label="Yopish"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        {/* Progress Indicator for Multi-Step Registration */}
+        {!isLoginMode && (
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>{step === 1 ? '1/2 — Ism va maʼlumot' : '2/2 — Kirish va parol'}</span>
+              </span>
+              <span className="text-xs font-mono font-bold text-slate-400 dark:text-slate-500">
+                Qadam {step} / 2
+              </span>
+            </div>
+
+            {/* Stepped Progress Track */}
+            <div className="grid grid-cols-2 gap-2">
+              <div
+                className={`h-1.5 rounded-full transition-all duration-300 ${
+                  step === 1
+                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 shadow-xs shadow-indigo-500/30'
+                    : 'bg-emerald-500'
+                }`}
+              />
+              <div
+                className={`h-1.5 rounded-full transition-all duration-300 ${
+                  step === 2
+                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 shadow-xs shadow-indigo-500/30'
+                    : 'bg-slate-100 dark:bg-slate-800'
+                }`}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Validation Error Alert */}
+        {errorMessage && (
+          <div
+            id="modal-register-error-alert"
+            className="mb-4 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs font-body flex items-start gap-2.5 animate-in fade-in duration-200"
+          >
+            <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+            <span className="flex-1">{errorMessage}</span>
+          </div>
+        )}
+
+        {/* REGISTRATION: MULTI-STEP WIZARD */}
+        {!isLoginMode ? (
+          <AnimatePresence mode="wait" custom={direction}>
+            {step === 1 ? (
+              <motion.div
+                key="register-step-1"
+                custom={direction}
+                initial={{ opacity: 0, x: direction > 0 ? -20 : 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: direction > 0 ? 20 : -20 }}
+                transition={{ duration: 0.22, ease: 'easeOut' }}
+              >
+                {/* Step 1 Header */}
+                <div className="text-center mb-5 pr-4">
+                  <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight font-heading leading-snug">
+                    Sizni qanday deb ataylik?
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-body mt-1.5 max-w-sm mx-auto leading-relaxed">
+                    {role === 'bloger'
+                      ? 'Platformada ishonchli profil yaratish uchun ism va familiyangizni kiriting.'
+                      : 'Hamkorliklar va briflar uchun brendingiz nomini va aloqa uchun ismingizni kiriting.'}
+                  </p>
+                </div>
+
+                {/* Role Selection Tabs (Bloger vs Brend) */}
+                <div className="mb-5">
+                  <span className="block text-xs font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                    Qaysi maqsadda qoʻshilasiz?
+                  </span>
+
+                  <div className="grid grid-cols-2 gap-2 p-1.5 bg-slate-100/90 dark:bg-slate-800/80 rounded-2xl border border-slate-200/70 dark:border-slate-700/60">
+                    <button
+                      type="button"
+                      id="modal-btn-role-bloger"
+                      onClick={() => {
+                        setRole('bloger');
+                        setErrorMessage(null);
+                      }}
+                      className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-heading font-bold transition-all duration-200 cursor-pointer ${
+                        role === 'bloger'
+                          ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-600/20'
+                          : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-700/60'
+                      }`}
+                    >
+                      <User className="w-4 h-4 stroke-[2.5]" />
+                      <span>Blogerman</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      id="modal-btn-role-brend"
+                      onClick={() => {
+                        setRole('brend');
+                        setErrorMessage(null);
+                      }}
+                      className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-heading font-bold transition-all duration-200 cursor-pointer ${
+                        role === 'brend'
+                          ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md shadow-purple-600/20'
+                          : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-700/60'
+                      }`}
+                    >
+                      <Building2 className="w-4 h-4 stroke-[2.5]" />
+                      <span>Brend / Biznes</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Step 1 Form Fields */}
+                <form onSubmit={handleProceedToStep2} className="space-y-3.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* First Name / Brand Name */}
+                    <div>
+                      <label
+                        htmlFor="modal-reg-firstname-input"
+                        className="block text-xs font-heading font-semibold text-slate-700 dark:text-slate-300 mb-1"
+                      >
+                        {role === 'bloger' ? 'Ism' : 'Brend / Kompaniya nomi'}
+                        <span className="text-rose-500 ml-0.5">*</span>
+                      </label>
+                      <input
+                        id="modal-reg-firstname-input"
+                        type="text"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        placeholder={role === 'bloger' ? 'Azizbek' : 'TechStart yoki SamAuto'}
+                        autoFocus
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-body text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-indigo-600 dark:focus:border-indigo-400 focus:outline-hidden transition-colors bg-slate-50/50 dark:bg-slate-800/50"
+                      />
+                    </div>
+
+                    {/* Last Name / Contact Person */}
+                    <div>
+                      <label
+                        htmlFor="modal-reg-lastname-input"
+                        className="block text-xs font-heading font-semibold text-slate-700 dark:text-slate-300 mb-1"
+                      >
+                        {role === 'bloger' ? 'Familiya' : 'Masʼul shaxs (Ism-familiya)'}
+                        <span className="text-rose-500 ml-0.5">*</span>
+                      </label>
+                      <input
+                        id="modal-reg-lastname-input"
+                        type="text"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        placeholder={role === 'bloger' ? 'Rahimov' : 'Jasur Alimov'}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-body text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-indigo-600 dark:focus:border-indigo-400 focus:outline-hidden transition-colors bg-slate-50/50 dark:bg-slate-800/50"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Trust Info */}
+                  <div className="p-3 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/50 flex items-center gap-2 text-indigo-800 dark:text-indigo-300 text-xs">
+                    <ShieldCheck className="w-4 h-4 shrink-0 text-indigo-600 dark:text-indigo-400" />
+                    <span>
+                      {role === 'bloger'
+                        ? 'Profilingiz tasdiqlangach, brendlar katalogida shu ism bilan koʻrinasiz.'
+                        : 'Briflar yaratish va buyurtmalarni boshqarishda ushbu nom aks etadi.'}
+                    </span>
+                  </div>
+
+                  {/* Proceed to Step 2 Button */}
+                  <div className="pt-2">
+                    <button
+                      id="modal-btn-step1-continue"
+                      type="submit"
+                      className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-heading font-bold text-sm sm:text-base tracking-tight shadow-lg shadow-indigo-600/25 hover:shadow-indigo-600/35 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <span>Davom etish</span>
+                      <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+                    </button>
+                  </div>
+                </form>
+
+                {/* Toggle to Login Mode */}
+                <div className="pt-3 text-center">
+                  <button
+                    type="button"
+                    id="modal-link-toggle-login"
+                    onClick={() => handleToggleMode(true)}
+                    className="text-xs sm:text-sm font-heading font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors cursor-pointer"
+                  >
+                    Avval roʻyxatdan oʻtganmisiz? Profilingizga kiring
+                  </button>
+                </div>
+              </motion.div>
+            ) : (
+              /* STEP 2: LOGIN VA PAROL */
+              <motion.div
+                key="register-step-2"
+                custom={direction}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.22, ease: 'easeOut' }}
+              >
+                {/* Step 2 Header */}
+                <div className="text-center mb-5 pr-4">
+                  <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight font-heading leading-snug">
+                    Kirish uchun maʼlumotlaringiz
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-body mt-1.5 max-w-sm mx-auto leading-relaxed">
+                    Profilingizga xavfsiz kirish uchun email va yangi maxfiy parol belgilang.
+                  </p>
+                </div>
+
+                {/* Step 2 Form Fields */}
+                <form onSubmit={handleFinalSubmit} className="space-y-3.5">
+                  {/* Email */}
+                  <div>
+                    <label
+                      htmlFor="modal-reg-contact-input"
+                      className="block text-xs font-heading font-semibold text-slate-700 dark:text-slate-300 mb-1"
+                    >
+                      Email manzili
+                      <span className="text-rose-500 ml-0.5">*</span>
+                    </label>
+                    <input
+                      id="modal-reg-contact-input"
+                      type="email"
+                      value={contact}
+                      onChange={(e) => setContact(e.target.value)}
+                      placeholder="masalan: sizning@email.uz yoki kompaniya@gmail.com"
+                      autoFocus
+                      required
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-body text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-indigo-600 dark:focus:border-indigo-400 focus:outline-hidden transition-colors bg-slate-50/50 dark:bg-slate-800/50"
+                    />
+                  </div>
+
+                  {/* Password */}
+                  <div>
+                    <label
+                      htmlFor="modal-reg-password-input"
+                      className="block text-xs font-heading font-semibold text-slate-700 dark:text-slate-300 mb-1"
+                    >
+                      Maxfiy parol
+                      <span className="text-rose-500 ml-0.5">*</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        id="modal-reg-password-input"
+                        type={showPassword ? 'text' : 'password'}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Kamida 6 ta belgi oʻylab toping"
+                        required
+                        className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-body text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-indigo-600 dark:focus:border-indigo-400 focus:outline-hidden transition-colors bg-slate-50/50 dark:bg-slate-800/50"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                        aria-label="Parolni ko'rsatish"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Confirm Password */}
+                  <div>
+                    <label
+                      htmlFor="modal-reg-confirm-password-input"
+                      className="block text-xs font-heading font-semibold text-slate-700 dark:text-slate-300 mb-1"
+                    >
+                      Parolni qayta tasdiqlang
+                      <span className="text-rose-500 ml-0.5">*</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        id="modal-reg-confirm-password-input"
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="Parolni yana bir bor yozing"
+                        required
+                        className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-body text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-indigo-600 dark:focus:border-indigo-400 focus:outline-hidden transition-colors bg-slate-50/50 dark:bg-slate-800/50"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                        aria-label="Parol tasdig'ini ko'rsatish"
+                      >
+                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons: "Orqaga" and "Ro'yxatdan o'tish" */}
+                  <div className="pt-3 flex items-center gap-2.5">
+                    <button
+                      type="button"
+                      id="modal-btn-step2-back"
+                      onClick={handleBackToStep1}
+                      disabled={isLoading}
+                      className="py-3.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-heading font-semibold text-sm transition-colors cursor-pointer flex items-center gap-1.5 shrink-0"
+                    >
+                      <ArrowLeft className="w-4 h-4" />
+                      <span>Orqaga</span>
+                    </button>
+
+                    <button
+                      id="modal-btn-submit-register"
+                      type="submit"
+                      disabled={isLoading}
+                      className="flex-1 py-3.5 px-5 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-heading font-bold text-sm sm:text-base tracking-tight shadow-lg shadow-indigo-600/25 hover:shadow-indigo-600/35 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Hisob yaratilmoqda...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>Roʻyxatdan oʻtish</span>
+                          <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+
+                {/* Hint about Admin Approval */}
+                <div className="pt-3 text-center">
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 font-body leading-relaxed">
+                    ✨ Roʻyxatdan oʻtgach, arizangiz xavfsizlik uchun admin tomonidan koʻrib chiqiladi (odatda 24 soat ichida).
+                  </p>
+                </div>
+
+                <div className="pt-2 text-center">
+                  <button
+                    type="button"
+                    onClick={() => handleToggleMode(true)}
+                    className="text-xs sm:text-sm font-heading font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors cursor-pointer"
+                  >
+                    Avval roʻyxatdan oʻtganmisiz? Profilingizga kiring
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        ) : (
+          /* LOGIN MODE (Single Screen) */
+          <motion.div
+            key="login-mode"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <div className="text-center mb-6 pr-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-900 mb-2.5 shadow-xs">
+                <Sparkles className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                <span className="text-xs font-mono font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-300">
+                  Kabinetga kirish
+                </span>
+              </div>
+
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight font-heading leading-snug">
+                Profilingizga xush kelibsiz
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-body mt-2 max-w-md mx-auto leading-relaxed">
+                Loyihalaringiz, yangi takliflar va xabarlaringiz sizni kutmoqda.
+              </p>
+            </div>
+
+            <form onSubmit={handleFinalSubmit} className="space-y-3.5">
+              <div>
+                <label
+                  htmlFor="modal-login-email-input"
+                  className="block text-xs font-heading font-semibold text-slate-700 dark:text-slate-300 mb-1"
+                >
+                  Email manzili
+                </label>
+                <input
+                  id="modal-login-email-input"
+                  type="email"
+                  value={contact}
+                  onChange={(e) => setContact(e.target.value)}
+                  placeholder="masalan, sizning@email.uz"
+                  required
+                  autoFocus
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-body text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-indigo-600 dark:focus:border-indigo-400 focus:outline-hidden transition-colors bg-slate-50/50 dark:bg-slate-800/50"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="modal-login-password-input"
+                  className="block text-xs font-heading font-semibold text-slate-700 dark:text-slate-300 mb-1"
+                >
+                  Maxfiy parolingiz
+                </label>
+                <div className="relative">
+                  <input
+                    id="modal-login-password-input"
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Parolingizni kiriting"
+                    required
+                    className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-body text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-indigo-600 dark:focus:border-indigo-400 focus:outline-hidden transition-colors bg-slate-50/50 dark:bg-slate-800/50"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                    aria-label="Parolni ko'rsatish"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <button
+                  id="modal-btn-submit-login"
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-heading font-bold text-sm sm:text-base tracking-tight shadow-lg shadow-indigo-600/25 hover:shadow-indigo-600/35 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Kirilmoqda...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Kabinetga kirish</span>
+                      <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+                    </>
+                  )}
+                </button>
+              </div>
+
+              <div className="pt-2 text-center">
+                <button
+                  type="button"
+                  id="modal-link-toggle-register"
+                  onClick={() => handleToggleMode(false)}
+                  className="text-xs sm:text-sm font-heading font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors cursor-pointer"
+                >
+                  Yangi hisob ochmoqchimisiz? Roʻyxatdan oʻtish
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        )}
+      </div>
+    </div>
+  );
+};

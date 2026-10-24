@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="uz">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <title>Collabix — Bloger va Brend Platformasi</title>
+    <meta name="description" content="O'zbekistonda bloger va brendlarni bir necha soniyada bog'laydigan platforma. Faqat tekshirilgan kreatorlar va ishonchli natija." />
+    
+    <!-- PWA & Mobile Web App Meta Tags -->
+    <meta name="theme-color" content="#2A4BFF" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#14121F" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Collabix" />
+    <meta name="application-name" content="Collabix" />
+    <meta name="msapplication-TileColor" content="#14121F" />
+    <meta name="msapplication-navbutton-color" content="#2A4BFF" />
+    
+    <!-- Icons & Manifest -->
+    <link rel="manifest" href="/manifest.json" crossorigin="use-credentials" />
+    <link rel="icon" type="image/svg+xml" href="/icons/icon.svg" />
+    <link rel="alternate icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192x192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512x512.png" />
+    
+    <!-- Open Graph & Social Sharing -->
+    <meta property="og:title" content="Collabix — Bloger va Brend Platformasi" />
+    <meta property="og:description" content="O'zbekistonda bloger va brendlarni bir necha soniyada bog'laydigan platforma. Faqat tekshirilgan kreatorlar va ishonchli natija." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/icons/icon-512x512.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Collabix — Bloger va Brend Platformasi" />
+    <meta name="twitter:description" content="O'zbekistonda bloger va brendlarni bir necha soniyada bog'laydigan platforma." />
+    <meta name="twitter:image" content="/icons/icon-512x512.png" />
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Space+Grotesk:wght@600;700;800&family=Unbounded:wght@600;700;800&display=swap" rel="stylesheet" />
+
+    <!-- Service Worker Registration & Preview Cache Protection -->
+    <script>
+      (function () {
+        var host = window.location.hostname || '';
+        var isInIframe = false;
+        try {
+          isInIframe = window.self !== window.top;
+        } catch (e) {
+          isInIframe = true;
+        }
+
+        // AI Studio Preview / dev muhitlarida (iframe, ais-dev-*, ais-pre-*, localhost)
+        // Cloud Run auth proxy 302 redirect ishlatadi va Service Worker keshlangan eski fayllarni
+        // ushlab qolib sayt ochilmasligiga sabab bo'ladi. Shu sabab preview muhitida SW va keshlarni to'liq tozalaymiz.
+        var isPreviewEnv =
+          isInIframe ||
+          host.indexOf('ais-dev-') !== -1 ||
+          host.indexOf('ais-pre-') !== -1 ||
+          host === 'localhost' ||
+          host === '127.0.0.1';
+
+        if (isPreviewEnv) {
+          var clearAllCaches = ('caches' in window)
+            ? caches.keys().then(function (names) {
+                return Promise.all(
+                  names.map(function (name) {
+                    return caches.delete(name);
+                  })
+                );
+              }).catch(function () {})
+            : Promise.resolve();
+
+          if ('serviceWorker' in navigator) {
+            var hadController = !!navigator.serviceWorker.controller;
+            navigator.serviceWorker.getRegistrations().then(function (registrations) {
+              return Promise.all(
+                registrations.map(function (reg) {
+                  return reg.unregister().catch(function () {});
+                })
+              );
+            }).then(function () {
+              return clearAllCaches;
+            }).then(function () {
+              if (hadController) {
+                try {
+                  if (!sessionStorage.getItem('collabix_sw_cleaned_v3')) {
+                    sessionStorage.setItem('collabix_sw_cleaned_v3', '1');
+                    window.location.reload();
+                  }
+                } catch (e) {}
+              }
+            }).catch(function () {});
+          }
+        } else {
+          // Production domenda (masalan collabix.uz) eski keshlarni tozalab, yangi v3 Service Worker'ni ulash
+          if ('caches' in window) {
+            caches.keys().then(function (names) {
+              names.forEach(function (name) {
+                if (name !== 'collabix-cache-v3') {
+                  caches.delete(name);
+                }
+              });
+            }).catch(function () {});
+          }
+
+          if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function () {
+              navigator.serviceWorker.register('/sw.js', { scope: '/' }).then(function (reg) {
+                console.log('Service Worker muvaffaqiyatli ro‘yxatdan o‘tdi, scope:', reg.scope);
+              }).catch(function (error) {
+                console.debug('Service Worker yuklanishi o‘tkazib yuborildi:', error && error.message);
+              });
+            });
+          }
+        }
+      })();
+
+      // Extra protection against iOS Safari pinch-to-zoom gestures
+      document.addEventListener('gesturestart', function (e) {
+        e.preventDefault();
+      }, { passive: false });
+      document.addEventListener('gesturechange', function (e) {
+        e.preventDefault();
+      }, { passive: false });
+      document.addEventListener('gestureend', function (e) {
+        e.preventDefault();
+      }, { passive: false });
+    </script>
+  </head>
+  <body class="bg-[#F8FAFD] text-[#0F172A] antialiased selection:bg-[#4F46E5] selection:text-white">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

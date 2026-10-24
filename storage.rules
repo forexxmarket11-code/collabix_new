@@ -1,0 +1,15 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Payment receipts: allow read and write for proof screenshots
+    match /payment_receipts/{allPaths=**} {
+      allow read: if true;
+      allow write: if true;
+    }
+    // Default fallback
+    match /{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+  }
+}

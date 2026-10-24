@@ -1,0 +1,3020 @@
+import { initializeApp } from 'firebase/app';
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  User as FirebaseUser,
+} from 'firebase/auth';
+import {
+  getFirestore,
+  initializeFirestore,
+  setLogLevel,
+  doc,
+  getDoc,
+  setDoc,
+  collection,
+  getDocs,
+  serverTimestamp,
+  onSnapshot,
+  query,
+  where,
+  orderBy,
+  addDoc,
+  updateDoc,
+  writeBatch,
+  increment,
+  deleteDoc,
+} from 'firebase/firestore';
+import {
+  getStorage,
+  ref,
+  uploadBytes,
+  getDownloadURL,
+} from 'firebase/storage';
+import {
+  UserSession,
+  UsersStatistics,
+  SubscriptionStatus,
+  AccountStatus,
+  CatalogCreator,
+  CreatorCategory,
+  BriefData,
+  BriefApplication,
+  BriefCreatorStatus,
+  RevenueStatistics,
+  ReferralStatistics,
+  MonthlyRevenueItem,
+  ReferrerItem,
+  ChatMessageItem,
+  ChatConversationItem,
+  NotificationItem,
+  CancellationRecord,
+  AgencyApplication,
+  AgencyApplicationStatus,
+  PaymentRequest,
+  PaymentRequestStatus,
+} from './types';
+
+// Provided Firebase Configuration
+export const firebaseConfig = {
+  apiKey: "AIzaSyAMTsX2H2MgRE4Mds2nqq27IWdEqz90K2g",
+  authDomain: "collabix-f0e09.firebaseapp.com",
+  projectId: "collabix-f0e09",
+  storageBucket: "collabix-f0e09.firebasestorage.app",
+  messagingSenderId: "104896553283",
+  appId: "1:104896553283:web:3a37daed0de44322da4ff6",
+  measurementId: "G-N72KK5LJF1",
+};
+
+// Initialize Firebase App
+export const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);
+
+// Safe Firebase Storage reference (graceful fallback if storage service is not provisioned)
+export function getSafeStorage() {
+  try {
+    return getStorage(app);
+  } catch {
+    return null;
+  }
+}
+export const storage = getSafeStorage();
+
+// Configure Firestore with silent internal logging to prevent transient network retry logs from triggering error boundaries
+try {
+  setLogLevel('silent');
+} catch {}
+
+export const db = initializeFirestore(app, {
+  experimentalAutoDetectLongPolling: true,
+  ignoreUndefinedProperties: true,
+});
+
+/**
+ * Format Firebase Auth Error codes into friendly, clear Uzbek messages
+ */
+export function getUzbekAuthErrorMessage(error: any): string {
+  const code = error?.code || '';
+  switch (code) {
+    case 'auth/email-already-in-use':
+      return "Bu email manzili allaqachon roʻyxatdan oʻtgan. Iltimos, profilingizga kiring.";
+    case 'auth/invalid-email':
+      return "Email formati notoʻgʻri. Iltimos, toʻgʻri email manzilini kiriting (masalan: foydalanuvchi@mail.uz).";
+    case 'auth/weak-password':
+      return "Parol kamida 6 belgidan iborat boʻlishi kerak.";
+    case 'auth/user-not-found':
+      return "Bunday email bilan hisob topilmadi. Avval roʻyxatdan oʻting.";
+    case 'auth/wrong-password':
+      return "Email yoki parol notoʻgʻri. Iltimos, qaytadan tekshirib koʻring.";
+    case 'auth/invalid-credential':
+      return "Email yoki parol notoʻgʻri. Iltimos, qaytadan tekshirib koʻring.";
+    case 'auth/too-many-requests':
+      return "Koʻp marotaba notoʻgʻri urinish boʻldi. Xavfsizlik uchun biroz kutib, qayta urinib koʻring.";
+    case 'auth/network-request-failed':
+      return "Internet bilan aloqa uzildi. Iltimos, internetingizni tekshirib koʻring.";
+    default:
+      return error?.message || "Kutilmagan xatolik yuz berdi. Iltimos, qaytadan urinib koʻring.";
+  }
+}
+
+/**
+ * Calculate user profile completion percentage (0 - 100%)
+ * Criteria checked: ism, bio, kategoriya, narx, ijtimoiy tarmoqlar (har biri 20%)
+ */
+export function calculateProfileCompletion(user: Partial<UserSession>): number {
+  if (!user) return 0;
+  let score = 0;
+
+  // 1. Ism (20%)
+  if (user.name && typeof user.name === 'string' && user.name.trim().length > 0) {
+    score += 20;
+  }
+
+  // 2. Bio / qisqacha ma'lumot (20%)
+  if (user.bio && typeof user.bio === 'string' && user.bio.trim().length > 0) {
+    score += 20;
+  }
+
+  // 3. Kategoriya / soha (20%)
+  if (Array.isArray(user.categories) && user.categories.length > 0) {
+    score += 20;
+  }
+
+  // 4. Narx / byudjet oralig'i (20%)
+  if (
+    user.priceRange &&
+    (Boolean(user.priceRange.min && user.priceRange.min.trim()) ||
+      Boolean(user.priceRange.max && user.priceRange.max.trim()))
+  ) {
+    score += 20;
+  }
+
+  // 5. Ijtimoiy tarmoqlar va kontaktlar (20%)
+  const hasSocial = Boolean(
+    (user.instagramHandle && user.instagramHandle.trim().length > 0) ||
+      (user.socialLinks?.instagram && user.socialLinks.instagram.trim().length > 0) ||
+      (user.socialLinks?.telegram && user.socialLinks.telegram.trim().length > 0) ||
+      (user.telegramUsername && user.telegramUsername.trim().length > 0) ||
+      (user.phoneNumber && user.phoneNumber.trim().length > 0) ||
+      (user.socialLinks?.tiktok && user.socialLinks.tiktok.trim().length > 0) ||
+      (user.socialLinks?.youtube && user.socialLinks.youtube.trim().length > 0)
+  );
+  if (hasSocial) {
+    score += 20;
+  }
+
+  return Math.min(100, Math.max(0, score));
+}
+
+/**
+ * Sign up a new user with Email and Password, and save their profile in Firestore 'users' collection
+ */
+export async function registerUser(
+  email: string,
+  pass: string,
+  fullName: string,
+  role: 'bloger' | 'brend'
+): Promise<UserSession> {
+  const userCredential = await createUserWithEmailAndPassword(auth, email.trim(), pass);
+  const fbUser = userCredential.user;
+
+  const initialCompletion = calculateProfileCompletion({
+    name: fullName.trim(),
+    role: role,
+    email: email.trim(),
+    contact: email.trim(),
+    phoneNumber: '',
+    telegramUsername: '',
+  });
+
+  const newUserProfile: UserSession = {
+    uid: fbUser.uid,
+    email: fbUser.email || email.trim(),
+    name: fullName.trim(),
+    contact: email.trim(),
+    phoneNumber: '',
+    telegramUsername: '',
+    role: role,
+    registeredAt: new Date().toLocaleDateString('uz-UZ'),
+    city: 'Toshkent, Oʻzbekiston',
+    profileCompletion: initialCompletion,
+    subscriptionStatus: 'free',
+    subscriptionPlanPrice: 59000,
+    accountStatus: 'pending',
+  };
+
+  try {
+    // Save to Firestore under 'users/{uid}' with serverTimestamp(), profileCompletion, and accountStatus: 'pending'
+    await setDoc(doc(db, 'users', fbUser.uid), {
+      ...newUserProfile,
+      accountStatus: 'pending',
+      profileCompletion: initialCompletion,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+    console.log("[registerUser] Firestore'ga yangi foydalanuvchi hujjati muvaffaqiyatli saqlandi! UID:", fbUser.uid);
+
+    // 2. Yangi ro'yxatdan o'tgan foydalanuvchi haqida Telegram API orqali adminga xabar yuborish
+    try {
+      const realName = fullName.trim() || "Noma'lum foydalanuvchi";
+      const realRole = role === 'brend' ? 'brend' : 'bloger';
+      console.log("[registerUser] Telegram API'ga so'rov yuborilmoqda: Ism =", realName, "Turi =", realRole);
+
+      const response = await fetch('https://api.telegram.org/bot8766687220:AAEnASe4ekqnyo13ZIpeW5KujNOK6mC3Kn0/sendMessage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: '8788020177',
+          text: `👤 Yangi foydalanuvchi ro'yxatdan o'tdi!\nIsm: ${realName}\nTuri: ${realRole}`,
+        }),
+      });
+
+      const tgResult = await response.json().catch(() => ({}));
+      console.log("[registerUser] Telegram API javobi:", response.status, tgResult);
+    } catch (error: any) {
+      console.error("[registerUser] Telegram API so'rovida xatolik:", error);
+    }
+  } catch (firestoreErr) {
+    console.error("Firestore ga profil saqlashda xatolik:", firestoreErr);
+  }
+
+  // Cache locally for instant UX
+  try {
+    localStorage.setItem('collabix_user', JSON.stringify(newUserProfile));
+  } catch {}
+
+  return newUserProfile;
+}
+
+/**
+ * Sign in existing user with Email and Password, and load their profile from Firestore
+ */
+export async function loginUser(email: string, pass: string): Promise<UserSession> {
+  const userCredential = await signInWithEmailAndPassword(auth, email.trim(), pass);
+  const fbUser = userCredential.user;
+
+  // Retrieve user document from Firestore
+  let profile: UserSession | null = null;
+  try {
+    const userDocRef = doc(db, 'users', fbUser.uid);
+    const snap = await getDoc(userDocRef);
+    if (snap.exists()) {
+      profile = snap.data() as UserSession;
+      if (!profile.accountStatus) {
+        profile.accountStatus = 'approved';
+      }
+    }
+  } catch (err) {
+    console.error("Firestore dan foydalanuvchi ma'lumotlarini yuklashda xatolik:", err);
+  }
+
+  // If no document was found (or offline), create a reasonable session object
+  if (!profile) {
+    profile = {
+      uid: fbUser.uid,
+      email: fbUser.email || email.trim(),
+      name: fbUser.displayName || email.split('@')[0],
+      contact: email.trim(),
+      role: 'bloger',
+      registeredAt: new Date().toLocaleDateString('uz-UZ'),
+      city: 'Toshkent, Oʻzbekiston',
+      accountStatus: 'approved',
+    };
+  }
+
+  try {
+    localStorage.setItem('collabix_user', JSON.stringify(profile));
+  } catch {}
+
+  return profile;
+}
+
+/**
+ * Sign out user from Firebase Auth
+ */
+export async function logoutUser(): Promise<void> {
+  try {
+    await signOut(auth);
+  } finally {
+    try {
+      localStorage.removeItem('collabix_user');
+    } catch {}
+  }
+}
+
+/**
+ * Fetch user profile from Firestore by UID
+ */
+export async function fetchUserProfile(uid: string): Promise<UserSession | null> {
+  try {
+    const snap = await getDoc(doc(db, 'users', uid));
+    if (snap.exists()) {
+      return snap.data() as UserSession;
+    }
+  } catch (err) {
+    console.error("fetchUserProfile xatosi:", err);
+  }
+  return null;
+}
+
+/**
+ * Real-time subscription to a creator document in Firestore 'users' collection.
+ * Calls onUpdate with profile or null (and notFound flag) strictly based on Firestore.
+ */
+export function subscribeToCreatorDocument(
+  creatorId: string,
+  onUpdate: (profile: UserSession | null, notFound: boolean) => void
+): () => void {
+  const userDocRef = doc(db, 'users', creatorId);
+
+  const unsubscribe = onSnapshot(
+    userDocRef,
+    (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data() as UserSession;
+        onUpdate({ ...data, uid: snapshot.id }, false);
+      } else {
+        onUpdate(null, true);
+      }
+    },
+    async (error) => {
+      if (error?.code !== 'unavailable') {
+        console.warn("Firestore onSnapshot error:", error?.message || error);
+      }
+      try {
+        const snap = await getDoc(userDocRef);
+        if (snap.exists()) {
+          onUpdate({ ...(snap.data() as UserSession), uid: snap.id }, false);
+        } else {
+          onUpdate(null, true);
+        }
+      } catch {
+        onUpdate(null, true);
+      }
+    }
+  );
+
+  return unsubscribe;
+}
+
+/**
+ * Increment creator profile views in Firestore 'users' collection
+ */
+export async function incrementCreatorViews(creatorId: string): Promise<void> {
+  if (!creatorId || creatorId === 'creator-profile' || creatorId === 'profil') return;
+  try {
+    const userDocRef = doc(db, 'users', creatorId);
+    await updateDoc(userDocRef, {
+      views: increment(1),
+    });
+  } catch (err) {
+    try {
+      const snap = await getDoc(doc(db, 'users', creatorId));
+      if (snap.exists()) {
+        const cur = (snap.data() as any).views || 0;
+        await setDoc(doc(db, 'users', creatorId), { views: cur + 1 }, { merge: true });
+      }
+    } catch {}
+  }
+}
+
+/**
+ * Check if a creator's contact is unlocked for a given brand user (either via Pro or pay-per-contact within 72 hours)
+ */
+export function isContactUnlockedForUser(
+  currentUser: UserSession | null | undefined,
+  creatorId: string
+): { isUnlocked: boolean; expiresAt?: string; remainingHours?: number; source?: 'pro' | 'paid_unlock' } {
+  if (!currentUser) {
+    return { isUnlocked: false };
+  }
+
+  // 1. Pro users have unlimited access
+  if (currentUser.subscriptionStatus === 'trial' || currentUser.subscriptionStatus === 'active') {
+    return { isUnlocked: true, source: 'pro' };
+  }
+
+  // 2. Bloggers looking at their own profile or each other
+  if (currentUser.uid === creatorId) {
+    return { isUnlocked: true, source: 'pro' };
+  }
+
+  // 3. Check 72-hour pay-per-contact unlock
+  const safeCreatorKey = creatorId.replace(/\./g, '_');
+  const unlockRecord = currentUser.unlockedCreators?.[creatorId] || currentUser.unlockedCreators?.[safeCreatorKey];
+  if (unlockRecord?.expiresAt) {
+    const expiresMs = new Date(unlockRecord.expiresAt).getTime();
+    const nowMs = Date.now();
+    if (expiresMs > nowMs) {
+      const remainingHours = Math.max(1, Math.ceil((expiresMs - nowMs) / (1000 * 60 * 60)));
+      return { isUnlocked: true, expiresAt: unlockRecord.expiresAt, remainingHours, source: 'paid_unlock' };
+    }
+  }
+
+  return { isUnlocked: false };
+}
+
+/**
+ * Purchase contact package for brand user
+ */
+export async function purchaseContactPackage(
+  userId: string,
+  packageType: 'single' | 'mini' | 'standard',
+  contactsToAdd: number
+): Promise<UserSession> {
+  const userDocRef = doc(db, 'users', userId);
+  const snap = await getDoc(userDocRef);
+  const existing = (snap.exists() ? snap.data() : {}) as UserSession;
+  const currentCount = existing.unlockedContactsCount || 0;
+  const newCount = currentCount + contactsToAdd;
+
+  const updates: Partial<UserSession> = {
+    unlockedContactsCount: newCount,
+    updatedAt: serverTimestamp(),
+  };
+
+  await setDoc(userDocRef, updates, { merge: true });
+
+  const updatedSession: UserSession = {
+    ...existing,
+    uid: userId,
+    unlockedContactsCount: newCount,
+  };
+
+  try {
+    const currentStr = localStorage.getItem('collabix_user');
+    if (currentStr) {
+      const parsed = JSON.parse(currentStr);
+      localStorage.setItem('collabix_user', JSON.stringify({ ...parsed, ...updatedSession }));
+    }
+  } catch {}
+
+  return updatedSession;
+}
+
+/**
+ * Unlock a specific creator's contact for 72 hours using 1 balance point
+ */
+export async function unlockCreatorContact(
+  userId: string,
+  creatorId: string
+): Promise<{ success: boolean; updatedUser: UserSession; expiresAt: string }> {
+  const userDocRef = doc(db, 'users', userId);
+  const snap = await getDoc(userDocRef);
+  if (!snap.exists()) {
+    throw new Error('Foydalanuvchi topilmadi');
+  }
+
+  const existing = snap.data() as UserSession;
+  const balance = existing.unlockedContactsCount || 0;
+  if (balance <= 0) {
+    throw new Error("Sizda kontakt ochish balansi mavjud emas. Iltimos, paket xarid qiling.");
+  }
+
+  const now = new Date();
+  const expiresDate = new Date(now.getTime() + 72 * 60 * 60 * 1000); // 72 hours
+  const expiresAt = expiresDate.toISOString();
+  const unlockedAt = now.toISOString();
+
+  const currentUnlockedMap = existing.unlockedCreators || {};
+  const safeCreatorKey = creatorId.replace(/\./g, '_');
+  const updatedUnlockedMap = {
+    ...currentUnlockedMap,
+    [safeCreatorKey]: {
+      unlockedAt,
+      expiresAt,
+    },
+    ...(safeCreatorKey !== creatorId
+      ? {
+          [creatorId]: {
+            unlockedAt,
+            expiresAt,
+          },
+        }
+      : {}),
+  };
+
+  const newBalance = Math.max(0, balance - 1);
+  const updates: Partial<UserSession> = {
+    unlockedContactsCount: newBalance,
+    unlockedCreators: updatedUnlockedMap,
+    updatedAt: serverTimestamp(),
+  };
+
+  await updateDoc(userDocRef, updates);
+
+  const updatedUser: UserSession = {
+    ...existing,
+    uid: userId,
+    unlockedContactsCount: newBalance,
+    unlockedCreators: updatedUnlockedMap,
+  };
+
+  try {
+    const currentStr = localStorage.getItem('collabix_user');
+    if (currentStr) {
+      const parsed = JSON.parse(currentStr);
+      localStorage.setItem('collabix_user', JSON.stringify({ ...parsed, ...updatedUser }));
+    }
+  } catch {}
+
+  return { success: true, updatedUser, expiresAt };
+}
+
+/**
+ * Activate or extend TOP placement for a creator
+ */
+export async function activateTopPlacement(
+  creatorId: string,
+  durationDays: 7 | 15 | 30
+): Promise<{ updatedUntil: string }> {
+  const userDocRef = doc(db, 'users', creatorId);
+  const snap = await getDoc(userDocRef);
+  const existing = (snap.exists() ? snap.data() : {}) as UserSession;
+
+  const nowMs = Date.now();
+  let baseMs = nowMs;
+  if (existing.topPlacementUntil) {
+    const curEndMs = new Date(existing.topPlacementUntil).getTime();
+    if (curEndMs > nowMs) {
+      baseMs = curEndMs; // extend existing TOP
+    }
+  }
+
+  const newEndMs = baseMs + durationDays * 24 * 60 * 60 * 1000;
+  const topPlacementUntil = new Date(newEndMs).toISOString();
+
+  await setDoc(userDocRef, {
+    topPlacementUntil,
+    updatedAt: serverTimestamp(),
+  }, { merge: true });
+
+  try {
+    const currentStr = localStorage.getItem('collabix_user');
+    if (currentStr) {
+      const parsed = JSON.parse(currentStr);
+      if (parsed.uid === creatorId) {
+        localStorage.setItem('collabix_user', JSON.stringify({ ...parsed, topPlacementUntil }));
+      }
+    }
+  } catch {}
+
+  return { updatedUntil: topPlacementUntil };
+}
+
+/**
+ * Deeply sanitizes data before writing to Firestore.
+ * Prevents "Property array contains an invalid nested entity" errors:
+ * - Flattens any nested arrays (Firestore strictly forbids arrays containing arrays)
+ * - Removes undefined, functions, and symbols
+ * - Strips invalid map keys (e.g. keys containing dots '.')
+ * - Cleans array elements to be plain primitive values or valid maps without nested arrays
+ */
+export function sanitizeFirestoreData<T = any>(val: any): T {
+  if (val === null || val === undefined) {
+    return val;
+  }
+
+  // Preserve Firestore FieldValues (such as serverTimestamp())
+  if (
+    typeof val === 'object' &&
+    ((val as any)._methodName || (val as any).toMillis || (val as any).nanoseconds !== undefined)
+  ) {
+    return val;
+  }
+
+  // Preserve Date instances
+  if (val instanceof Date) {
+    return val as any;
+  }
+
+  // Strip File, Blob, FileList, or DOM objects that cannot be serialized to Firestore
+  if (
+    typeof val === 'object' &&
+    (typeof (val as any).arrayBuffer === 'function' ||
+      (val as any).nodeType !== undefined ||
+      (val as any).constructor?.name === 'File' ||
+      (val as any).constructor?.name === 'Blob' ||
+      (val as any).constructor?.name === 'FileList')
+  ) {
+    return undefined as any;
+  }
+
+  if (Array.isArray(val)) {
+    // Strictly flatten all nested arrays so no array can ever contain an array
+    const flat: any[] = [];
+    const flatten = (arr: any[]) => {
+      for (const item of arr) {
+        if (Array.isArray(item)) {
+          flatten(item);
+        } else if (item !== undefined && typeof item !== 'function' && typeof item !== 'symbol') {
+          flat.push(item);
+        }
+      }
+    };
+    flatten(val);
+
+    return flat.map((item) => {
+      if (typeof item === 'object' && item !== null) {
+        const cleanItem: Record<string, any> = {};
+        for (const [k, v] of Object.entries(item)) {
+          if (v !== undefined && typeof v !== 'function' && typeof v !== 'symbol') {
+            const safeKey = k.replace(/\./g, '_');
+            if (Array.isArray(v)) {
+              // Ensure array inside map in array has no nested arrays
+              const subFlat: any[] = [];
+              const subFlatten = (subArr: any[]) => {
+                for (const subItem of subArr) {
+                  if (Array.isArray(subItem)) {
+                    subFlatten(subItem);
+                  } else if (subItem !== undefined && typeof subItem !== 'function' && typeof subItem !== 'symbol') {
+                    subFlat.push(subItem);
+                  }
+                }
+              };
+              subFlatten(v);
+              cleanItem[safeKey] = subFlat;
+            } else if (typeof v === 'object' && v !== null) {
+              cleanItem[safeKey] = sanitizeFirestoreData(v);
+            } else {
+              cleanItem[safeKey] = v;
+            }
+          }
+        }
+        return cleanItem;
+      }
+      return item;
+    }) as any;
+  }
+
+  if (typeof val === 'object') {
+    const cleanObj: Record<string, any> = {};
+    for (const [k, v] of Object.entries(val)) {
+      if (v === undefined || typeof v === 'function' || typeof v === 'symbol') {
+        continue;
+      }
+      const safeKey = k.replace(/\./g, '_');
+      cleanObj[safeKey] = sanitizeFirestoreData(v);
+    }
+    return cleanObj as T;
+  }
+
+  return val;
+}
+
+/**
+ * Save / Update user profile in Firestore
+ */
+export async function saveUserProfile(uid: string, profile: Partial<UserSession>): Promise<void> {
+  const docRef = doc(db, 'users', uid);
+
+  // Recalculate profile completion if fields were provided
+  let profileCompletion = profile.profileCompletion;
+  if (typeof profileCompletion !== 'number') {
+    profileCompletion = calculateProfileCompletion(profile);
+  }
+
+  const rawPayload = {
+    ...profile,
+    profileCompletion,
+    updatedAt: serverTimestamp(),
+  };
+
+  const cleanPayload = sanitizeFirestoreData(rawPayload);
+
+  await setDoc(docRef, cleanPayload, { merge: true });
+
+  // Update local storage
+  try {
+    const currentStr = localStorage.getItem('collabix_user');
+    if (currentStr) {
+      const parsed = JSON.parse(currentStr);
+      localStorage.setItem('collabix_user', JSON.stringify({ ...parsed, ...cleanPayload, profileCompletion }));
+    }
+  } catch {}
+}
+
+/**
+ * Format date to natural Uzbek string: e.g. "21-oktabr 2026-yil"
+ */
+export function formatUzbekDate(isoOrDateStr?: string): string {
+  if (!isoOrDateStr) return '';
+  try {
+    const d = new Date(isoOrDateStr);
+    if (isNaN(d.getTime())) return isoOrDateStr;
+    const months = [
+      'yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun',
+      'iyul', 'avgust', 'sentabr', 'oktabr', 'noyabr', 'dekabr'
+    ];
+    return `${d.getDate()}-${months[d.getMonth()]} ${d.getFullYear()}-yil`;
+  } catch {
+    return isoOrDateStr;
+  }
+}
+
+/**
+ * Calculate the number of days remaining until trialEndDate
+ */
+export function getDaysRemainingInTrial(trialEndDateStr?: string): number {
+  if (!trialEndDateStr) return 0;
+  const endDate = new Date(trialEndDateStr).getTime();
+  const now = Date.now();
+  const diffMs = endDate - now;
+  return Math.ceil(diffMs / (24 * 60 * 60 * 1000));
+}
+
+/**
+ * Update user's subscription status in Firestore and localStorage
+ */
+export async function updateSubscriptionStatus(
+  uid: string,
+  status: SubscriptionStatus
+): Promise<void> {
+  const docRef = doc(db, 'users', uid);
+  await setDoc(
+    docRef,
+    {
+      subscriptionStatus: status,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true }
+  );
+
+  try {
+    const currentStr = localStorage.getItem('collabix_user');
+    if (currentStr) {
+      const parsed = JSON.parse(currentStr);
+      localStorage.setItem('collabix_user', JSON.stringify({ ...parsed, subscriptionStatus: status }));
+    }
+  } catch {}
+}
+
+/**
+ * Record subscription cancellation feedback and update status in Firestore
+ */
+export async function recordSubscriptionCancellation(params: {
+  userId: string;
+  userName: string;
+  userEmail?: string;
+  userRole?: string;
+  userHandle?: string;
+  reason: string;
+  reasonDetails?: string;
+}): Promise<CancellationRecord> {
+  const now = new Date();
+  const cancelledAt = now.toISOString();
+  const cancelledAtMillis = now.getTime();
+  const id = `cancel_${cancelledAtMillis}_${params.userId ? params.userId.slice(0, 6) : 'guest'}`;
+
+  const cancellationRecord: CancellationRecord = {
+    id,
+    userId: params.userId,
+    userName: params.userName || "Noma'lum foydalanuvchi",
+    userEmail: params.userEmail || '',
+    userRole: params.userRole || '',
+    userHandle: params.userHandle || '',
+    cancelledAt,
+    cancelledAtMillis,
+    reason: params.reason,
+    reasonDetails: params.reasonDetails?.trim() || '',
+  };
+
+  // 1. Save to cancellations collection in Firestore
+  try {
+    const cancelDocRef = doc(db, 'cancellations', id);
+    await setDoc(cancelDocRef, cancellationRecord);
+  } catch (err) {
+    console.error("Firestore'ga bekor qilish ma'lumotlarini saqlashda xatolik:", err);
+  }
+
+  // 2. Update user's subscriptionStatus to 'cancelled' and save reason in user doc
+  if (params.userId) {
+    try {
+      const userDocRef = doc(db, 'users', params.userId);
+      await setDoc(
+        userDocRef,
+        {
+          subscriptionStatus: 'cancelled',
+          cancellationReason: params.reason,
+          cancellationDetails: params.reasonDetails?.trim() || '',
+          cancelledAt,
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true }
+      );
+    } catch (err) {
+      console.error("Foydalanuvchi hujjatiga bekor qilish holatini yozishda xatolik:", err);
+    }
+  }
+
+  // 3. Update localStorage
+  try {
+    const currentStr = localStorage.getItem('collabix_user');
+    if (currentStr) {
+      const parsed = JSON.parse(currentStr);
+      localStorage.setItem(
+        'collabix_user',
+        JSON.stringify({
+          ...parsed,
+          subscriptionStatus: 'cancelled',
+          cancellationReason: params.reason,
+          cancellationDetails: params.reasonDetails?.trim() || '',
+        })
+      );
+    }
+  } catch {}
+
+  return cancellationRecord;
+}
+
+/**
+ * Subscribe to real-time subscription cancellations list for Admin panel
+ */
+export function subscribeToCancellationRecords(
+  callback: (records: CancellationRecord[]) => void,
+  onError?: (error: Error) => void
+): () => void {
+  const cancellationsCol = collection(db, 'cancellations');
+  return onSnapshot(
+    cancellationsCol,
+    (snapshot) => {
+      const records: CancellationRecord[] = snapshot.docs.map((docSnap) => {
+        const data = docSnap.data();
+        return {
+          id: docSnap.id,
+          userId: data.userId || '',
+          userName: data.userName || "Noma'lum foydalanuvchi",
+          userEmail: data.userEmail || '',
+          userRole: data.userRole || '',
+          userHandle: data.userHandle || '',
+          cancelledAt: data.cancelledAt || new Date().toISOString(),
+          cancelledAtMillis: data.cancelledAtMillis || 0,
+          reason: data.reason || 'Boshqa sabab',
+          reasonDetails: data.reasonDetails || '',
+        };
+      });
+
+      // Sort by newest cancelledAtMillis desc
+      records.sort((a, b) => (b.cancelledAtMillis || 0) - (a.cancelledAtMillis || 0));
+      callback(records);
+    },
+    (err) => {
+      console.error("Bekor qilish ma'lumotlarini yuklashda xatolik:", err);
+      if (onError) onError(err);
+    }
+  );
+}
+
+/**
+ * Fetch one-off subscription cancellations list
+ */
+export async function fetchCancellationRecords(): Promise<CancellationRecord[]> {
+  try {
+    const cancellationsCol = collection(db, 'cancellations');
+    const snapshot = await getDocs(cancellationsCol);
+    const records: CancellationRecord[] = snapshot.docs.map((docSnap) => {
+      const data = docSnap.data();
+      return {
+        id: docSnap.id,
+        userId: data.userId || '',
+        userName: data.userName || "Noma'lum foydalanuvchi",
+        userEmail: data.userEmail || '',
+        userRole: data.userRole || '',
+        userHandle: data.userHandle || '',
+        cancelledAt: data.cancelledAt || new Date().toISOString(),
+        cancelledAtMillis: data.cancelledAtMillis || 0,
+        reason: data.reason || 'Boshqa sabab',
+        reasonDetails: data.reasonDetails || '',
+      };
+    });
+
+    records.sort((a, b) => (b.cancelledAtMillis || 0) - (a.cancelledAtMillis || 0));
+    return records;
+  } catch (err) {
+    console.error("fetchCancellationRecords xatoligi:", err);
+    return [];
+  }
+}
+
+/**
+ * Activate Pro mode with 59 000 so'm monthly subscription
+ */
+export async function activateProSubscription(
+  uid: string
+): Promise<{ trialStartDate: string; trialEndDate: string; subscriptionStatus: SubscriptionStatus; subscriptionPlanPrice: number }> {
+  const now = new Date();
+  const trialStartDate = now.toISOString();
+  const trialEndDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+  const subscriptionStatus: SubscriptionStatus = 'active';
+  const subscriptionPlanPrice = 59000;
+
+  const docRef = doc(db, 'users', uid);
+  await setDoc(
+    docRef,
+    {
+      trialStartDate,
+      trialEndDate,
+      subscriptionStatus,
+      subscriptionPlanPrice,
+      reminderSent: false,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true }
+  );
+
+  try {
+    const currentStr = localStorage.getItem('collabix_user');
+    if (currentStr) {
+      const parsed = JSON.parse(currentStr);
+      localStorage.setItem('collabix_user', JSON.stringify({
+        ...parsed,
+        trialStartDate,
+        trialEndDate,
+        subscriptionStatus,
+        subscriptionPlanPrice,
+        reminderSent: false,
+      }));
+    }
+  } catch {}
+
+  return { trialStartDate, trialEndDate, subscriptionStatus, subscriptionPlanPrice };
+}
+
+/**
+ * Mark that the trial expiration reminder has been sent / acknowledged
+ */
+export async function markReminderSent(uid: string): Promise<void> {
+  const docRef = doc(db, 'users', uid);
+  await setDoc(
+    docRef,
+    {
+      reminderSent: true,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true }
+  );
+
+  try {
+    const currentStr = localStorage.getItem('collabix_user');
+    if (currentStr) {
+      const parsed = JSON.parse(currentStr);
+      localStorage.setItem('collabix_user', JSON.stringify({ ...parsed, reminderSent: true }));
+    }
+  } catch {}
+}
+
+/**
+ * Set demo trial days remaining for instant testing of the reminder banner
+ */
+export async function setDemoTrialDaysRemaining(
+  uid: string,
+  daysRemaining: number,
+  resetReminder: boolean = true
+): Promise<{ trialStartDate: string; trialEndDate: string; reminderSent: boolean }> {
+  const now = new Date();
+  const trialStartDate = new Date(now.getTime() - (30 - daysRemaining) * 24 * 60 * 60 * 1000).toISOString();
+  const trialEndDate = new Date(now.getTime() + daysRemaining * 24 * 60 * 60 * 1000).toISOString();
+  const reminderSent = !resetReminder;
+
+  const docRef = doc(db, 'users', uid);
+  await setDoc(
+    docRef,
+    {
+      trialStartDate,
+      trialEndDate,
+      subscriptionStatus: 'trial',
+      reminderSent,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true }
+  );
+
+  try {
+    const currentStr = localStorage.getItem('collabix_user');
+    if (currentStr) {
+      const parsed = JSON.parse(currentStr);
+      localStorage.setItem('collabix_user', JSON.stringify({
+        ...parsed,
+        trialStartDate,
+        trialEndDate,
+        subscriptionStatus: 'trial',
+        reminderSent,
+      }));
+    }
+  } catch {}
+
+  return { trialStartDate, trialEndDate, reminderSent };
+}
+
+/**
+ * Fetch users statistics directly from Firestore 'users' collection
+ */
+export async function fetchUsersStatistics(): Promise<UsersStatistics> {
+  try {
+    const usersCol = collection(db, 'users');
+    const snap = await getDocs(usersCol);
+    const docs = snap.docs;
+    const totalUsers = docs.length;
+
+    let bloggersCount = 0;
+    let brandsCount = 0;
+    let completedProfilesCount = 0;
+    let totalCompletionSum = 0;
+    let last30DaysCount = 0;
+
+    const now = Date.now();
+    const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
+    const sevenDays = 7 * 24 * 60 * 60 * 1000;
+
+    // 4 weekly buckets for user growth chart: Week 1 (oldest) to Week 4 (current)
+    const weeklyBuckets = [
+      { name: '1-hafta', blogger: 0, brand: 0, total: 0 },
+      { name: '2-hafta', blogger: 0, brand: 0, total: 0 },
+      { name: '3-hafta', blogger: 0, brand: 0, total: 0 },
+      { name: '4-hafta', blogger: 0, brand: 0, total: 0 },
+    ];
+
+    docs.forEach((docSnapshot) => {
+      const data = docSnapshot.data() as UserSession;
+      const role = data.role === 'brend' ? 'brend' : 'bloger';
+      if (role === 'bloger') {
+        bloggersCount++;
+      } else {
+        brandsCount++;
+      }
+
+      // Profile completion (0 - 100%)
+      const completion = typeof data.profileCompletion === 'number'
+        ? data.profileCompletion
+        : calculateProfileCompletion(data);
+
+      if (completion === 100) {
+        completedProfilesCount++;
+      }
+      totalCompletionSum += completion;
+
+      // Extract registration/creation timestamp
+      let createdTime: number | null = null;
+      if (data.createdAt) {
+        if (typeof data.createdAt.toMillis === 'function') {
+          createdTime = data.createdAt.toMillis();
+        } else if (typeof data.createdAt.toDate === 'function') {
+          createdTime = data.createdAt.toDate().getTime();
+        } else if (typeof data.createdAt.seconds === 'number') {
+          createdTime = data.createdAt.seconds * 1000;
+        } else if (typeof data.createdAt === 'string') {
+          const parsed = new Date(data.createdAt).getTime();
+          if (!isNaN(parsed)) createdTime = parsed;
+        }
+      }
+
+      // Fallback to updatedAt if createdAt was not set
+      if (createdTime === null && data.updatedAt) {
+        if (typeof data.updatedAt.toMillis === 'function') {
+          createdTime = data.updatedAt.toMillis();
+        } else if (typeof data.updatedAt.toDate === 'function') {
+          createdTime = data.updatedAt.toDate().getTime();
+        } else if (typeof data.updatedAt.seconds === 'number') {
+          createdTime = data.updatedAt.seconds * 1000;
+        } else if (typeof data.updatedAt === 'string') {
+          const parsed = new Date(data.updatedAt).getTime();
+          if (!isNaN(parsed)) createdTime = parsed;
+        }
+      }
+
+      // If document is newly created or without date, assume current time
+      if (createdTime === null) {
+        createdTime = now;
+      }
+
+      if (createdTime >= thirtyDaysAgo) {
+        last30DaysCount++;
+
+        // Calculate which of the 4 weeks it belongs to
+        const diffMs = Math.max(0, now - createdTime);
+        const weekIndex = Math.min(3, Math.max(0, 3 - Math.floor(diffMs / sevenDays)));
+        if (role === 'bloger') {
+          weeklyBuckets[weekIndex].blogger++;
+        } else {
+          weeklyBuckets[weekIndex].brand++;
+        }
+        weeklyBuckets[weekIndex].total++;
+      }
+    });
+
+    const bloggerPercentage = totalUsers > 0
+      ? Math.round((bloggersCount / totalUsers) * 1000) / 10
+      : 0;
+    const brandPercentage = totalUsers > 0
+      ? Math.round((brandsCount / totalUsers) * 1000) / 10
+      : 0;
+
+    const averageCompletionPercentage = totalUsers > 0
+      ? Math.round(totalCompletionSum / totalUsers)
+      : 0;
+
+    const nowFormatted = new Date().toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
+
+    return {
+      totalUsers,
+      bloggersCount,
+      brandsCount,
+      bloggerPercentage,
+      brandPercentage,
+      last30DaysCount,
+      last30DaysGrowthRate: totalUsers > 0 ? Math.round((last30DaysCount / totalUsers) * 100) : 0,
+      completedProfilesCount,
+      averageCompletionPercentage,
+      weeklyGrowth: weeklyBuckets,
+      lastUpdated: `Bugun, ${nowFormatted}`,
+    };
+  } catch (err) {
+    console.error("fetchUsersStatistics Firestore xatosi:", err);
+    throw err;
+  }
+}
+
+/**
+ * Admin action: Update user's accountStatus ('approved' | 'rejected' | 'pending') and optional rejectionReason
+ */
+export async function updateUserAccountStatus(
+  userId: string,
+  status: 'pending' | 'approved' | 'rejected',
+  rejectionReason?: string
+): Promise<void> {
+  const docRef = doc(db, 'users', userId);
+  const data: Record<string, any> = {
+    accountStatus: status,
+    updatedAt: serverTimestamp(),
+  };
+  if (status === 'rejected') {
+    data.rejectionReason = rejectionReason ? rejectionReason.trim() : '';
+  } else if (status === 'approved') {
+    data.rejectionReason = '';
+  }
+  await setDoc(docRef, data, { merge: true });
+}
+
+/**
+ * User action: Resubmit profile for admin approval after fixing information
+ */
+export async function resubmitForApproval(userId: string): Promise<void> {
+  const docRef = doc(db, 'users', userId);
+  await setDoc(
+    docRef,
+    {
+      accountStatus: 'pending',
+      rejectionReason: '',
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true }
+  );
+}
+
+/**
+ * Real-time subscription to all users in Firestore for the Admin Panel
+ */
+export function subscribeToUsersForAdmin(
+  callback: (users: UserSession[]) => void
+): () => void {
+  const usersCol = collection(db, 'users');
+  return onSnapshot(
+    usersCol,
+    (snapshot) => {
+      const users: UserSession[] = snapshot.docs.map((docSnap) => {
+        const data = docSnap.data() as UserSession;
+        return {
+          ...data,
+          uid: docSnap.id,
+          accountStatus: data.accountStatus || 'approved',
+        };
+      });
+      callback(users);
+    },
+    (error) => {
+      if (error?.code !== 'unavailable') {
+        console.warn("Admin users onSnapshot xatosi:", error?.message || error);
+      }
+    }
+  );
+}
+
+/**
+ * Fetch all users list once for Admin Panel
+ */
+export async function fetchUsersForAdmin(): Promise<UserSession[]> {
+  try {
+    const usersCol = collection(db, 'users');
+    const snap = await getDocs(usersCol);
+    return snap.docs.map((docSnap) => {
+      const data = docSnap.data() as UserSession;
+      return {
+        ...data,
+        uid: docSnap.id,
+        accountStatus: data.accountStatus || 'approved',
+      };
+    });
+  } catch (err) {
+    console.error("fetchUsersForAdmin xatosi:", err);
+    return [];
+  }
+}
+
+/**
+ * Subscribe to Auth state changes and real-time user document changes in Firestore
+ */
+export function onAuthUserChanged(callback: (user: UserSession | null, fbUser: FirebaseUser | null) => void) {
+  let docUnsubscribe: (() => void) | null = null;
+
+  const authUnsubscribe = onAuthStateChanged(auth, async (fbUser) => {
+    if (docUnsubscribe) {
+      docUnsubscribe();
+      docUnsubscribe = null;
+    }
+
+    if (fbUser) {
+      // Attach real-time snapshot listener on the user's document in Firestore
+      const userDocRef = doc(db, 'users', fbUser.uid);
+      docUnsubscribe = onSnapshot(
+        userDocRef,
+        (snapshot) => {
+          if (snapshot.exists()) {
+            const data = snapshot.data() as UserSession;
+            const fullProfile: UserSession = {
+              uid: fbUser.uid,
+              ...data,
+              accountStatus: data.accountStatus || 'approved',
+            };
+
+            // Set default Pro / subscription fields if not initialized
+            if (!fullProfile.subscriptionStatus) {
+              const now = new Date();
+              fullProfile.trialStartDate = now.toISOString();
+              fullProfile.trialEndDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+              fullProfile.subscriptionStatus = 'active';
+              fullProfile.reminderSent = false;
+              fullProfile.subscriptionPlanPrice = 59000;
+            }
+
+            callback(fullProfile, fbUser);
+            try {
+              localStorage.setItem('collabix_user', JSON.stringify(fullProfile));
+            } catch {}
+          } else {
+            // Document doesn't exist yet, provide fallback session
+            const fallback: UserSession = {
+              uid: fbUser.uid,
+              email: fbUser.email || '',
+              name: fbUser.displayName || fbUser.email?.split('@')[0] || 'Foydalanuvchi',
+              contact: fbUser.email || '',
+              role: 'bloger',
+              registeredAt: new Date().toLocaleDateString('uz-UZ'),
+              accountStatus: 'pending',
+              subscriptionStatus: 'free',
+            };
+            callback(fallback, fbUser);
+          }
+        },
+        (error) => {
+          if (error?.code !== 'unavailable') {
+            console.warn("User document onSnapshot xatosi:", error?.message || error);
+          }
+          // Fallback fetch
+          fetchUserProfile(fbUser.uid).then((prof) => {
+            if (prof) {
+              callback({ ...prof, accountStatus: prof.accountStatus || 'approved' }, fbUser);
+            }
+          }).catch(() => {});
+        }
+      );
+    } else {
+      callback(null, null);
+    }
+  });
+
+  return () => {
+    if (docUnsubscribe) {
+      docUnsubscribe();
+    }
+    authUnsubscribe();
+  };
+}
+
+/**
+ * Converts a Firestore UserSession document to a CatalogCreator format for rendering
+ */
+export function userSessionToCatalogCreator(user: UserSession): CatalogCreator {
+  const minPrice = user.priceRange?.min || '';
+  const maxPrice = user.priceRange?.max || '';
+  let priceDisplay = 'Kelishuvga binoan';
+  if (minPrice && maxPrice) {
+    priceDisplay = `${minPrice} — ${maxPrice} soʻm`;
+  } else if (minPrice) {
+    priceDisplay = `${minPrice} soʻmdan`;
+  } else if (maxPrice) {
+    priceDisplay = `${maxPrice} soʻmgacha`;
+  }
+
+  const rawHandle =
+    user.instagramHandle ||
+    user.contact ||
+    (user.name ? `@${user.name.toLowerCase().replace(/\s+/g, '_')}` : '@creator');
+  const handle = rawHandle.startsWith('@')
+    ? rawHandle
+    : `@${rawHandle.replace(/^https?:\/\/(www\.)?instagram\.com\//, '').replace(/\/$/, '')}`;
+
+  const categoryRaw = (user.categories && user.categories[0]) || 'Blogger';
+  let category: CreatorCategory = 'Blogger';
+  if (
+    categoryRaw === 'Mini Blogger' ||
+    categoryRaw === 'Model' ||
+    categoryRaw === 'Brand Face'
+  ) {
+    category = categoryRaw;
+  }
+
+  const followersStr =
+    user.totalFollowers || user.socialLinks?.instagramFollowers || '10K+';
+
+  return {
+    id: user.uid || '',
+    name: user.name || 'Kreator',
+    handle,
+    category,
+    specialty: user.bio || (user.categories && user.categories.join(', ')) || 'Kreativ kontent muallifi',
+    city: user.city || 'Toshkent',
+    avatar:
+      user.avatar ||
+      `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(user.name || user.uid || 'collabix')}`,
+    followers: followersStr,
+    followersCount: typeof (user as any).followersCount === 'number' ? (user as any).followersCount : 10000,
+    rating: typeof (user as any).rating === 'number' ? (user as any).rating : 5.0,
+    reviewsCount: typeof (user as any).reviewsCount === 'number' ? (user as any).reviewsCount : 0,
+    priceRange: '1.5m-5m',
+    priceDisplay,
+    verified: user.accountStatus === 'approved',
+    engagementRate: user.engagementRate || '7.8%',
+    bio: user.bio || '',
+    tags: user.categories && user.categories.length > 0 ? user.categories : ['Blogger', 'Kontent'],
+    height: user.height,
+    weight: user.weight,
+    age: user.age,
+    experienceYears: user.experienceYears,
+    views: typeof user.views === 'number' ? user.views : (user as any).viewsCount || 0,
+    gallery: user.gallery || user.mediaGallery || [],
+    topPlacementUntil: user.topPlacementUntil || null,
+    isTopPlacement: Boolean(user.topPlacementUntil && new Date(user.topPlacementUntil).getTime() > Date.now()),
+  };
+}
+
+/**
+ * Real-time subscription to only approved creators from Firestore 'users' collection
+ */
+export function subscribeToApprovedCreators(
+  callback: (creators: CatalogCreator[], rawUsers: UserSession[]) => void,
+  onError?: (error: any) => void
+): () => void {
+  const usersCol = collection(db, 'users');
+
+  return onSnapshot(
+    usersCol,
+    (snapshot) => {
+      const approvedCreators: CatalogCreator[] = [];
+      const rawApprovedUsers: UserSession[] = [];
+
+      snapshot.docs.forEach((docSnap) => {
+        const data = docSnap.data() as UserSession;
+        const uid = docSnap.id;
+        const role = data.role || 'bloger';
+        const isCreator = role === 'bloger' || (role as string) === 'kreator';
+        const isApproved = data.accountStatus === 'approved';
+
+        if (isCreator && isApproved) {
+          const userObj: UserSession = { ...data, uid };
+          rawApprovedUsers.push(userObj);
+          approvedCreators.push(userSessionToCatalogCreator(userObj));
+        }
+      });
+
+      callback(approvedCreators, rawApprovedUsers);
+    },
+    (error) => {
+      if (error?.code !== 'unavailable') {
+        console.warn("subscribeToApprovedCreators error:", error?.message || error);
+      }
+      if (onError) onError(error);
+    }
+  );
+}
+
+/**
+ * Fetch real revenue statistics calculated from Firestore users collection
+ */
+export async function fetchRevenueStatistics(): Promise<RevenueStatistics> {
+  try {
+    const usersCol = collection(db, 'users');
+    const snap = await getDocs(usersCol);
+
+    let totalRevenue = 0;
+    let thisMonthRevenue = 0;
+
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+
+    const monthNames = [
+      'Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun',
+      'Iyul', 'Avgust', 'Sentyabr', 'Oktabr', 'Noyabr', 'Dekabr'
+    ];
+
+    // Build 6 past months buckets
+    const past6Months: { name: string; year: number; monthIndex: number; totalUZS: number }[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(currentYear, currentMonth - i, 1);
+      past6Months.push({
+        name: monthNames[d.getMonth()],
+        year: d.getFullYear(),
+        monthIndex: d.getMonth(),
+        totalUZS: 0,
+      });
+    }
+
+    snap.docs.forEach((docSnap) => {
+      const data = docSnap.data() as UserSession;
+      // Check subscription
+      const isSubscribed =
+        data.subscriptionStatus === 'active' ||
+        data.subscriptionStatus === 'trial';
+
+      if (isSubscribed) {
+        const planPrice = typeof data.subscriptionPlanPrice === 'number' && data.subscriptionPlanPrice > 0
+          ? data.subscriptionPlanPrice
+          : 59000;
+
+        totalRevenue += planPrice;
+
+        // Parse creation/subscription date
+        let subDate: Date = now;
+        if (data.trialStartDate) {
+          subDate = new Date(data.trialStartDate);
+        } else if (data.createdAt) {
+          if (typeof data.createdAt.toDate === 'function') {
+            subDate = data.createdAt.toDate();
+          } else if (typeof data.createdAt.seconds === 'number') {
+            subDate = new Date(data.createdAt.seconds * 1000);
+          } else if (typeof data.createdAt === 'string') {
+            subDate = new Date(data.createdAt);
+          }
+        }
+
+        if (
+          subDate.getFullYear() === currentYear &&
+          subDate.getMonth() === currentMonth
+        ) {
+          thisMonthRevenue += planPrice;
+        }
+
+        // Add to corresponding month bucket
+        const bucket = past6Months.find(
+          (b) => b.year === subDate.getFullYear() && b.monthIndex === subDate.getMonth()
+        );
+        if (bucket) {
+          bucket.totalUZS += planPrice;
+        }
+      }
+    });
+
+    const monthlyRevenueData: MonthlyRevenueItem[] = past6Months.map((b) => ({
+      month: b.name,
+      amount: Math.round((b.totalUZS / 1000000) * 10) / 10,
+      formatted: b.totalUZS > 0 ? `${(b.totalUZS / 1000000).toFixed(1)} mln` : '0 mln',
+      rawAmount: b.totalUZS,
+    }));
+
+    const averageMonthlyRevenue =
+      past6Months.length > 0
+        ? Math.round(totalRevenue / past6Months.length)
+        : 0;
+
+    const previousMonthTotal = past6Months.length > 1 ? past6Months[past6Months.length - 2].totalUZS : 0;
+    const thisMonthGrowthRate =
+      previousMonthTotal > 0
+        ? Math.round(((thisMonthRevenue - previousMonthTotal) / previousMonthTotal) * 100)
+        : thisMonthRevenue > 0
+        ? 100
+        : 0;
+
+    return {
+      totalRevenue,
+      thisMonthRevenue,
+      thisMonthGrowthRate,
+      monthlyRevenueData,
+      averageMonthlyRevenue,
+    };
+  } catch (err) {
+    console.error("fetchRevenueStatistics xatosi:", err);
+    return {
+      totalRevenue: 0,
+      thisMonthRevenue: 0,
+      thisMonthGrowthRate: 0,
+      monthlyRevenueData: [],
+      averageMonthlyRevenue: 0,
+    };
+  }
+}
+
+/**
+ * Fetch real referral statistics calculated from Firestore
+ */
+export async function fetchReferralStatistics(): Promise<ReferralStatistics> {
+  try {
+    const usersCol = collection(db, 'users');
+    const snap = await getDocs(usersCol);
+
+    const docs = snap.docs;
+    let totalReferralUsers = 0;
+    const referrersMap = new Map<string, {
+      uid: string;
+      name: string;
+      handle: string;
+      role: string;
+      count: number;
+    }>();
+
+    docs.forEach((docSnap) => {
+      const data = docSnap.data() as UserSession & { referredBy?: string; referralCount?: number };
+      const uid = docSnap.id;
+
+      if (data.referredBy) {
+        totalReferralUsers++;
+        const refId = data.referredBy;
+        const existing = referrersMap.get(refId);
+        if (existing) {
+          existing.count++;
+        } else {
+          referrersMap.set(refId, {
+            uid: refId,
+            name: 'Foydalanuvchi',
+            handle: '@id_' + refId.slice(0, 6),
+            role: 'Bloger',
+            count: 1,
+          });
+        }
+      }
+
+      if (typeof data.referralCount === 'number' && data.referralCount > 0) {
+        const existing = referrersMap.get(uid);
+        if (existing) {
+          existing.count = Math.max(existing.count, data.referralCount);
+        } else {
+          referrersMap.set(uid, {
+            uid,
+            name: data.name || 'Foydalanuvchi',
+            handle: data.instagramHandle || data.contact || '@' + uid.slice(0, 6),
+            role: data.role === 'brend' ? 'Brend' : 'Bloger',
+            count: data.referralCount,
+          });
+        }
+      }
+    });
+
+    // Resolve referrer names from the docs list
+    docs.forEach((docSnap) => {
+      const uid = docSnap.id;
+      if (referrersMap.has(uid)) {
+        const data = docSnap.data() as UserSession;
+        const ref = referrersMap.get(uid)!;
+        ref.name = data.name || ref.name;
+        ref.handle = data.instagramHandle || data.contact || ref.handle;
+        ref.role = data.role === 'brend' ? 'Brend' : 'Bloger';
+      }
+    });
+
+    const topReferrers: ReferrerItem[] = Array.from(referrersMap.values())
+      .sort((a, b) => b.count - a.count)
+      .map((r, idx) => ({
+        id: r.uid,
+        name: r.name,
+        handle: r.handle.startsWith('@') ? r.handle : `@${r.handle}`,
+        role: r.role,
+        referralCount: r.count,
+        rewardAmount: `${(r.count * 30000).toLocaleString('uz-UZ')} soʻm`,
+        status: 'Toʻlangan',
+      }));
+
+    const totalRewardsPaid = totalReferralUsers * 30000;
+    const referralPercentage =
+      docs.length > 0
+        ? Math.round((totalReferralUsers / docs.length) * 1000) / 10
+        : 0;
+
+    return {
+      totalReferralUsers,
+      referralPercentage,
+      totalRewardsPaid,
+      pendingRewards: 0,
+      topReferrers,
+    };
+  } catch (err) {
+    console.error("fetchReferralStatistics xatosi:", err);
+    return {
+      totalReferralUsers: 0,
+      referralPercentage: 0,
+      totalRewardsPaid: 0,
+      pendingRewards: 0,
+      topReferrers: [],
+    };
+  }
+}
+
+/**
+/**
+ * Real-time subscription to Briefs collection in Firestore
+ * - Open briefs ('open') are loaded for the public directory.
+ * - Direct briefs ('direct') are strictly loaded ONLY for the targeted creator (selectedCreatorId)
+ *   or the creating brand (brandId). Other users' direct briefs are never fetched or displayed.
+ */
+export function subscribeToBriefs(
+  callback: (briefs: BriefData[]) => void,
+  onError?: (error: any) => void,
+  currentUserId?: string
+): () => void {
+  const briefsCol = collection(db, 'briefs');
+
+  const openBriefsMap = new Map<string, BriefData>();
+  const creatorDirectMap = new Map<string, BriefData>();
+  const brandDirectMap = new Map<string, BriefData>();
+
+  function processDoc(docSnap: any): BriefData | null {
+    const data = docSnap.data() as BriefData;
+    const id = docSnap.id;
+    const taskTitle = (data.taskTitle || '').trim();
+    const desc = (data.description || '').trim();
+
+    // Spam / Gibberish filter
+    const isSpamGibberish =
+      /shsjs/i.test(taskTitle) ||
+      /shsjs/i.test(desc) ||
+      /(.)\1{5,}/.test(taskTitle) ||
+      /(.)\1{5,}/.test(desc) ||
+      /^[a-z]{18,}$/i.test(taskTitle) ||
+      /^[a-z]{18,}$/i.test(desc) ||
+      (/test/i.test(taskTitle) && taskTitle.length < 8 && desc.length < 8);
+
+    if (isSpamGibberish) {
+      deleteDoc(doc(db, 'briefs', id)).catch(() => {});
+      return null;
+    }
+
+    return {
+      ...data,
+      id,
+      applications: Array.isArray(data.applications) ? data.applications : [],
+    };
+  }
+
+  function emitCombinedBriefs() {
+    const allBriefsMap = new Map<string, BriefData>();
+    openBriefsMap.forEach((b, k) => allBriefsMap.set(k, b));
+    creatorDirectMap.forEach((b, k) => allBriefsMap.set(k, b));
+    brandDirectMap.forEach((b, k) => allBriefsMap.set(k, b));
+
+    const briefs = Array.from(allBriefsMap.values());
+    briefs.sort((a, b) => {
+      const timeA = (a as any).createdAtMillis || (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+      const timeB = (b as any).createdAtMillis || (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+      return timeB - timeA;
+    });
+
+    callback(briefs);
+  }
+
+  const unsubs: Array<() => void> = [];
+
+  // 1. Subscribe to all open briefs (accessible to everyone)
+  try {
+    const openQuery = query(briefsCol, where('recipientType', '==', 'open'));
+    const unsubOpen = onSnapshot(
+      openQuery,
+      (snapshot) => {
+        openBriefsMap.clear();
+        snapshot.docs.forEach((docSnap) => {
+          const item = processDoc(docSnap);
+          if (item) openBriefsMap.set(item.id, item);
+        });
+        emitCombinedBriefs();
+      },
+      (error) => {
+        if (error?.code !== 'unavailable') {
+          console.warn("subscribeToBriefs (open) xatosi:", error?.message || error);
+        }
+        if (onError) onError(error);
+      }
+    );
+    unsubs.push(unsubOpen);
+  } catch (err) {
+    console.error("Open briefs subscription error:", err);
+  }
+
+  // 2. If current user is logged in, subscribe ONLY to direct briefs where they are creator or brand
+  if (currentUserId && currentUserId.trim()) {
+    const cleanUid = currentUserId.trim();
+
+    try {
+      const creatorDirectQuery = query(
+        briefsCol,
+        where('recipientType', '==', 'direct'),
+        where('selectedCreatorId', '==', cleanUid)
+      );
+      const unsubCreator = onSnapshot(
+        creatorDirectQuery,
+        (snapshot) => {
+          creatorDirectMap.clear();
+          snapshot.docs.forEach((docSnap) => {
+            const item = processDoc(docSnap);
+            if (item) creatorDirectMap.set(item.id, item);
+          });
+          emitCombinedBriefs();
+        },
+        (error) => {
+          if (error?.code !== 'unavailable') {
+            console.warn("subscribeToBriefs (creator direct) xatosi:", error?.message || error);
+          }
+        }
+      );
+      unsubs.push(unsubCreator);
+    } catch (err) {
+      console.error("Creator direct briefs subscription error:", err);
+    }
+
+    try {
+      const brandDirectQuery = query(
+        briefsCol,
+        where('recipientType', '==', 'direct'),
+        where('brandId', '==', cleanUid)
+      );
+      const unsubBrand = onSnapshot(
+        brandDirectQuery,
+        (snapshot) => {
+          brandDirectMap.clear();
+          snapshot.docs.forEach((docSnap) => {
+            const item = processDoc(docSnap);
+            if (item) brandDirectMap.set(item.id, item);
+          });
+          emitCombinedBriefs();
+        },
+        (error) => {
+          if (error?.code !== 'unavailable') {
+            console.warn("subscribeToBriefs (brand direct) xatosi:", error?.message || error);
+          }
+        }
+      );
+      unsubs.push(unsubBrand);
+    } catch (err) {
+      console.error("Brand direct briefs subscription error:", err);
+    }
+  }
+
+  return () => {
+    unsubs.forEach((unsub) => unsub());
+  };
+}
+
+/**
+ * Create a new Brief in Firestore 'briefs' collection
+ */
+export async function createBriefInFirestore(brief: BriefData): Promise<string> {
+  const briefId = brief.id || `brief_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  const docRef = doc(db, 'briefs', briefId);
+
+  const rawPayload = {
+    ...brief,
+    id: briefId,
+    creatorStatus: brief.creatorStatus || 'yangi',
+    status: brief.status || 'open',
+    createdAtMillis: brief.createdAtMillis || Date.now(),
+    serverCreatedAt: serverTimestamp(),
+  };
+
+  // Strip undefined values for clean Firestore writes
+  const payload = Object.fromEntries(
+    Object.entries(rawPayload).filter(([_, v]) => v !== undefined)
+  );
+
+  await setDoc(docRef, payload);
+
+  // If this is a direct brief, notify the selected creator immediately!
+  if (brief.recipientType === 'direct' && brief.selectedCreatorId) {
+    try {
+      await createNotificationInFirestore({
+        userId: brief.selectedCreatorId,
+        type: 'yangi_brif',
+        title: 'Yangi shaxsiy brif',
+        briefTitle: brief.taskTitle,
+        briefId: briefId,
+        senderId: brief.brandId || '',
+        senderName: brief.brandName || 'Brend',
+        senderAvatar: brief.brandAvatar,
+        message: `${brief.brandName || 'Brend'} sizga yangi brif yubordi: "${brief.taskTitle}"`,
+        read: false,
+        createdAt: new Date().toISOString(),
+        createdAtMillis: Date.now(),
+      });
+    } catch (notifErr) {
+      console.error("Kreatorga bildirishnoma yuborishda xatolik:", notifErr);
+    }
+  }
+
+  return briefId;
+}
+
+/**
+ * Apply to an open Brief in Firestore
+ */
+export async function applyToBriefInFirestore(
+  briefId: string,
+  application: BriefApplication
+): Promise<void> {
+  const docRef = doc(db, 'briefs', briefId);
+  const snap = await getDoc(docRef);
+
+  if (!snap.exists()) {
+    throw new Error("Brif topilmadi");
+  }
+
+  const data = snap.data() as BriefData;
+  const existingApps = Array.isArray(data.applications) ? [...data.applications] : [];
+
+  // Check if creator already applied
+  const existingIndex = existingApps.findIndex((a) => a.creatorId === application.creatorId);
+  if (existingIndex >= 0) {
+    existingApps[existingIndex] = application;
+  } else {
+    existingApps.push(application);
+  }
+
+  await updateDoc(docRef, {
+    applications: existingApps,
+    updatedAt: serverTimestamp(),
+  });
+
+  // Notify the brand that a creator applied to their brief
+  if (data.brandId && data.brandId !== application.creatorId) {
+    try {
+      await createNotificationInFirestore({
+        userId: data.brandId,
+        type: 'ariza_keldi',
+        title: 'Yangi ariza keldi',
+        briefTitle: data.taskTitle,
+        briefId: briefId,
+        senderId: application.creatorId,
+        senderName: application.creatorName || 'Kreator',
+        senderAvatar: application.creatorAvatar,
+        message: `${application.creatorName || 'Kreator'} sizning "${data.taskTitle}" brifingizga ariza topshirdi`,
+        read: false,
+        createdAt: new Date().toISOString(),
+        createdAtMillis: Date.now(),
+      });
+    } catch (notifErr) {
+      console.error("Brendga bildirishnoma yuborishda xatolik:", notifErr);
+    }
+  }
+}
+
+/**
+ * Respond to a Brief (Accept or Reject) by creator
+ */
+export async function respondToBriefInFirestore(
+  briefId: string,
+  status: 'qabul_qilindi' | 'rad_etildi',
+  creator: {
+    uid: string;
+    name: string;
+    avatar?: string;
+    handle?: string;
+    phoneNumber?: string;
+    telegramUsername?: string;
+  },
+  rejectionReason?: string
+): Promise<void> {
+  const docRef = doc(db, 'briefs', briefId);
+  const snap = await getDoc(docRef);
+
+  if (!snap.exists()) {
+    throw new Error("Brif topilmadi");
+  }
+
+  const data = snap.data() as BriefData;
+  const nowIso = new Date().toISOString();
+  const nowMillis = Date.now();
+
+  const updates: Record<string, any> = {
+    creatorStatus: status,
+    status: status === 'qabul_qilindi' ? 'in_progress' : 'cancelled',
+    respondedAt: nowIso,
+    respondedAtMillis: nowMillis,
+    updatedAt: serverTimestamp(),
+  };
+
+  if (status === 'qabul_qilindi') {
+    let cPhone = creator.phoneNumber;
+    let cTg = creator.telegramUsername;
+
+    // If creator contact was not directly passed, attempt lookup in users collection
+    if ((!cPhone || !cTg) && creator.uid) {
+      try {
+        const creatorSnap = await getDoc(doc(db, 'users', creator.uid));
+        if (creatorSnap.exists()) {
+          const cData = creatorSnap.data() as UserSession;
+          if (!cPhone) cPhone = cData.phoneNumber || (cData as any).phone || (cData.contact && !cData.contact.includes('@') ? cData.contact : undefined);
+          if (!cTg) cTg = cData.telegramUsername || (cData.socialLinks?.telegram ? cData.socialLinks.telegram.replace(/^https?:\/\/t\.me\//, '').replace(/^@/, '') : undefined);
+        }
+      } catch (err) {
+        console.warn("Kreator kontaktini olishda xatolik:", err);
+      }
+    }
+
+    if (cPhone) updates.creatorPhoneNumber = cPhone;
+    if (cTg) updates.creatorTelegramUsername = cTg;
+
+    // Also populate brand's contact from Firestore if missing on the brief
+    if (data.brandId && (!data.brandPhoneNumber || !data.brandTelegramUsername)) {
+      try {
+        const brandSnap = await getDoc(doc(db, 'users', data.brandId));
+        if (brandSnap.exists()) {
+          const bData = brandSnap.data() as UserSession;
+          const bPhone = bData.phoneNumber || (bData as any).phone || (bData.contact && !bData.contact.includes('@') ? bData.contact : undefined);
+          const bTg = bData.telegramUsername || (bData.socialLinks?.telegram ? bData.socialLinks.telegram.replace(/^https?:\/\/t\.me\//, '').replace(/^@/, '') : undefined);
+          if (bPhone && !data.brandPhoneNumber) updates.brandPhoneNumber = bPhone;
+          if (bTg && !data.brandTelegramUsername) updates.brandTelegramUsername = bTg;
+        }
+      } catch (err) {
+        console.warn("Brend kontaktini olishda xatolik:", err);
+      }
+    }
+  }
+
+  if (status === 'rad_etildi') {
+    updates.rejectionReason = rejectionReason ? rejectionReason.trim() : 'Sabab koʻrsatilmadi';
+  }
+
+  await updateDoc(docRef, updates);
+
+  // Notify the brand
+  if (data.brandId && data.brandId !== creator.uid) {
+    try {
+      if (status === 'qabul_qilindi') {
+        await createNotificationInFirestore({
+          userId: data.brandId,
+          type: 'ariza_qabul',
+          title: 'Brif qabul qilindi',
+          briefTitle: data.taskTitle,
+          briefId: briefId,
+          senderId: creator.uid,
+          senderName: creator.name || 'Kreator',
+          senderAvatar: creator.avatar,
+          message: `${creator.name || 'Kreator'} brifingizni qabul qildi! Endi xabar yozib, ishni boshlashingiz mumkin.`,
+          read: false,
+          createdAt: nowIso,
+          createdAtMillis: nowMillis,
+        });
+      } else {
+        const reasonText = rejectionReason && rejectionReason.trim()
+          ? ` (Sabab: "${rejectionReason.trim()}")`
+          : '';
+        await createNotificationInFirestore({
+          userId: data.brandId,
+          type: 'tizim',
+          title: 'Brif rad etildi',
+          briefTitle: data.taskTitle,
+          briefId: briefId,
+          senderId: creator.uid,
+          senderName: creator.name || 'Kreator',
+          senderAvatar: creator.avatar,
+          message: `${creator.name || 'Kreator'} brifingizni rad etdi${reasonText}`,
+          read: false,
+          createdAt: nowIso,
+          createdAtMillis: nowMillis,
+        });
+      }
+    } catch (notifErr) {
+      console.error("Brendga bildirishnoma yuborishda xatolik:", notifErr);
+    }
+  }
+}
+
+/**
+ * Update an application status on an open Brief (by brand)
+ */
+export async function respondToBriefApplicationInFirestore(
+  briefId: string,
+  applicationId: string,
+  status: 'qabul_qilindi' | 'rad_etildi',
+  brand: {
+    uid: string;
+    name: string;
+    avatar?: string;
+    phoneNumber?: string;
+    telegramUsername?: string;
+  },
+  rejectionReason?: string
+): Promise<void> {
+  const docRef = doc(db, 'briefs', briefId);
+  const snap = await getDoc(docRef);
+
+  if (!snap.exists()) {
+    throw new Error("Brif topilmadi");
+  }
+
+  const data = snap.data() as BriefData;
+  const existingApps = Array.isArray(data.applications) ? [...data.applications] : [];
+  const appIndex = existingApps.findIndex((a) => a.id === applicationId);
+
+  if (appIndex === -1) {
+    throw new Error("Ariza topilmadi");
+  }
+
+  const targetApp = { ...existingApps[appIndex] };
+  const nowIso = new Date().toISOString();
+
+  targetApp.status = status === 'qabul_qilindi' ? 'accepted' : 'rejected';
+  targetApp.creatorStatus = status;
+  targetApp.respondedAt = nowIso;
+  if (status === 'qabul_qilindi') {
+    let bPhone = brand.phoneNumber;
+    let bTg = brand.telegramUsername;
+
+    // Lookup brand profile if missing
+    if ((!bPhone || !bTg) && brand.uid) {
+      try {
+        const brandSnap = await getDoc(doc(db, 'users', brand.uid));
+        if (brandSnap.exists()) {
+          const bData = brandSnap.data() as UserSession;
+          if (!bPhone) bPhone = bData.phoneNumber || (bData as any).phone || (bData.contact && !bData.contact.includes('@') ? bData.contact : undefined);
+          if (!bTg) bTg = bData.telegramUsername || (bData.socialLinks?.telegram ? bData.socialLinks.telegram.replace(/^https?:\/\/t\.me\//, '').replace(/^@/, '') : undefined);
+        }
+      } catch (err) {
+        console.warn("Brend kontaktini olishda xatolik:", err);
+      }
+    }
+
+    if (bPhone) targetApp.brandPhoneNumber = bPhone;
+    if (bTg) targetApp.brandTelegramUsername = bTg;
+
+    // Lookup creator profile if missing on targetApp
+    if ((!targetApp.creatorPhoneNumber || !targetApp.creatorTelegramUsername) && targetApp.creatorId) {
+      try {
+        const creatorSnap = await getDoc(doc(db, 'users', targetApp.creatorId));
+        if (creatorSnap.exists()) {
+          const cData = creatorSnap.data() as UserSession;
+          if (!targetApp.creatorPhoneNumber) {
+            targetApp.creatorPhoneNumber = cData.phoneNumber || (cData as any).phone || (cData.contact && !cData.contact.includes('@') ? cData.contact : undefined);
+          }
+          if (!targetApp.creatorTelegramUsername) {
+            targetApp.creatorTelegramUsername = cData.telegramUsername || (cData.socialLinks?.telegram ? cData.socialLinks.telegram.replace(/^https?:\/\/t\.me\//, '').replace(/^@/, '') : undefined);
+          }
+        }
+      } catch (err) {
+        console.warn("Kreator kontaktini olishda xatolik:", err);
+      }
+    }
+  }
+  if (status === 'rad_etildi' && rejectionReason) {
+    targetApp.rejectionReason = rejectionReason.trim();
+  }
+
+  existingApps[appIndex] = targetApp;
+
+  const briefUpdates: Record<string, any> = {
+    applications: existingApps,
+    updatedAt: serverTimestamp(),
+  };
+
+  if (status === 'qabul_qilindi') {
+    briefUpdates.selectedApplicationId = applicationId;
+    if (targetApp.brandPhoneNumber) briefUpdates.brandPhoneNumber = targetApp.brandPhoneNumber;
+    if (targetApp.brandTelegramUsername) briefUpdates.brandTelegramUsername = targetApp.brandTelegramUsername;
+    if (targetApp.creatorPhoneNumber) briefUpdates.creatorPhoneNumber = targetApp.creatorPhoneNumber;
+    if (targetApp.creatorTelegramUsername) briefUpdates.creatorTelegramUsername = targetApp.creatorTelegramUsername;
+  }
+
+  await updateDoc(docRef, briefUpdates);
+
+  // Notify the applicant creator
+  if (targetApp.creatorId && targetApp.creatorId !== brand.uid) {
+    try {
+      if (status === 'qabul_qilindi') {
+        await createNotificationInFirestore({
+          userId: targetApp.creatorId,
+          type: 'ariza_qabul',
+          title: 'Arizangiz qabul qilindi',
+          briefTitle: data.taskTitle,
+          briefId: briefId,
+          senderId: brand.uid,
+          senderName: brand.name || 'Brend',
+          senderAvatar: brand.avatar,
+          message: `${brand.name || 'Brend'} "${data.taskTitle}" boʻyicha arizangizni qabul qildi! Endi xabar yozishingiz mumkin.`,
+          read: false,
+          createdAt: nowIso,
+          createdAtMillis: Date.now(),
+        });
+      } else {
+        const reasonText = rejectionReason && rejectionReason.trim()
+          ? ` (Sabab: "${rejectionReason.trim()}")`
+          : '';
+        await createNotificationInFirestore({
+          userId: targetApp.creatorId,
+          type: 'tizim',
+          title: 'Ariza rad etildi',
+          briefTitle: data.taskTitle,
+          briefId: briefId,
+          senderId: brand.uid,
+          senderName: brand.name || 'Brend',
+          senderAvatar: brand.avatar,
+          message: `${brand.name || 'Brend'} "${data.taskTitle}" boʻyicha arizangizni rad etdi${reasonText}`,
+          read: false,
+          createdAt: nowIso,
+          createdAtMillis: Date.now(),
+        });
+      }
+    } catch (notifErr) {
+      console.error("Kreatorga bildirishnoma yuborishda xatolik:", notifErr);
+    }
+  }
+}
+
+/**
+ * 100% Pul qaytarish kafolati holatini tekshirish
+ * Talab: "30 kun ichida javob kelmasa" degan kafolat mantig'ida, "rad etildi" ham "javob keldi"
+ * deb hisoblanadi (chunki kreator ko'rib chiqib, javob bergan) — faqat "yangi" holatida
+ * 30 kun davomida hech qanday harakat bo'lmasa, kafolat ishga tushadi.
+ */
+export function checkBriefGuaranteeStatus(brief: BriefData): {
+  isEligibleForRefund: boolean;
+  daysPassed: number;
+  daysRemaining: number;
+  statusText: string;
+  hasResponse: boolean;
+  responseType: BriefCreatorStatus;
+} {
+  const creatorStatus: BriefCreatorStatus =
+    brief.creatorStatus ||
+    (brief.status === 'in_progress'
+      ? 'qabul_qilindi'
+      : brief.status === 'cancelled'
+      ? 'rad_etildi'
+      : 'yangi');
+
+  const hasResponse = creatorStatus === 'qabul_qilindi' || creatorStatus === 'rad_etildi';
+
+  const createdTime =
+    brief.createdAtMillis ||
+    (brief.createdAt && !isNaN(new Date(brief.createdAt).getTime())
+      ? new Date(brief.createdAt).getTime()
+      : Date.now());
+  const now = Date.now();
+  const diffDays = Math.floor((now - createdTime) / (1000 * 60 * 60 * 24));
+  const daysPassed = Math.max(0, diffDays);
+  const daysRemaining = Math.max(0, 30 - daysPassed);
+
+  if (hasResponse) {
+    return {
+      isEligibleForRefund: false,
+      daysPassed,
+      daysRemaining: 0,
+      statusText:
+        creatorStatus === 'qabul_qilindi'
+          ? "Kreator qabul qildi (Javob olindi — kafolat talabi qanoatlantirildi)"
+          : "Kreator rad etdi (Javob olindi — kafolat talabi qanoatlantirildi)",
+      hasResponse: true,
+      responseType: creatorStatus,
+    };
+  }
+
+  // Still 'yangi' (waiting for response)
+  const isEligibleForRefund = daysPassed >= 30;
+  return {
+    isEligibleForRefund,
+    daysPassed,
+    daysRemaining,
+    statusText: isEligibleForRefund
+      ? "30 kun ichida hech qanday javob olinmadi — 100% pul qaytarish kafolati amalda!"
+      : `Javob kutilmoqda (Kafolat boʻyicha yana ${daysRemaining} kun qoldi)`,
+    hasResponse: false,
+    responseType: 'yangi',
+  };
+}
+
+/**
+ * Find or create a conversation between currentUser and targetUser in Firestore
+ */
+export async function getOrCreateConversation(
+  currentUser: UserSession,
+  targetUser: {
+    uid: string;
+    name: string;
+    handle?: string;
+    avatar?: string;
+    role?: string;
+  }
+): Promise<string> {
+  if (!currentUser.uid || !targetUser.uid) {
+    throw new Error("Foydalanuvchi IDsi talab qilinadi");
+  }
+
+  // Generate deterministic ID or query existing
+  const convId = [currentUser.uid, targetUser.uid].sort().join('_');
+  const convRef = doc(db, 'conversations', convId);
+  const snap = await getDoc(convRef);
+
+  if (!snap.exists()) {
+    const participantDetails: Record<string, any> = {
+      [currentUser.uid]: {
+        name: currentUser.name || 'Men',
+        handle: currentUser.instagramHandle || currentUser.contact || '@men',
+        avatar: currentUser.avatar || '',
+        role: currentUser.role === 'brend' ? 'Brend' : 'Bloger',
+      },
+      [targetUser.uid]: {
+        name: targetUser.name || 'Kreator',
+        handle: targetUser.handle || '@creator',
+        avatar: targetUser.avatar || '',
+        role: targetUser.role || 'Bloger',
+      },
+    };
+
+    await setDoc(convRef, {
+      id: convId,
+      participants: [currentUser.uid, targetUser.uid],
+      participantDetails,
+      lastMessage: '',
+      lastMessageTime: '',
+      createdAt: serverTimestamp(),
+      updatedAtMillis: Date.now(),
+    });
+  }
+
+  return convId;
+}
+
+/**
+ * Subscribe to user's conversations from Firestore
+ */
+export function subscribeToUserConversations(
+  uid: string,
+  onUpdate: (conversations: any[]) => void,
+  onError?: (err: Error) => void
+): () => void {
+  const convsRef = collection(db, 'conversations');
+  const q = query(convsRef, where('participants', 'array-contains', uid));
+
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const convs = snapshot.docs.map((docSnap) => {
+        const data = docSnap.data();
+        const otherUid = (data.participants || []).find((p: string) => p !== uid) || uid;
+        const otherDetail = data.participantDetails?.[otherUid] || {};
+        return {
+          id: docSnap.id,
+          name: otherDetail.name || 'Foydalanuvchi',
+          handle: otherDetail.handle || '@foydalanuvchi',
+          avatar: otherDetail.avatar || '',
+          role: otherDetail.role || 'Hamkor',
+          status: 'online',
+          unreadCount: data.unreadCount?.[uid] || 0,
+          lastMessageTime: data.lastMessageTime || '',
+          lastMessageText: data.lastMessage || '',
+          pinned: false,
+          updatedAtMillis: data.updatedAtMillis || 0,
+        };
+      });
+      // Sort newest first
+      convs.sort((a, b) => (b.updatedAtMillis || 0) - (a.updatedAtMillis || 0));
+      onUpdate(convs);
+    },
+    (err) => {
+      if (err?.code !== 'unavailable') {
+        console.warn("subscribeToUserConversations error:", err?.message || err);
+      }
+      if (onError) onError(err);
+    }
+  );
+}
+
+/**
+ * Subscribe to messages of a conversation from Firestore
+ */
+export function subscribeToConversationMessages(
+  conversationId: string,
+  onUpdate: (messages: any[]) => void,
+  onError?: (err: Error) => void
+): () => void {
+  const msgsRef = collection(db, 'conversations', conversationId, 'messages');
+  const q = query(msgsRef, orderBy('createdAt', 'asc'));
+
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const msgs = snapshot.docs.map((docSnap) => {
+        const data = docSnap.data();
+        return {
+          id: docSnap.id,
+          senderId: data.senderId,
+          text: data.text || '',
+          time: data.time || '',
+          date: data.date || '',
+          isRead: data.isRead ?? true,
+          voiceNote: data.voiceNote,
+          attachment: data.attachment,
+          createdAt: data.createdAt,
+        };
+      });
+      onUpdate(msgs);
+    },
+    (err) => {
+      if (err?.code !== 'unavailable') {
+        console.warn("subscribeToConversationMessages error:", err?.message || err);
+      }
+      if (onError) onError(err);
+    }
+  );
+}
+
+/**
+ * Send a message into a conversation in Firestore
+ */
+export async function sendMessageToFirestore(
+  conversationId: string,
+  senderId: string,
+  messageData: {
+    text?: string;
+    attachment?: any;
+    voiceNote?: any;
+  }
+): Promise<void> {
+  const now = new Date();
+  const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  const months = ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun', 'Iyul', 'Avgust', 'Sentyabr', 'Oktyabr', 'Noyabr', 'Dekabr'];
+  const dateStr = `${now.getDate()}-${months[now.getMonth()]}`;
+
+  const msgsRef = collection(db, 'conversations', conversationId, 'messages');
+  await addDoc(msgsRef, {
+    senderId,
+    text: messageData.text || '',
+    attachment: messageData.attachment || null,
+    voiceNote: messageData.voiceNote || null,
+    time: timeStr,
+    date: dateStr,
+    isRead: false,
+    createdAt: serverTimestamp(),
+  });
+
+  const convRef = doc(db, 'conversations', conversationId);
+  await setDoc(
+    convRef,
+    {
+      lastMessage: messageData.text || (messageData.voiceNote ? 'Ovozli xabar' : 'Fayl biriktirildi'),
+      lastMessageTime: timeStr,
+      updatedAtMillis: Date.now(),
+    },
+    { merge: true }
+  );
+}
+
+/**
+ * =========================================================================
+ * NOTIFICATIONS SYSTEM (Real-time Firestore & Browser Notifications)
+ * =========================================================================
+ */
+
+/**
+ * Create a new notification document in Firestore 'notifications' collection
+ */
+export async function createNotificationInFirestore(
+  notification: Omit<NotificationItem, 'id'> & { id?: string }
+): Promise<string> {
+  const notifId = notification.id || `notif_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  const notifRef = doc(db, 'notifications', notifId);
+  const payload: NotificationItem = {
+    ...notification,
+    id: notifId,
+    read: notification.read ?? false,
+    createdAt: notification.createdAt || new Date().toISOString(),
+    createdAtMillis: notification.createdAtMillis || Date.now(),
+  };
+
+  await setDoc(notifRef, payload);
+  return notifId;
+}
+
+/**
+ * Real-time subscription to notifications for a specific user
+ */
+export function subscribeToUserNotifications(
+  userId: string,
+  callback: (notifications: NotificationItem[]) => void
+): () => void {
+  if (!userId) {
+    callback([]);
+    return () => {};
+  }
+
+  const notifsQuery = query(
+    collection(db, 'notifications'),
+    where('userId', '==', userId)
+  );
+
+  return onSnapshot(
+    notifsQuery,
+    (snapshot) => {
+      const list: NotificationItem[] = [];
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data() as NotificationItem;
+        list.push({
+          ...data,
+          id: docSnap.id,
+        });
+      });
+
+      // Sort newest first by createdAtMillis or createdAt
+      list.sort((a, b) => {
+        const timeA = a.createdAtMillis || new Date(a.createdAt).getTime() || 0;
+        const timeB = b.createdAtMillis || new Date(b.createdAt).getTime() || 0;
+        return timeB - timeA;
+      });
+
+      callback(list);
+    },
+    (err) => {
+      if (err?.code !== 'unavailable') {
+        console.warn("Bildirishnomalarni olishda xatolik:", err?.message || err);
+      }
+    }
+  );
+}
+
+/**
+ * Mark a single notification as read
+ */
+export async function markNotificationAsReadInFirestore(notificationId: string): Promise<void> {
+  if (!notificationId) return;
+  try {
+    const notifRef = doc(db, 'notifications', notificationId);
+    await updateDoc(notifRef, { read: true });
+  } catch (err) {
+    console.error("Bildirishnomani o'qilgan deb belgilashda xatolik:", err);
+  }
+}
+
+/**
+ * Mark all unread notifications for a user as read
+ */
+export async function markAllNotificationsAsReadInFirestore(userId: string): Promise<void> {
+  if (!userId) return;
+  try {
+    const q = query(
+      collection(db, 'notifications'),
+      where('userId', '==', userId),
+      where('read', '==', false)
+    );
+    const snap = await getDocs(q);
+    if (snap.empty) return;
+
+    const batch = writeBatch(db);
+    snap.forEach((docSnap) => {
+      batch.update(docSnap.ref, { read: true });
+    });
+    await batch.commit();
+  } catch (err) {
+    console.error("Barcha bildirishnomalarni o'qilgan deb belgilashda xatolik:", err);
+  }
+}
+
+/**
+ * Request Web Browser Notification permission
+ */
+export async function requestBrowserNotificationPermission(): Promise<boolean> {
+  if (typeof window === 'undefined' || !('Notification' in window)) {
+    return false;
+  }
+  if (Notification.permission === 'granted') {
+    return true;
+  }
+  if (Notification.permission !== 'denied') {
+    try {
+      const permission = await Notification.requestPermission();
+      return permission === 'granted';
+    } catch {
+      return false;
+    }
+  }
+  return false;
+}
+
+/**
+ * Display a native browser push notification
+ */
+export function showBrowserPushNotification(title: string, options?: NotificationOptions) {
+  if (typeof window === 'undefined' || !('Notification' in window)) return;
+  if (Notification.permission === 'granted') {
+    try {
+      new Notification(title, {
+        icon: '/favicon.ico',
+        badge: '/favicon.ico',
+        ...options,
+      });
+    } catch (err) {
+      console.warn("Brauzer bildirishnomasi chiqarishda ogohlantirish:", err);
+    }
+  }
+}
+
+/**
+ * Submit an Agency Partnership Application to Firestore 'agencyApplications'
+ */
+export async function submitAgencyApplication(data: {
+  agencyName: string;
+  contactPerson: string;
+  phoneOrEmail: string;
+  websiteOrInstagram?: string;
+  notes?: string;
+}): Promise<string> {
+  const applicationId = `agency_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  const docRef = doc(db, 'agencyApplications', applicationId);
+
+  const nowIso = new Date().toISOString();
+  const nowMillis = Date.now();
+
+  const payload: AgencyApplication & { serverCreatedAt: any } = {
+    id: applicationId,
+    agencyName: data.agencyName.trim(),
+    contactPerson: data.contactPerson.trim(),
+    phoneOrEmail: data.phoneOrEmail.trim(),
+    websiteOrInstagram: data.websiteOrInstagram ? data.websiteOrInstagram.trim() : '',
+    status: 'yangi',
+    createdAt: formatUzbekDate(nowIso),
+    createdAtMillis: nowMillis,
+    notes: data.notes ? data.notes.trim() : '',
+    serverCreatedAt: serverTimestamp(),
+  };
+
+  await setDoc(docRef, payload);
+  return applicationId;
+}
+
+/**
+ * Subscribe in real-time to all Agency Partnership Applications (for Admin)
+ */
+export function subscribeToAgencyApplications(
+  callback: (apps: AgencyApplication[]) => void,
+  onError?: (err: any) => void
+): () => void {
+  const appsCol = collection(db, 'agencyApplications');
+
+  return onSnapshot(
+    appsCol,
+    (snapshot) => {
+      const items: AgencyApplication[] = [];
+      snapshot.forEach((docSnap) => {
+        const d = docSnap.data() as any;
+        items.push({
+          id: docSnap.id,
+          agencyName: d.agencyName || 'Nomaʼlum agentlik',
+          contactPerson: d.contactPerson || '',
+          phoneOrEmail: d.phoneOrEmail || '',
+          websiteOrInstagram: d.websiteOrInstagram || '',
+          status: (d.status as AgencyApplicationStatus) || 'yangi',
+          createdAt: d.createdAt || 'Nomaʼlum',
+          createdAtMillis: d.createdAtMillis || 0,
+          notes: d.notes || '',
+        });
+      });
+
+      // Sort newest first
+      items.sort((a, b) => (b.createdAtMillis || 0) - (a.createdAtMillis || 0));
+      callback(items);
+    },
+    (err) => {
+      if (err?.code !== 'unavailable') {
+        console.warn("Agentlik arizalarini tinglashda xatolik:", err?.message || err);
+      }
+      if (onError) onError(err);
+    }
+  );
+}
+
+/**
+ * Update Agency Application Status by Admin
+ */
+/**
+ * Update Agency Application Status by Admin
+ */
+export async function updateAgencyApplicationStatus(
+  applicationId: string,
+  status: AgencyApplicationStatus,
+  notes?: string
+): Promise<void> {
+  const docRef = doc(db, 'agencyApplications', applicationId);
+  const updates: Record<string, any> = {
+    status: status,
+    updatedAt: serverTimestamp(),
+  };
+  if (notes !== undefined) {
+    updates.notes = notes;
+  }
+  await updateDoc(docRef, updates);
+}
+
+/**
+ * Compress an image file to a lightweight data URL (JPEG)
+ * to ensure bulletproof delivery even if Storage or network conditions are constrained.
+ */
+export function compressImageFile(file: File, maxWidth = 800, quality = 0.7): Promise<string> {
+  return new Promise((resolve) => {
+    let settled = false;
+    const safeResolve = (val: string) => {
+      if (!settled) {
+        settled = true;
+        resolve(val);
+      }
+    };
+
+    // Safety timeout: Never hang longer than 1500ms
+    const timer = setTimeout(() => {
+      console.warn("[compressImageFile] 1500ms timeout, reading fallback dataUrl");
+      try {
+        const fallbackReader = new FileReader();
+        fallbackReader.onload = () => safeResolve((fallbackReader.result as string) || '');
+        fallbackReader.onerror = () => safeResolve('');
+        fallbackReader.readAsDataURL(file);
+      } catch {
+        safeResolve('');
+      }
+    }, 1500);
+
+    try {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const rawUrl = event.target?.result as string;
+        if (!rawUrl) {
+          clearTimeout(timer);
+          safeResolve('');
+          return;
+        }
+
+        const img = new Image();
+        img.onload = () => {
+          clearTimeout(timer);
+          try {
+            let width = img.width;
+            let height = img.height;
+            if (width > maxWidth || height > maxWidth) {
+              if (width > height) {
+                height = Math.round((height * maxWidth) / width);
+                width = maxWidth;
+              } else {
+                width = Math.round((width * maxWidth) / height);
+                height = maxWidth;
+              }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.max(1, width);
+            canvas.height = Math.max(1, height);
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+              safeResolve(rawUrl);
+              return;
+            }
+            ctx.drawImage(img, 0, 0, width, height);
+            const compressed = canvas.toDataURL('image/jpeg', quality);
+            safeResolve(compressed);
+          } catch {
+            safeResolve(rawUrl);
+          }
+        };
+        img.onerror = () => {
+          clearTimeout(timer);
+          safeResolve(rawUrl);
+        };
+        img.src = rawUrl;
+      };
+      reader.onerror = () => {
+        clearTimeout(timer);
+        safeResolve('');
+      };
+      reader.readAsDataURL(file);
+    } catch {
+      clearTimeout(timer);
+      safeResolve('');
+    }
+  });
+}
+
+/**
+ * Upload receipt screenshot to Firebase Storage with automatic compressed Base64 fallback.
+ */
+export async function uploadPaymentReceipt(file: File, userId: string): Promise<string> {
+  console.log("[uploadPaymentReceipt] Boshlandi. Fayl:", file.name, "Hajmi:", file.size);
+
+  // 1. Zudlik bilan siqilgan Base64 tayyorlab olamiz (faqat 50-100ms ketadi)
+  let base64Preview = '';
+  try {
+    base64Preview = await compressImageFile(file, 800, 0.7);
+  } catch (err) {
+    console.warn("[uploadPaymentReceipt] compressImageFile muammo:", err);
+  }
+
+  // 2. Firebase Storage mavjud bo'lsa, 2.5 soniya ichida yuklab ko'ramiz
+  const currentStorage = storage || getSafeStorage();
+  if (currentStorage) {
+    try {
+      console.log("[uploadPaymentReceipt] Firebase Storage'ga yuklash urinilmoqda...");
+      const timestamp = Date.now();
+      const safeExt = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
+      const storageRef = ref(currentStorage, `payment_receipts/${userId}_${timestamp}.${safeExt}`);
+      
+      const uploadTaskPromise = (async () => {
+        const snapshot = await uploadBytes(storageRef, file);
+        return await getDownloadURL(snapshot.ref);
+      })();
+
+      const uploadTimeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Storage upload 2.5s timeout")), 2500)
+      );
+
+      const downloadUrl = await Promise.race([uploadTaskPromise, uploadTimeout]);
+      console.log("[uploadPaymentReceipt] Firebase Storage yuklash muvaffaqiyatli:", downloadUrl);
+      return downloadUrl;
+    } catch (storageErr) {
+      console.warn("[uploadPaymentReceipt] Storage yuklanmadi yoki timeout bo'ldi. Base64 ishlatiladi:", storageErr);
+    }
+  }
+
+  if (base64Preview) {
+    return base64Preview;
+  }
+
+  return await compressImageFile(file, 700, 0.65);
+}
+
+/**
+ * Submit manual bank card payment request to Firestore 'paymentRequests' collection
+ */
+export async function submitPaymentRequest(params: {
+  userId: string;
+  userName: string;
+  userPhone?: string;
+  userEmail?: string;
+  userRole?: string;
+  screenshotFile: File | null;
+  screenshotDataUrl?: string;
+}): Promise<string> {
+  console.log("[submitPaymentRequest] Chaqirildi:", {
+    userId: params.userId,
+    userName: params.userName,
+    hasFile: !!params.screenshotFile,
+    hasPreview: !!params.screenshotDataUrl,
+  });
+
+  let screenshotUrl = '';
+
+  if (params.screenshotFile) {
+    try {
+      screenshotUrl = await uploadPaymentReceipt(params.screenshotFile, params.userId || 'guest');
+    } catch (uploadErr) {
+      console.warn("[submitPaymentRequest] uploadPaymentReceipt xatosi:", uploadErr);
+    }
+  }
+
+  if (!screenshotUrl && params.screenshotDataUrl) {
+    screenshotUrl = params.screenshotDataUrl;
+  }
+
+  // Agar base64 juda katta bo'lsa (Firestore doc limit 1MB dan oshmasligi uchun), qo'shimcha optimallashtiramiz
+  if (screenshotUrl && screenshotUrl.startsWith('data:') && screenshotUrl.length > 500000) {
+    console.log("[submitPaymentRequest] Rasm hajmi katta (" + Math.round(screenshotUrl.length / 1024) + " KB), qayta siqilmoqda...");
+    if (params.screenshotFile) {
+      try {
+        screenshotUrl = await compressImageFile(params.screenshotFile, 600, 0.6);
+      } catch {}
+    }
+  }
+
+  console.log("[submitPaymentRequest] Firestore 'paymentRequests' kolleksiyasiga saqlanmoqda...");
+  const now = new Date();
+  const paymentRequestsCol = collection(db, 'paymentRequests');
+
+  const addDocPromise = addDoc(paymentRequestsCol, {
+    userId: params.userId || '',
+    userName: params.userName || "Noma'lum foydalanuvchi",
+    userPhone: params.userPhone || '',
+    userEmail: params.userEmail || '',
+    userRole: params.userRole || '',
+    amount: 59000,
+    screenshotUrl: screenshotUrl || '',
+    sana: now.toISOString(),
+    createdAtMillis: now.getTime(),
+    status: 'pending',
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+
+  const timeoutPromise = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error("Server bilan aloqa sekin yoki uzildi. Iltimos, qayta urinib ko'ring.")), 25000)
+  );
+
+  const docRef = await Promise.race([addDocPromise, timeoutPromise]);
+  console.log("[submitPaymentRequest] Firestore'ga muvaffaqiyatli saqlandi! Doc ID:", docRef.id);
+
+  // 1. Yangi to'lov so'rovi kelganda Telegram API orqali adminga xabar yuborish
+  try {
+    const realName = (params.userName || '').trim() || "Noma'lum foydalanuvchi";
+    console.log("[submitPaymentRequest] Telegram API'ga so'rov yuborilmoqda: Foydalanuvchi =", realName);
+
+    const response = await fetch('https://api.telegram.org/bot8766687220:AAEnASe4ekqnyo13ZIpeW5KujNOK6mC3Kn0/sendMessage', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: '8788020177',
+        text: `💳 Yangi to'lov so'rovi!\nFoydalanuvchi: ${realName}\nSumma: 59 000 so'm`,
+      }),
+    });
+
+    const tgResult = await response.json().catch(() => ({}));
+    console.log("[submitPaymentRequest] Telegram API javobi:", response.status, tgResult);
+  } catch (error: any) {
+    console.error("[submitPaymentRequest] Telegram API so'rovida xatolik:", error);
+  }
+
+  return docRef.id;
+}
+
+/**
+ * Fetch all payment requests from 'paymentRequests' collection
+ */
+export async function fetchPaymentRequests(): Promise<PaymentRequest[]> {
+  try {
+    const requestsCol = collection(db, 'paymentRequests');
+    const snapshot = await getDocs(requestsCol);
+    const list: PaymentRequest[] = snapshot.docs.map((d) => {
+      const data = d.data();
+      return {
+        id: d.id,
+        userId: data.userId || '',
+        userName: data.userName || "Noma'lum foydalanuvchi",
+        userPhone: data.userPhone || '',
+        userEmail: data.userEmail || '',
+        userRole: data.userRole || '',
+        amount: data.amount || 59000,
+        screenshotUrl: data.screenshotUrl || '',
+        sana: data.sana || (data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : new Date().toISOString()),
+        createdAtMillis: data.createdAtMillis || 0,
+        status: (data.status as PaymentRequestStatus) || 'pending',
+        rejectionReason: data.rejectionReason || '',
+        approvedAt: data.approvedAt || '',
+        rejectedAt: data.rejectedAt || '',
+        reviewedBy: data.reviewedBy || '',
+      };
+    });
+
+    list.sort((a, b) => (b.createdAtMillis || 0) - (a.createdAtMillis || 0));
+    return list;
+  } catch (err) {
+    console.error("fetchPaymentRequests xatosi:", err);
+    return [];
+  }
+}
+
+/**
+ * Real-time listener for payment requests
+ */
+export function subscribeToPaymentRequests(
+  callback: (requests: PaymentRequest[]) => void,
+  onError?: (err: any) => void
+): () => void {
+  const requestsCol = collection(db, 'paymentRequests');
+  return onSnapshot(
+    requestsCol,
+    (snapshot) => {
+      const list: PaymentRequest[] = snapshot.docs.map((d) => {
+        const data = d.data();
+        return {
+          id: d.id,
+          userId: data.userId || '',
+          userName: data.userName || "Noma'lum foydalanuvchi",
+          userPhone: data.userPhone || '',
+          userEmail: data.userEmail || '',
+          userRole: data.userRole || '',
+          amount: data.amount || 59000,
+          screenshotUrl: data.screenshotUrl || '',
+          sana: data.sana || (data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : new Date().toISOString()),
+          createdAtMillis: data.createdAtMillis || 0,
+          status: (data.status as PaymentRequestStatus) || 'pending',
+          rejectionReason: data.rejectionReason || '',
+          approvedAt: data.approvedAt || '',
+          rejectedAt: data.rejectedAt || '',
+          reviewedBy: data.reviewedBy || '',
+        };
+      });
+      list.sort((a, b) => (b.createdAtMillis || 0) - (a.createdAtMillis || 0));
+      callback(list);
+    },
+    (err) => {
+      console.error("subscribeToPaymentRequests xatosi:", err);
+      if (onError) onError(err);
+    }
+  );
+}
+
+/**
+ * Approve payment request: changes request status to 'approved' and activates Pro subscription for the user (30 days)
+ */
+export async function approvePaymentRequest(
+  requestId: string,
+  userId: string,
+  reviewerName: string = 'Admin'
+): Promise<void> {
+  const reqRef = doc(db, 'paymentRequests', requestId);
+  const now = new Date();
+  await updateDoc(reqRef, {
+    status: 'approved',
+    approvedAt: now.toISOString(),
+    reviewedBy: reviewerName,
+    updatedAt: serverTimestamp(),
+  });
+
+  if (userId) {
+    const userRef = doc(db, 'users', userId);
+    const trialStartDate = now.toISOString();
+    const trialEndDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    await setDoc(
+      userRef,
+      {
+        subscriptionStatus: 'active',
+        trialStartDate,
+        trialEndDate,
+        subscriptionPlanPrice: 59000,
+        reminderSent: false,
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+
+    // If active logged-in user matches this ID, update localStorage
+    try {
+      const currentStr = localStorage.getItem('collabix_user');
+      if (currentStr) {
+        const parsed = JSON.parse(currentStr);
+        if (parsed.uid === userId) {
+          localStorage.setItem('collabix_user', JSON.stringify({
+            ...parsed,
+            subscriptionStatus: 'active',
+            trialStartDate,
+            trialEndDate,
+            subscriptionPlanPrice: 59000,
+            reminderSent: false,
+          }));
+        }
+      }
+    } catch {}
+  }
+}
+
+/**
+ * Reject payment request with optional reason
+ */
+export async function rejectPaymentRequest(
+  requestId: string,
+  reason?: string,
+  reviewerName: string = 'Admin'
+): Promise<void> {
+  const reqRef = doc(db, 'paymentRequests', requestId);
+  const now = new Date();
+  await updateDoc(reqRef, {
+    status: 'rejected',
+    rejectionReason: reason || 'Toʻlov cheki maʼlumotlari tasdiqlanmadi',
+    rejectedAt: now.toISOString(),
+    reviewedBy: reviewerName,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+/**
+ * Fetch latest payment request for specific user
+ */
+export async function fetchUserLatestPaymentRequest(userId: string): Promise<PaymentRequest | null> {
+  if (!userId) return null;
+  try {
+    const all = await fetchPaymentRequests();
+    const userReqs = all.filter((r) => r.userId === userId);
+    return userReqs[0] || null;
+  } catch {
+    return null;
+  }
+}
+
+
+

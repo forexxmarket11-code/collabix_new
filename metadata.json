@@ -1,0 +1,6 @@
+{
+  "name": "Collabix — Bloger va Brend Platformasi",
+  "description": "Bloger va brendlarni bir necha soniyada bog'laydigan platforma. Faqat tekshirilgan kreatorlar va ishonchli natija.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
