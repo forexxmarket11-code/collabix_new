@@ -11,12 +11,16 @@ import {
   Sparkles,
   X,
   Loader2,
-  Check,
   ShieldCheck,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { UserSession } from '../types';
-import { registerUser, loginUser, getUzbekAuthErrorMessage } from '../firebase';
+import {
+  registerUser,
+  loginUser,
+  getUzbekAuthErrorMessage,
+  normalizeContactToAuthEmail,
+} from '../firebase';
 
 interface RegisterModalProps {
   isOpen: boolean;
@@ -29,9 +33,7 @@ interface RegisterModalProps {
 export const RegisterModal: React.FC<RegisterModalProps> = ({
   isOpen,
   onClose,
-  onOpenCatalog,
   onSuccess,
-  onGoToProfile,
 }) => {
   // Wizard Step: 1 (Ism va familiya) | 2 (Login va parol)
   const [step, setStep] = useState<1 | 2>(1);
@@ -58,11 +60,14 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
 
   // Status & Validation
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Lock background scroll when modal is open
+  // Lock background scroll when modal is open & reset transient status on reopen
   useEffect(() => {
     if (isOpen) {
+      setErrorMessage(null);
+      setSuccessMessage(null);
       const originalStyle = window.getComputedStyle(document.body).overflow;
       document.body.style.overflow = 'hidden';
       return () => {
@@ -84,11 +89,12 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
     }
   }, [isOpen, onClose]);
 
-  // Reset modal state when reopening or switching modes
+  // Reset modal state when switching modes
   const handleToggleMode = (loginMode: boolean) => {
     setIsLoginMode(loginMode);
     setStep(1);
     setErrorMessage(null);
+    setSuccessMessage(null);
   };
 
   if (!isOpen) return null;
@@ -103,20 +109,20 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
 
     if (role === 'bloger') {
       if (!fName) {
-        setErrorMessage("Iltimos, ismingizni kiriting.");
+        setErrorMessage('Ismingizni kiriting.');
         return;
       }
       if (!lName) {
-        setErrorMessage("Iltimos, familiyangizni kiriting.");
+        setErrorMessage('Familiyangizni kiriting.');
         return;
       }
     } else {
       if (!fName) {
-        setErrorMessage("Iltimos, brendingiz yoki kompaniyangiz nomini kiriting.");
+        setErrorMessage('Brendingiz nomini kiriting.');
         return;
       }
       if (!lName) {
-        setErrorMessage("Iltimos, masʼul shaxsning ism va familiyasini kiriting.");
+        setErrorMessage('Ism va familiyangizni kiriting.');
         return;
       }
     }
@@ -136,54 +142,71 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
   const handleFinalSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
+    setSuccessMessage(null);
 
-    const emailTrimmed = contact.trim();
+    const contactTrimmed = contact.trim();
 
-    if (!emailTrimmed) {
-      setErrorMessage("Bogʻlanish uchun emailingizni kiriting.");
+    if (!contactTrimmed) {
+      setErrorMessage('Email yoki telefon raqamingizni kiriting.');
       return;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(emailTrimmed)) {
-      setErrorMessage("Email formati notoʻgʻri. Iltimos, haqiqiy email kiriting (masalan: foydalanuvchi@mail.uz).");
+    const { isPhone } = normalizeContactToAuthEmail(contactTrimmed);
+
+    if (contactTrimmed.includes('@')) {
+      if (!emailRegex.test(contactTrimmed)) {
+        setErrorMessage('Email manzili notoʻgʻri kiritilgan (masalan: azizbek@gmail.com).');
+        return;
+      }
+    } else if (!isPhone) {
+      setErrorMessage('Email yoki telefon raqamingizni toʻgʻri kiriting.');
       return;
     }
 
     if (!password) {
-      setErrorMessage("Hisobingizni himoyalash uchun parol kiriting.");
+      setErrorMessage('Parolni kiriting.');
       return;
     }
 
     if (!isLoginMode) {
       // Step 2 Registration validations
       if (password.length < 6) {
-        setErrorMessage("Parol kamida 6 belgidan iborat boʻlishi kerak.");
+        setErrorMessage('Parol juda qisqa — kamida 6 ta belgi kiriting.');
         return;
       }
 
       if (password !== confirmPassword) {
-        setErrorMessage("Kiritilgan parollar bir xil emas. Qaytadan tekshirib koʻring.");
+        setErrorMessage('Parollar bir xil emas. Qaytadan tekshirib koʻring.');
         return;
       }
 
       // Compute full name
       const fName = firstName.trim();
       const lName = lastName.trim();
-      const fullName = role === 'bloger'
-        ? `${fName} ${lName}`.trim()
-        : (lName ? `${fName} (${lName})` : fName);
+      const fullName =
+        role === 'bloger'
+          ? `${fName} ${lName}`.trim()
+          : lName
+          ? `${fName} (${lName})`
+          : fName;
 
       setIsLoading(true);
       try {
-        const newUser = await registerUser(emailTrimmed, password, fullName, role);
-        onClose();
+        const newUser = await registerUser(contactTrimmed, password, fullName, role);
+        setSuccessMessage('Tabriklaymiz! Profilingiz tayyor 🎉');
         if (onSuccess) {
           onSuccess(newUser);
         }
+        setTimeout(() => {
+          setSuccessMessage(null);
+          setStep(1);
+          setPassword('');
+          setConfirmPassword('');
+          onClose();
+        }, 1400);
       } catch (err: any) {
-        // Keeps user on Step 2 with existing inputs and shows helpful Uzbek error
-        setErrorMessage(getUzbekAuthErrorMessage(err));
+        setErrorMessage(getUzbekAuthErrorMessage(err, isPhone));
       } finally {
         setIsLoading(false);
       }
@@ -191,13 +214,13 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
       // Login flow
       setIsLoading(true);
       try {
-        const loggedInUser = await loginUser(emailTrimmed, password);
+        const loggedInUser = await loginUser(contactTrimmed, password);
         onClose();
         if (onSuccess) {
           onSuccess(loggedInUser);
         }
       } catch (err: any) {
-        setErrorMessage(getUzbekAuthErrorMessage(err));
+        setErrorMessage(getUzbekAuthErrorMessage(err, isPhone));
       } finally {
         setIsLoading(false);
       }
@@ -234,7 +257,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-mono font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>{step === 1 ? '1/2 — Ism va maʼlumot' : '2/2 — Kirish va parol'}</span>
+                <span>{step === 1 ? '1/2 — Tanishuv' : '2/2 — Kirish maʼlumotlari'}</span>
               </span>
               <span className="text-xs font-mono font-bold text-slate-400 dark:text-slate-500">
                 Qadam {step} / 2
@@ -258,6 +281,17 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
                 }`}
               />
             </div>
+          </div>
+        )}
+
+        {/* Success Alert */}
+        {successMessage && (
+          <div
+            id="modal-register-success-alert"
+            className="mb-4 p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-xs sm:text-sm font-heading font-bold flex items-center gap-2.5 animate-in fade-in duration-200"
+          >
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <span className="flex-1">{successMessage}</span>
           </div>
         )}
 
@@ -287,19 +321,17 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
                 {/* Step 1 Header */}
                 <div className="text-center mb-5 pr-4">
                   <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight font-heading leading-snug">
-                    Sizni qanday deb ataylik?
+                    Collabix&apos;ga xush kelibsiz 👋
                   </h2>
                   <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-body mt-1.5 max-w-sm mx-auto leading-relaxed">
-                    {role === 'bloger'
-                      ? 'Platformada ishonchli profil yaratish uchun ism va familiyangizni kiriting.'
-                      : 'Hamkorliklar va briflar uchun brendingiz nomini va aloqa uchun ismingizni kiriting.'}
+                    Bir daqiqada roʻyxatdan oʻting va hamkorlikni boshlang
                   </p>
                 </div>
 
                 {/* Role Selection Tabs (Bloger vs Brend) */}
                 <div className="mb-5">
                   <span className="block text-xs font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
-                    Qaysi maqsadda qoʻshilasiz?
+                    Kim sifatida qoʻshilasiz?
                   </span>
 
                   <div className="grid grid-cols-2 gap-2 p-1.5 bg-slate-100/90 dark:bg-slate-800/80 rounded-2xl border border-slate-200/70 dark:border-slate-700/60">
@@ -334,9 +366,15 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
                       }`}
                     >
                       <Building2 className="w-4 h-4 stroke-[2.5]" />
-                      <span>Brend / Biznes</span>
+                      <span>Brendman</span>
                     </button>
                   </div>
+
+                  <p className="mt-2 text-xs text-slate-600 dark:text-slate-400 font-body text-center">
+                    {role === 'bloger'
+                      ? 'Men blogerman — brendlardan takliflar olaman'
+                      : 'Men brendman — mos blogerlarni topaman'}
+                  </p>
                 </div>
 
                 {/* Step 1 Form Fields */}
@@ -348,7 +386,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
                         htmlFor="modal-reg-firstname-input"
                         className="block text-xs font-heading font-semibold text-slate-700 dark:text-slate-300 mb-1"
                       >
-                        {role === 'bloger' ? 'Ism' : 'Brend / Kompaniya nomi'}
+                        {role === 'bloger' ? 'Ismingiz' : 'Brendingiz nomi'}
                         <span className="text-rose-500 ml-0.5">*</span>
                       </label>
                       <input
@@ -356,7 +394,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
                         type="text"
                         value={firstName}
                         onChange={(e) => setFirstName(e.target.value)}
-                        placeholder={role === 'bloger' ? 'Azizbek' : 'TechStart yoki SamAuto'}
+                        placeholder={role === 'bloger' ? 'Azizbek' : 'TechStart'}
                         autoFocus
                         className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-body text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-indigo-600 dark:focus:border-indigo-400 focus:outline-hidden transition-colors bg-slate-50/50 dark:bg-slate-800/50"
                       />
@@ -368,7 +406,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
                         htmlFor="modal-reg-lastname-input"
                         className="block text-xs font-heading font-semibold text-slate-700 dark:text-slate-300 mb-1"
                       >
-                        {role === 'bloger' ? 'Familiya' : 'Masʼul shaxs (Ism-familiya)'}
+                        {role === 'bloger' ? 'Familiyangiz' : 'Ism va familiyangiz'}
                         <span className="text-rose-500 ml-0.5">*</span>
                       </label>
                       <input
@@ -387,8 +425,8 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
                     <ShieldCheck className="w-4 h-4 shrink-0 text-indigo-600 dark:text-indigo-400" />
                     <span>
                       {role === 'bloger'
-                        ? 'Profilingiz tasdiqlangach, brendlar katalogida shu ism bilan koʻrinasiz.'
-                        : 'Briflar yaratish va buyurtmalarni boshqarishda ushbu nom aks etadi.'}
+                        ? 'Roʻyxatdan oʻtiboq katalogda koʻrinasiz va takliflar qabul qila olasiz.'
+                        : 'Roʻyxatdan oʻtiboq mos blogerlarni topib, brif yuborishingiz mumkin.'}
                     </span>
                   </div>
 
@@ -413,7 +451,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
                     onClick={() => handleToggleMode(true)}
                     className="text-xs sm:text-sm font-heading font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors cursor-pointer"
                   >
-                    Avval roʻyxatdan oʻtganmisiz? Profilingizga kiring
+                    Profilingiz bormi? Tizimga kiring
                   </button>
                 </div>
               </motion.div>
@@ -430,30 +468,31 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
                 {/* Step 2 Header */}
                 <div className="text-center mb-5 pr-4">
                   <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight font-heading leading-snug">
-                    Kirish uchun maʼlumotlaringiz
+                    Kirish maʼlumotlari
                   </h2>
                   <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-body mt-1.5 max-w-sm mx-auto leading-relaxed">
-                    Profilingizga xavfsiz kirish uchun email va yangi maxfiy parol belgilang.
+                    Profilingizga kirish uchun kontakt va parol yarating
                   </p>
                 </div>
 
                 {/* Step 2 Form Fields */}
                 <form onSubmit={handleFinalSubmit} className="space-y-3.5">
-                  {/* Email */}
+                  {/* Email or Phone */}
                   <div>
                     <label
                       htmlFor="modal-reg-contact-input"
                       className="block text-xs font-heading font-semibold text-slate-700 dark:text-slate-300 mb-1"
                     >
-                      Email manzili
+                      Email yoki telefon
                       <span className="text-rose-500 ml-0.5">*</span>
                     </label>
                     <input
                       id="modal-reg-contact-input"
-                      type="email"
+                      type="text"
+                      inputMode="email"
                       value={contact}
                       onChange={(e) => setContact(e.target.value)}
-                      placeholder="masalan: sizning@email.uz yoki kompaniya@gmail.com"
+                      placeholder="azizbek@gmail.com yoki +998 90 123 45 67"
                       autoFocus
                       required
                       className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-body text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-indigo-600 dark:focus:border-indigo-400 focus:outline-hidden transition-colors bg-slate-50/50 dark:bg-slate-800/50"
@@ -466,7 +505,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
                       htmlFor="modal-reg-password-input"
                       className="block text-xs font-heading font-semibold text-slate-700 dark:text-slate-300 mb-1"
                     >
-                      Maxfiy parol
+                      Parol (kamida 6 belgi)
                       <span className="text-rose-500 ml-0.5">*</span>
                     </label>
                     <div className="relative">
@@ -475,7 +514,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
                         type={showPassword ? 'text' : 'password'}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Kamida 6 ta belgi oʻylab toping"
+                        placeholder="Kamida 6 ta belgi kiriting"
                         required
                         className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-body text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-indigo-600 dark:focus:border-indigo-400 focus:outline-hidden transition-colors bg-slate-50/50 dark:bg-slate-800/50"
                       />
@@ -483,7 +522,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
-                        aria-label="Parolni ko'rsatish"
+                        aria-label="Parolni koʻrsatish"
                       >
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
@@ -496,7 +535,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
                       htmlFor="modal-reg-confirm-password-input"
                       className="block text-xs font-heading font-semibold text-slate-700 dark:text-slate-300 mb-1"
                     >
-                      Parolni qayta tasdiqlang
+                      Parolni tasdiqlang
                       <span className="text-rose-500 ml-0.5">*</span>
                     </label>
                     <div className="relative">
@@ -505,7 +544,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
                         type={showConfirmPassword ? 'text' : 'password'}
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        placeholder="Parolni yana bir bor yozing"
+                        placeholder="Parolni qayta kiriting"
                         required
                         className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-body text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-indigo-600 dark:focus:border-indigo-400 focus:outline-hidden transition-colors bg-slate-50/50 dark:bg-slate-800/50"
                       />
@@ -513,21 +552,21 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
                         type="button"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                         className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
-                        aria-label="Parol tasdig'ini ko'rsatish"
+                        aria-label="Parol tasdigʻini koʻrsatish"
                       >
                         {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
                   </div>
 
-                  {/* Action Buttons: "Orqaga" and "Ro'yxatdan o'tish" */}
+                  {/* Action Buttons: "Orqaga" and "Roʻyxatdan oʻtish" */}
                   <div className="pt-3 flex items-center gap-2.5">
                     <button
                       type="button"
                       id="modal-btn-step2-back"
                       onClick={handleBackToStep1}
-                      disabled={isLoading}
-                      className="py-3.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-heading font-semibold text-sm transition-colors cursor-pointer flex items-center gap-1.5 shrink-0"
+                      disabled={isLoading || Boolean(successMessage)}
+                      className="py-3.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-heading font-semibold text-sm transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 disabled:opacity-50"
                     >
                       <ArrowLeft className="w-4 h-4" />
                       <span>Orqaga</span>
@@ -536,13 +575,19 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
                     <button
                       id="modal-btn-submit-register"
                       type="submit"
-                      disabled={isLoading}
-                      className="flex-1 py-3.5 px-5 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-heading font-bold text-sm sm:text-base tracking-tight shadow-lg shadow-indigo-600/25 hover:shadow-indigo-600/35 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
+                      disabled={isLoading || Boolean(successMessage)}
+                      className={`flex-1 py-3.5 px-5 rounded-xl text-white font-heading font-bold text-sm sm:text-base tracking-tight shadow-lg active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-90 disabled:cursor-not-allowed ${
+                        successMessage
+                          ? 'bg-emerald-600 shadow-emerald-600/25'
+                          : 'bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-600 hover:from-indigo-500 hover:to-purple-500 shadow-indigo-600/25 hover:shadow-indigo-600/35'
+                      }`}
                     >
-                      {isLoading ? (
+                      {successMessage ? (
+                        <span>Tabriklaymiz! Profilingiz tayyor 🎉</span>
+                      ) : isLoading ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin" />
-                          <span>Hisob yaratilmoqda...</span>
+                          <span>Tayyorlanmoqda...</span>
                         </>
                       ) : (
                         <>
@@ -554,10 +599,10 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
                   </div>
                 </form>
 
-                {/* Hint about Admin Approval */}
+                {/* Hint about instant access */}
                 <div className="pt-3 text-center">
                   <p className="text-[11px] text-slate-500 dark:text-slate-400 font-body leading-relaxed">
-                    ✨ Roʻyxatdan oʻtgach, arizangiz xavfsizlik uchun admin tomonidan koʻrib chiqiladi (odatda 24 soat ichida).
+                    ✨ Roʻyxatdan oʻtishingiz bilan barcha imkoniyatlar darhol ochiladi.
                   </p>
                 </div>
 
@@ -567,7 +612,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
                     onClick={() => handleToggleMode(true)}
                     className="text-xs sm:text-sm font-heading font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors cursor-pointer"
                   >
-                    Avval roʻyxatdan oʻtganmisiz? Profilingizga kiring
+                    Profilingiz bormi? Tizimga kiring
                   </button>
                 </div>
               </motion.div>
@@ -585,15 +630,15 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-900 mb-2.5 shadow-xs">
                 <Sparkles className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
                 <span className="text-xs font-mono font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-300">
-                  Kabinetga kirish
+                  Tizimga kirish
                 </span>
               </div>
 
               <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight font-heading leading-snug">
-                Profilingizga xush kelibsiz
+                Xush kelibsiz 👋
               </h2>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-body mt-2 max-w-md mx-auto leading-relaxed">
-                Loyihalaringiz, yangi takliflar va xabarlaringiz sizni kutmoqda.
+                Profilingizga kiring va hamkorlikni davom ettiring
               </p>
             </div>
 
@@ -603,14 +648,15 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
                   htmlFor="modal-login-email-input"
                   className="block text-xs font-heading font-semibold text-slate-700 dark:text-slate-300 mb-1"
                 >
-                  Email manzili
+                  Email yoki telefon
                 </label>
                 <input
                   id="modal-login-email-input"
-                  type="email"
+                  type="text"
+                  inputMode="email"
                   value={contact}
                   onChange={(e) => setContact(e.target.value)}
-                  placeholder="masalan, sizning@email.uz"
+                  placeholder="azizbek@gmail.com yoki +998 90 123 45 67"
                   required
                   autoFocus
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-body text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-indigo-600 dark:focus:border-indigo-400 focus:outline-hidden transition-colors bg-slate-50/50 dark:bg-slate-800/50"
@@ -622,7 +668,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
                   htmlFor="modal-login-password-input"
                   className="block text-xs font-heading font-semibold text-slate-700 dark:text-slate-300 mb-1"
                 >
-                  Maxfiy parolingiz
+                  Parolingiz
                 </label>
                 <div className="relative">
                   <input
@@ -638,7 +684,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
-                    aria-label="Parolni ko'rsatish"
+                    aria-label="Parolni koʻrsatish"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -659,7 +705,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
                     </>
                   ) : (
                     <>
-                      <span>Kabinetga kirish</span>
+                      <span>Kirish</span>
                       <ArrowRight className="w-4 h-4 stroke-[2.5]" />
                     </>
                   )}
@@ -673,7 +719,7 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
                   onClick={() => handleToggleMode(false)}
                   className="text-xs sm:text-sm font-heading font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors cursor-pointer"
                 >
-                  Yangi hisob ochmoqchimisiz? Roʻyxatdan oʻtish
+                  Profilingiz yoʻqmi? Roʻyxatdan oʻting
                 </button>
               </div>
             </form>

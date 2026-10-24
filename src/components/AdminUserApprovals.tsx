@@ -5,27 +5,18 @@ import {
   X,
   Eye,
   AlertCircle,
-  Clock,
   CheckCircle2,
   XCircle,
   Search,
-  Filter,
-  ShieldCheck,
+  Ban,
   MapPin,
-  Mail,
-  Phone,
   Instagram,
   Youtube,
   Send,
   Video,
-  ExternalLink,
   Loader2,
-  Calendar,
-  DollarSign,
-  Tag,
-  Sparkles,
 } from 'lucide-react';
-import { UserSession, AccountStatus } from '../types';
+import { UserSession } from '../types';
 import { subscribeToUsersForAdmin, updateUserAccountStatus, isCurrentUserAdmin } from '../firebase';
 
 interface AdminUserApprovalsProps {
@@ -39,13 +30,13 @@ export const AdminUserApprovals: React.FC<AdminUserApprovalsProps> = ({
 }) => {
   const [users, setUsers] = useState<UserSession[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filterStatus, setFilterStatus] = useState<'pending' | 'approved' | 'rejected' | 'all'>('pending');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'rejected'>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   // Selected user for inspection modal
   const [selectedUser, setSelectedUser] = useState<UserSession | null>(null);
 
-  // Reject modal state
+  // Block (rejected) modal state
   const [rejectingUser, setRejectingUser] = useState<UserSession | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
@@ -67,17 +58,16 @@ export const AdminUserApprovals: React.FC<AdminUserApprovalsProps> = ({
     const unsubscribe = subscribeToUsersForAdmin((fetchedUsers) => {
       setUsers(fetchedUsers);
       setLoading(false);
-      
-      const pendingCount = fetchedUsers.filter((u) => u.accountStatus === 'pending').length;
+
       if (onPendingCountChange) {
-        onPendingCountChange(pendingCount);
+        onPendingCountChange(fetchedUsers.length);
       }
     });
 
     return () => unsubscribe();
   }, [onPendingCountChange, onUnauthorized]);
 
-  const handleApprove = async (user: UserSession) => {
+  const handleUnblock = async (user: UserSession) => {
     if (!isCurrentUserAdmin()) {
       onUnauthorized?.();
       return;
@@ -86,7 +76,7 @@ export const AdminUserApprovals: React.FC<AdminUserApprovalsProps> = ({
     setIsProcessing(user.uid);
     try {
       await updateUserAccountStatus(user.uid, 'approved');
-      showToast(`${user.name} arizasi muvaffaqiyatli tasdiqlandi!`);
+      showToast(`${user.name} blokdan chiqarildi!`);
       if (selectedUser?.uid === user.uid) {
         setSelectedUser({ ...selectedUser, accountStatus: 'approved', rejectionReason: '' });
       }
@@ -95,14 +85,14 @@ export const AdminUserApprovals: React.FC<AdminUserApprovalsProps> = ({
         onUnauthorized?.();
         return;
       }
-      console.error('Tasdiqlashda xatolik:', err);
-      showToast('Xatolik yuz berdi. Iltimos qayta urinib koʻring', 'error');
+      console.error('Blokdan chiqarishda xatolik:', err);
+      showToast('Xatolik yuz berdi. Iltimos, qayta urinib koʻring', 'error');
     } finally {
       setIsProcessing(null);
     }
   };
 
-  const handleOpenRejectModal = (user: UserSession) => {
+  const handleOpenBlockModal = (user: UserSession) => {
     if (!isCurrentUserAdmin()) {
       onUnauthorized?.();
       return;
@@ -111,7 +101,7 @@ export const AdminUserApprovals: React.FC<AdminUserApprovalsProps> = ({
     setRejectReason(user.rejectionReason || '');
   };
 
-  const handleConfirmReject = async () => {
+  const handleConfirmBlock = async () => {
     if (!isCurrentUserAdmin()) {
       onUnauthorized?.();
       return;
@@ -120,7 +110,7 @@ export const AdminUserApprovals: React.FC<AdminUserApprovalsProps> = ({
     setIsProcessing(rejectingUser.uid);
     try {
       await updateUserAccountStatus(rejectingUser.uid, 'rejected', rejectReason);
-      showToast(`${rejectingUser.name} arizasi rad etildi`, 'success');
+      showToast(`${rejectingUser.name} hisobi bloklandi`, 'success');
       if (selectedUser?.uid === rejectingUser.uid) {
         setSelectedUser({ ...selectedUser, accountStatus: 'rejected', rejectionReason: rejectReason });
       }
@@ -131,22 +121,19 @@ export const AdminUserApprovals: React.FC<AdminUserApprovalsProps> = ({
         onUnauthorized?.();
         return;
       }
-      console.error('Rad etishda xatolik:', err);
-      showToast('Xatolik yuz berdi. Iltimos qayta urinib koʻring', 'error');
+      console.error('Bloklashda xatolik:', err);
+      showToast('Xatolik yuz berdi. Iltimos, qayta urinib koʻring', 'error');
     } finally {
       setIsProcessing(null);
     }
   };
 
-  // Filtered users
+  // Filtered users: only accountStatus === 'rejected' is blocked; all others ('approved', 'pending', undefined) are active
   const filteredUsers = users.filter((u) => {
-    // Status filter
-    if (filterStatus !== 'all') {
-      const status = u.accountStatus || 'approved';
-      if (status !== filterStatus) return false;
-    }
+    const isBlocked = u.accountStatus === 'rejected';
+    if (filterStatus === 'active' && isBlocked) return false;
+    if (filterStatus === 'rejected' && !isBlocked) return false;
 
-    // Search query
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       const matchName = u.name?.toLowerCase().includes(q);
@@ -160,8 +147,7 @@ export const AdminUserApprovals: React.FC<AdminUserApprovalsProps> = ({
     return true;
   });
 
-  const pendingCount = users.filter((u) => u.accountStatus === 'pending').length;
-  const approvedCount = users.filter((u) => (u.accountStatus || 'approved') === 'approved').length;
+  const activeCount = users.filter((u) => u.accountStatus !== 'rejected').length;
   const rejectedCount = users.filter((u) => u.accountStatus === 'rejected').length;
 
   return (
@@ -188,27 +174,19 @@ export const AdminUserApprovals: React.FC<AdminUserApprovalsProps> = ({
       <div className="bg-white dark:bg-[#1A1A24] rounded-3xl p-5 sm:p-6 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div className="space-y-2 flex-1 min-w-0">
-            {/* Status indicator badge displayed distinctly without colliding with the title */}
             <div>
-              {pendingCount > 0 ? (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-heading font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 shadow-2xs">
-                  <Clock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                  <span>{pendingCount} ta tasdiqlash kutilmoqda</span>
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-heading font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 shadow-2xs">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                  <span>Barchasi koʻrib chiqilgan</span>
-                </span>
-              )}
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-heading font-semibold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 shadow-2xs">
+                <Users className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                <span>Jami {users.length} ta foydalanuvchi</span>
+              </span>
             </div>
 
             <h2 className="text-lg sm:text-xl font-heading font-extrabold text-slate-900 dark:text-white tracking-tight leading-snug">
-              Tasdiqlashni kutayotgan foydalanuvchilar
+              Barcha foydalanuvchilar
             </h2>
 
             <p className="text-xs text-slate-500 dark:text-slate-400 font-body leading-relaxed max-w-xl">
-              Yangi roʻyxatdan oʻtgan foydalanuvchilar arizasini tekshiring, profillarini koʻrib chiqing va tasdiqlang yoki rad eting.
+              Platformada roʻyxatdan oʻtgan barcha bloger va brendlar roʻyxati. Foydalanuvchi maʼlumotlarini koʻrishingiz yoki kerak boʻlganda hisobni bloklashingiz mumkin.
             </p>
           </div>
 
@@ -219,53 +197,14 @@ export const AdminUserApprovals: React.FC<AdminUserApprovalsProps> = ({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Ism, email yoki shahar boʻyicha qidirish..."
+              placeholder="Ism, email, telefon yoki shahar boʻyicha..."
               className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 bg-slate-50/70 dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
             />
           </div>
         </div>
 
-        {/* Status Filter Chips - Horizontally scrollable and shrink-proof */}
+        {/* Status Filter Chips */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs no-scrollbar flex-nowrap w-full touch-pan-x">
-          <button
-            type="button"
-            onClick={() => setFilterStatus('pending')}
-            className={`px-3.5 py-2 rounded-xl font-heading font-semibold transition-colors flex items-center gap-1.5 shrink-0 whitespace-nowrap cursor-pointer ${
-              filterStatus === 'pending'
-                ? 'bg-amber-600 text-white shadow-xs'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-            }`}
-          >
-            <Clock className="w-3.5 h-3.5" />
-            <span>Kutilmoqda ({pendingCount})</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setFilterStatus('approved')}
-            className={`px-3.5 py-2 rounded-xl font-heading font-semibold transition-colors flex items-center gap-1.5 shrink-0 whitespace-nowrap cursor-pointer ${
-              filterStatus === 'approved'
-                ? 'bg-emerald-600 text-white shadow-xs'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-            }`}
-          >
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>Tasdiqlanganlar ({approvedCount})</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setFilterStatus('rejected')}
-            className={`px-3.5 py-2 rounded-xl font-heading font-semibold transition-colors flex items-center gap-1.5 shrink-0 whitespace-nowrap cursor-pointer ${
-              filterStatus === 'rejected'
-                ? 'bg-rose-600 text-white shadow-xs'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-            }`}
-          >
-            <XCircle className="w-3.5 h-3.5" />
-            <span>Rad etilganlar ({rejectedCount})</span>
-          </button>
-
           <button
             type="button"
             onClick={() => setFilterStatus('all')}
@@ -278,10 +217,36 @@ export const AdminUserApprovals: React.FC<AdminUserApprovalsProps> = ({
             <Users className="w-3.5 h-3.5" />
             <span>Barchasi ({users.length})</span>
           </button>
+
+          <button
+            type="button"
+            onClick={() => setFilterStatus('active')}
+            className={`px-3.5 py-2 rounded-xl font-heading font-semibold transition-colors flex items-center gap-1.5 shrink-0 whitespace-nowrap cursor-pointer ${
+              filterStatus === 'active'
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+            }`}
+          >
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            <span>Faollar ({activeCount})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setFilterStatus('rejected')}
+            className={`px-3.5 py-2 rounded-xl font-heading font-semibold transition-colors flex items-center gap-1.5 shrink-0 whitespace-nowrap cursor-pointer ${
+              filterStatus === 'rejected'
+                ? 'bg-rose-600 text-white shadow-xs'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+            }`}
+          >
+            <XCircle className="w-3.5 h-3.5" />
+            <span>Bloklanganlar ({rejectedCount})</span>
+          </button>
         </div>
       </div>
 
-      {/* Users List Table / Cards */}
+      {/* Users List Table */}
       <div className="bg-white dark:bg-[#1A1A24] rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs overflow-hidden">
         {loading ? (
           <div className="py-16 text-center text-slate-400 dark:text-slate-500 flex flex-col items-center justify-center gap-2 text-xs">
@@ -291,15 +256,13 @@ export const AdminUserApprovals: React.FC<AdminUserApprovalsProps> = ({
         ) : filteredUsers.length === 0 ? (
           <div className="py-16 text-center text-slate-500 dark:text-slate-400 px-4">
             <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-3 text-slate-400 dark:text-slate-500">
-              <Clock className="w-6 h-6" />
+              <Users className="w-6 h-6" />
             </div>
             <p className="font-heading font-bold text-sm text-slate-800 dark:text-slate-200">
-              {filterStatus === 'pending'
-                ? 'Hozircha tasdiqlashni kutayotgan yangi arizalar yoʻq'
-                : 'Tanlangan filtr boʻyicha foydalanuvchilar topilmadi'}
+              Tanlangan filtr boʻyicha foydalanuvchilar topilmadi
             </p>
             <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-sm mx-auto font-body">
-              Yangi foydalanuvchilar roʻyxatdan oʻtganda ular avtomatik shu yerda aks etadi.
+              Yangi foydalanuvchilar roʻyxatdan oʻtganda ular avtomatik shu roʻyxatda koʻrinadi.
             </p>
           </div>
         ) : (
@@ -317,9 +280,7 @@ export const AdminUserApprovals: React.FC<AdminUserApprovalsProps> = ({
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {filteredUsers.map((u) => {
-                  const status = u.accountStatus || 'approved';
-                  const isUserPending = status === 'pending';
-                  const isUserRejected = status === 'rejected';
+                  const isBlocked = u.accountStatus === 'rejected';
 
                   return (
                     <tr
@@ -346,7 +307,7 @@ export const AdminUserApprovals: React.FC<AdminUserApprovalsProps> = ({
                               {u.name || 'Ismsiz foydalanuvchi'}
                             </p>
                             <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                              {u.email || u.contact}
+                              {u.contact || u.email}
                             </p>
                           </div>
                         </div>
@@ -395,22 +356,15 @@ export const AdminUserApprovals: React.FC<AdminUserApprovalsProps> = ({
 
                       {/* Account Status Badge */}
                       <td className="py-4 px-4 whitespace-nowrap">
-                        {status === 'pending' && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
-                            <Clock className="w-3 h-3" />
-                            <span>Kutilmoqda</span>
-                          </span>
-                        )}
-                        {status === 'approved' && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                            <CheckCircle2 className="w-3 h-3" />
-                            <span>Tasdiqlangan</span>
-                          </span>
-                        )}
-                        {status === 'rejected' && (
+                        {isBlocked ? (
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
                             <XCircle className="w-3 h-3" />
-                            <span>Rad etilgan</span>
+                            <span>Bloklangan</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                            <CheckCircle2 className="w-3 h-3" />
+                            <span>Faol</span>
                           </span>
                         )}
                       </td>
@@ -421,49 +375,40 @@ export const AdminUserApprovals: React.FC<AdminUserApprovalsProps> = ({
                           className="inline-flex items-center gap-1.5"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          {/* Inspect Profile */}
                           <button
                             type="button"
                             onClick={() => setSelectedUser(u)}
-                            className="p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                            className="p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                             title="Batafsil maʼlumotlarni koʻrish"
                           >
                             <Eye className="w-4 h-4" />
                           </button>
 
-                          {/* Approve button */}
-                          <button
-                            type="button"
-                            onClick={() => handleApprove(u)}
-                            disabled={isProcessing === u.uid}
-                            className={`px-3 py-1.5 rounded-xl font-heading font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer ${
-                              status === 'approved'
-                                ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 hover:text-emerald-700 dark:hover:text-emerald-300'
-                                : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs'
-                            }`}
-                          >
-                            {isProcessing === u.uid ? (
-                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            ) : (
-                              <Check className="w-3.5 h-3.5" />
-                            )}
-                            <span>{status === 'approved' ? 'Qayta tasdiqlash' : 'Tasdiqlash'}</span>
-                          </button>
-
-                          {/* Reject button */}
-                          <button
-                            type="button"
-                            onClick={() => handleOpenRejectModal(u)}
-                            disabled={isProcessing === u.uid}
-                            className={`px-3 py-1.5 rounded-xl font-heading font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer ${
-                              status === 'rejected'
-                                ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 hover:text-rose-700 dark:hover:text-rose-300'
-                                : 'bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
-                            }`}
-                          >
-                            <X className="w-3.5 h-3.5" />
-                            <span>Rad etish</span>
-                          </button>
+                          {isBlocked ? (
+                            <button
+                              type="button"
+                              onClick={() => handleUnblock(u)}
+                              disabled={isProcessing === u.uid}
+                              className="px-3 py-1.5 rounded-xl font-heading font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs disabled:opacity-50"
+                            >
+                              {isProcessing === u.uid ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <Check className="w-3.5 h-3.5" />
+                              )}
+                              <span>Blokdan chiqarish</span>
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenBlockModal(u)}
+                              disabled={isProcessing === u.uid}
+                              className="px-3 py-1.5 rounded-xl font-heading font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 disabled:opacity-50"
+                            >
+                              <Ban className="w-3.5 h-3.5" />
+                              <span>Bloklash</span>
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -515,7 +460,7 @@ export const AdminUserApprovals: React.FC<AdminUserApprovalsProps> = ({
                     </span>
                   </div>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    {selectedUser.email} {selectedUser.contact && selectedUser.contact !== selectedUser.email ? `• ${selectedUser.contact}` : ''}
+                    {selectedUser.contact || selectedUser.email}
                   </p>
                   <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
                     Roʻyxatdan oʻtgan sana: {selectedUser.registeredAt || 'Yaqinda'}
@@ -536,19 +481,13 @@ export const AdminUserApprovals: React.FC<AdminUserApprovalsProps> = ({
             <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700 flex items-center justify-between">
               <div className="flex items-center gap-2 text-xs">
                 <span className="text-slate-500 dark:text-slate-400 font-medium">Hisob holati:</span>
-                {selectedUser.accountStatus === 'pending' && (
-                  <span className="font-bold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/60 px-2 py-0.5 rounded-md">
-                    Kutilmoqda (Admin tasdiqi talab qilinadi)
-                  </span>
-                )}
-                {selectedUser.accountStatus === 'approved' && (
-                  <span className="font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/60 px-2 py-0.5 rounded-md">
-                    Tasdiqlangan (Faol)
-                  </span>
-                )}
-                {selectedUser.accountStatus === 'rejected' && (
+                {selectedUser.accountStatus === 'rejected' ? (
                   <span className="font-bold text-rose-700 dark:text-rose-300 bg-rose-100 dark:bg-rose-950/60 px-2 py-0.5 rounded-md">
-                    Rad etilgan
+                    Bloklangan
+                  </span>
+                ) : (
+                  <span className="font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/60 px-2 py-0.5 rounded-md">
+                    Faol
                   </span>
                 )}
               </div>
@@ -557,12 +496,12 @@ export const AdminUserApprovals: React.FC<AdminUserApprovalsProps> = ({
               </span>
             </div>
 
-            {/* Rejection Reason if any */}
-            {selectedUser.rejectionReason && (
+            {/* Block Reason if any */}
+            {selectedUser.accountStatus === 'rejected' && selectedUser.rejectionReason && (
               <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-xs text-rose-900 dark:text-rose-200 space-y-1">
                 <span className="font-bold flex items-center gap-1.5 text-rose-700 dark:text-rose-300">
                   <AlertCircle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
-                  Rad etish sababi:
+                  Bloklash sababi:
                 </span>
                 <p className="text-rose-800 dark:text-rose-300 leading-relaxed pl-5">
                   {selectedUser.rejectionReason}
@@ -686,36 +625,36 @@ export const AdminUserApprovals: React.FC<AdminUserApprovalsProps> = ({
                 Yopish
               </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  handleOpenRejectModal(selectedUser);
-                }}
-                className="px-4 py-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 font-heading font-bold text-xs border border-rose-200 dark:border-rose-800 transition-colors flex items-center gap-1.5 cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-                <span>Rad etish</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleApprove(selectedUser)}
-                disabled={isProcessing === selectedUser.uid}
-                className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-heading font-bold text-xs shadow-md shadow-emerald-600/20 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-              >
-                {isProcessing === selectedUser.uid ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Check className="w-4 h-4" />
-                )}
-                <span>Tasdiqlash</span>
-              </button>
+              {selectedUser.accountStatus === 'rejected' ? (
+                <button
+                  type="button"
+                  onClick={() => handleUnblock(selectedUser)}
+                  disabled={isProcessing === selectedUser.uid}
+                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-heading font-bold text-xs shadow-md shadow-emerald-600/20 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  {isProcessing === selectedUser.uid ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Check className="w-4 h-4" />
+                  )}
+                  <span>Blokdan chiqarish</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => handleOpenBlockModal(selectedUser)}
+                  className="px-4 py-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 font-heading font-bold text-xs border border-rose-200 dark:border-rose-800 transition-colors flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Ban className="w-4 h-4" />
+                  <span>Bloklash</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
       )}
 
-      {/* MODAL 2: Rejection Reason Dialog */}
+      {/* MODAL 2: Block User Dialog */}
       {rejectingUser && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs"
@@ -727,31 +666,31 @@ export const AdminUserApprovals: React.FC<AdminUserApprovalsProps> = ({
           >
             <div className="flex items-center gap-3 text-rose-600 dark:text-rose-400">
               <div className="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-950/60 flex items-center justify-center">
-                <AlertCircle className="w-5 h-5" />
+                <Ban className="w-5 h-5" />
               </div>
               <div>
                 <h3 className="font-heading font-extrabold text-lg text-slate-900 dark:text-white">
-                  Arizani rad etish
+                  Foydalanuvchini bloklash
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {rejectingUser.name} uchun rad etish sababini kiriting
+                  {rejectingUser.name} hisobini cheklash sababini kiriting
                 </p>
               </div>
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                Rad etish sababi (ixtiyoriy, foydalanuvchiga koʻrsatiladi):
+                Bloklash sababi (ixtiyoriy, foydalanuvchiga koʻrsatiladi):
               </label>
               <textarea
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
-                placeholder="Masalan: Ijtimoiy tarmoq havolalari notoʻgʻri koʻrsatilgan yoki profil toʻliq toʻldirilmagan..."
+                placeholder="Masalan: Platforma qoidalariga zid faoliyat yoki notoʻgʻri maʼlumotlar..."
                 rows={4}
                 className="w-full p-3 text-xs rounded-xl border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 text-slate-800 dark:text-slate-200 bg-slate-50/70 dark:bg-slate-800"
               />
               <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
-                Ushbu sabab foydalanuvchining ekranida chiqadi va u maʼlumotlarini toʻgʻrilab, arizani qayta yuborishi mumkin boʻladi.
+                Bloklangan foydalanuvchi tizimga kira olmaydi; istalgan vaqtda hisobni blokdan chiqarishingiz mumkin.
               </p>
             </div>
 
@@ -766,16 +705,16 @@ export const AdminUserApprovals: React.FC<AdminUserApprovalsProps> = ({
 
               <button
                 type="button"
-                onClick={handleConfirmReject}
+                onClick={handleConfirmBlock}
                 disabled={isProcessing === rejectingUser.uid}
                 className="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-heading font-bold text-xs shadow-md shadow-rose-600/20 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
               >
                 {isProcessing === rejectingUser.uid ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  <X className="w-4 h-4" />
+                  <Ban className="w-4 h-4" />
                 )}
-                <span>Rad etishni tasdiqlash</span>
+                <span>Bloklash</span>
               </button>
             </div>
           </div>

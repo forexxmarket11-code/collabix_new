@@ -52,8 +52,10 @@ export const AdminAgencyApplications: React.FC<AdminAgencyApplicationsProps> = (
           onCountChange(yangiCount);
         }
       },
-      (err) => {
-        console.error("Admin: Agentlik arizalarini yuklashda xatolik:", err);
+      (err: any) => {
+        if (err?.code !== 'permission-denied' && err?.code !== 'unavailable') {
+          console.warn("Admin: Agentlik arizalarini yuklashda ogohlantirish:", err?.message || err);
+        }
         setIsLoading(false);
       }
     );

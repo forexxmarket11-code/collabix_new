@@ -121,8 +121,10 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser }) => {
           return convs[0]?.id || '';
         });
       },
-      (err) => {
-        console.error("Firestore suhbatlarni yuklash xatosi:", err);
+      (err: any) => {
+        if (err?.code !== 'permission-denied' && err?.code !== 'unavailable') {
+          console.warn("Firestore suhbatlarni yuklash ogohlantirishi:", err?.message || err);
+        }
       }
     );
 
@@ -152,8 +154,10 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser }) => {
           [activeChatId]: formattedMsgs,
         }));
       },
-      (err) => {
-        console.error("Firestore xabarlarni yuklash xatosi:", err);
+      (err: any) => {
+        if (err?.code !== 'permission-denied' && err?.code !== 'unavailable') {
+          console.warn("Firestore xabarlarni yuklash ogohlantirishi:", err?.message || err);
+        }
       }
     );
 

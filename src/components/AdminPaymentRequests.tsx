@@ -73,8 +73,10 @@ export const AdminPaymentRequests: React.FC<AdminPaymentRequestsProps> = ({
           onCountChange(pending);
         }
       },
-      (err) => {
-        console.error('Toʻlov soʻrovlarini yuklashda xatolik:', err);
+      (err: any) => {
+        if (err?.code !== 'permission-denied' && err?.code !== 'unavailable') {
+          console.warn('Toʻlov soʻrovlarini yuklashda ogohlantirish:', err?.message || err);
+        }
         setIsLoading(false);
       }
     );

@@ -558,6 +558,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
       gallery: cleanGallery,
       mediaGallery: cleanGallery,
       profileCompletion: completion,
+      accountStatus: user?.accountStatus === 'rejected' ? 'rejected' : 'approved',
     };
 
     if (user?.uid) {

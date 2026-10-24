@@ -132,29 +132,73 @@ export async function loginAdmin(loginInput: string, password: string): Promise<
 }
 
 /**
+ * Normalize an email or Uzbekistan/international phone number to a valid Firebase Auth email
+ */
+export function normalizeContactToAuthEmail(rawInput: string): {
+  authEmail: string;
+  isPhone: boolean;
+  displayContact: string;
+  phoneNumber: string;
+} {
+  const trimmed = rawInput.trim();
+  if (trimmed.includes('@')) {
+    return {
+      authEmail: trimmed.toLowerCase(),
+      isPhone: false,
+      displayContact: trimmed,
+      phoneNumber: '',
+    };
+  }
+
+  const digits = trimmed.replace(/\D/g, '');
+  if (digits.length >= 9 && digits.length <= 15) {
+    const normalizedDigits = digits.length === 9 ? `998${digits}` : digits;
+    const formattedPhone = `+${normalizedDigits}`;
+    return {
+      authEmail: `tel_${normalizedDigits}@collabix.uz`,
+      isPhone: true,
+      displayContact: formattedPhone,
+      phoneNumber: formattedPhone,
+    };
+  }
+
+  return {
+    authEmail: trimmed,
+    isPhone: false,
+    displayContact: trimmed,
+    phoneNumber: '',
+  };
+}
+
+/**
  * Format Firebase Auth Error codes into friendly, clear Uzbek messages
  */
-export function getUzbekAuthErrorMessage(error: any): string {
+export function getUzbekAuthErrorMessage(error: any, isPhoneInput = false): string {
   const code = error?.code || '';
   switch (code) {
     case 'auth/email-already-in-use':
-      return "Bu email manzili allaqachon roʻyxatdan oʻtgan. Iltimos, profilingizga kiring.";
+      return isPhoneInput
+        ? "Bu telefon raqami allaqachon roʻyxatdan oʻtgan. Tizimga kiring."
+        : "Bu email allaqachon roʻyxatdan oʻtgan. Tizimga kiring.";
     case 'auth/invalid-email':
-      return "Email formati notoʻgʻri. Iltimos, toʻgʻri email manzilini kiriting (masalan: foydalanuvchi@mail.uz).";
+      return isPhoneInput
+        ? "Telefon raqami notoʻgʻri kiritilgan. Qaytadan tekshirib koʻring."
+        : "Email manzili notoʻgʻri kiritilgan. Qaytadan tekshirib koʻring.";
     case 'auth/weak-password':
-      return "Parol kamida 6 belgidan iborat boʻlishi kerak.";
+      return "Parol juda qisqa — kamida 6 ta belgi kiriting.";
     case 'auth/user-not-found':
-      return "Bunday email bilan hisob topilmadi. Avval roʻyxatdan oʻting.";
+      return isPhoneInput
+        ? "Bu telefon raqami bilan profil topilmadi. Avval roʻyxatdan oʻting."
+        : "Bu email bilan profil topilmadi. Avval roʻyxatdan oʻting.";
     case 'auth/wrong-password':
-      return "Email yoki parol notoʻgʻri. Iltimos, qaytadan tekshirib koʻring.";
     case 'auth/invalid-credential':
-      return "Email yoki parol notoʻgʻri. Iltimos, qaytadan tekshirib koʻring.";
+      return "Login yoki parol notoʻgʻri. Qaytadan tekshirib koʻring.";
     case 'auth/too-many-requests':
-      return "Koʻp marotaba notoʻgʻri urinish boʻldi. Xavfsizlik uchun biroz kutib, qayta urinib koʻring.";
+      return "Urinishlar koʻpayib ketdi. Biroz kutib, qayta urinib koʻring.";
     case 'auth/network-request-failed':
-      return "Internet bilan aloqa uzildi. Iltimos, internetingizni tekshirib koʻring.";
+      return "Internet aloqasi uzildi. Tarmoqni tekshirib, qayta urinib koʻring.";
     default:
-      return error?.message || "Kutilmagan xatolik yuz berdi. Iltimos, qaytadan urinib koʻring.";
+      return "Xatolik yuz berdi. Iltimos, qaytadan urinib koʻring.";
   }
 }
 
@@ -216,42 +260,57 @@ export async function registerUser(
   fullName: string,
   role: 'bloger' | 'brend'
 ): Promise<UserSession> {
-  const userCredential = await createUserWithEmailAndPassword(auth, email.trim(), pass);
+  const { authEmail, isPhone, displayContact, phoneNumber } = normalizeContactToAuthEmail(email);
+  const userCredential = await createUserWithEmailAndPassword(auth, authEmail, pass);
   const fbUser = userCredential.user;
 
   const initialCompletion = calculateProfileCompletion({
     name: fullName.trim(),
     role: role,
-    email: email.trim(),
-    contact: email.trim(),
-    phoneNumber: '',
+    email: isPhone ? '' : displayContact,
+    contact: displayContact,
+    phoneNumber: phoneNumber,
     telegramUsername: '',
   });
 
   const newUserProfile: UserSession = {
     uid: fbUser.uid,
-    email: fbUser.email || email.trim(),
+    email: isPhone ? '' : (fbUser.email || displayContact),
     name: fullName.trim(),
-    contact: email.trim(),
-    phoneNumber: '',
+    contact: displayContact,
+    phoneNumber: phoneNumber,
     telegramUsername: '',
     role: role,
     registeredAt: new Date().toLocaleDateString('uz-UZ'),
     city: 'Toshkent, Oʻzbekiston',
     profileCompletion: initialCompletion,
     subscriptionStatus: 'free',
-    accountStatus: 'pending',
+    accountStatus: 'approved',
   };
 
   try {
-    // Save to Firestore under 'users/{uid}' with serverTimestamp(), profileCompletion, and accountStatus: 'pending'
-    await setDoc(doc(db, 'users', fbUser.uid), {
-      ...newUserProfile,
-      accountStatus: 'pending',
-      profileCompletion: initialCompletion,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
+    // Save to Firestore under 'users/{uid}' with serverTimestamp(), profileCompletion, and accountStatus: 'approved'
+    try {
+      await setDoc(doc(db, 'users', fbUser.uid), {
+        ...newUserProfile,
+        accountStatus: 'approved',
+        profileCompletion: initialCompletion,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+    } catch (initialWriteErr: any) {
+      if (initialWriteErr?.code === 'permission-denied') {
+        const { accountStatus: _omittedStatus, ...profileWithoutStatus } = newUserProfile;
+        await setDoc(doc(db, 'users', fbUser.uid), {
+          ...profileWithoutStatus,
+          profileCompletion: initialCompletion,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+      } else {
+        throw initialWriteErr;
+      }
+    }
     console.log("[registerUser] Firestore'ga yangi foydalanuvchi hujjati muvaffaqiyatli saqlandi! UID:", fbUser.uid);
 
     // 2. Yangi ro'yxatdan o'tgan foydalanuvchi haqida Telegram API orqali adminga xabar yuborish
@@ -290,7 +349,8 @@ export async function registerUser(
  * Sign in existing user with Email and Password, and load their profile from Firestore
  */
 export async function loginUser(email: string, pass: string): Promise<UserSession> {
-  const userCredential = await signInWithEmailAndPassword(auth, email.trim(), pass);
+  const { authEmail, isPhone, displayContact } = normalizeContactToAuthEmail(email);
+  const userCredential = await signInWithEmailAndPassword(auth, authEmail, pass);
   const fbUser = userCredential.user;
 
   // Retrieve user document from Firestore
@@ -300,7 +360,7 @@ export async function loginUser(email: string, pass: string): Promise<UserSessio
     const snap = await getDoc(userDocRef);
     if (snap.exists()) {
       profile = snap.data() as UserSession;
-      if (!profile.accountStatus) {
+      if (!profile.accountStatus || profile.accountStatus === 'pending') {
         profile.accountStatus = 'approved';
       }
     }
@@ -312,9 +372,9 @@ export async function loginUser(email: string, pass: string): Promise<UserSessio
   if (!profile) {
     profile = {
       uid: fbUser.uid,
-      email: fbUser.email || email.trim(),
-      name: fbUser.displayName || email.split('@')[0],
-      contact: email.trim(),
+      email: isPhone ? '' : (fbUser.email || displayContact),
+      name: fbUser.displayName || displayContact.split('@')[0],
+      contact: displayContact,
       role: 'bloger',
       registeredAt: new Date().toLocaleDateString('uz-UZ'),
       city: 'Toshkent, Oʻzbekiston',
@@ -766,7 +826,7 @@ export async function saveUserProfile(uid: string, profile: Partial<UserSession>
       if (!existingSnap.exists()) {
         filteredProfile.uid = uid;
         filteredProfile.role = profile.role === 'brend' ? 'brend' : 'bloger';
-        filteredProfile.accountStatus = 'pending';
+        filteredProfile.accountStatus = 'approved';
         filteredProfile.subscriptionStatus = 'free';
         filteredProfile.createdAt = serverTimestamp();
       }
@@ -970,8 +1030,12 @@ export function subscribeToCancellationRecords(
       records.sort((a, b) => (b.cancelledAtMillis || 0) - (a.cancelledAtMillis || 0));
       callback(records);
     },
-    (err) => {
-      console.error("Bekor qilish ma'lumotlarini yuklashda xatolik:", err);
+    (err: any) => {
+      if (err?.code === 'permission-denied' || err?.code === 'unavailable') {
+        callback([]);
+        return;
+      }
+      console.warn("Bekor qilish ma'lumotlarini yuklashda xatolik:", err?.message || err);
       if (onError) onError(err);
     }
   );
@@ -1387,7 +1451,11 @@ export function onAuthUserChanged(callback: (user: UserSession | null, fbUser: F
             const fullProfile: UserSession = {
               uid: fbUser.uid,
               ...data,
-              accountStatus: isSuperAdmin ? 'approved' : (data.accountStatus || 'approved'),
+              accountStatus: isSuperAdmin
+                ? 'approved'
+                : data.accountStatus === 'rejected'
+                ? 'rejected'
+                : 'approved',
               subscriptionStatus: data.subscriptionStatus || 'free',
             };
 
@@ -1404,7 +1472,7 @@ export function onAuthUserChanged(callback: (user: UserSession | null, fbUser: F
               contact: fbUser.email || '',
               role: 'bloger',
               registeredAt: new Date().toLocaleDateString('uz-UZ'),
-              accountStatus: isSuperAdmin ? 'approved' : 'pending',
+              accountStatus: 'approved',
               subscriptionStatus: 'free',
             };
             callback(fallback, fbUser);
@@ -1417,7 +1485,17 @@ export function onAuthUserChanged(callback: (user: UserSession | null, fbUser: F
           // Fallback fetch
           fetchUserProfile(fbUser.uid).then((prof) => {
             if (prof) {
-              callback({ ...prof, accountStatus: isSuperAdmin ? 'approved' : (prof.accountStatus || 'approved') }, fbUser);
+              callback(
+                {
+                  ...prof,
+                  accountStatus: isSuperAdmin
+                    ? 'approved'
+                    : prof.accountStatus === 'rejected'
+                    ? 'rejected'
+                    : 'approved',
+                },
+                fbUser
+              );
             }
           }).catch(() => {});
         }
@@ -1487,7 +1565,7 @@ export function userSessionToCatalogCreator(user: UserSession): CatalogCreator {
     reviewsCount: typeof (user as any).reviewsCount === 'number' ? (user as any).reviewsCount : 0,
     priceRange: '1.5m-5m',
     priceDisplay,
-    verified: user.accountStatus === 'approved',
+    verified: Boolean(user.verified ?? (user.accountStatus !== 'rejected')),
     engagementRate: user.engagementRate || '7.8%',
     bio: user.bio || '',
     tags: user.categories && user.categories.length > 0 ? user.categories : ['Blogger', 'Kontent'],
@@ -1503,43 +1581,118 @@ export function userSessionToCatalogCreator(user: UserSession): CatalogCreator {
 }
 
 /**
- * Real-time subscription to only approved creators from Firestore 'users' collection
+ * Real-time subscription to active (non-rejected) creators from Firestore 'users' collection
  */
 export function subscribeToApprovedCreators(
   callback: (creators: CatalogCreator[], rawUsers: UserSession[]) => void,
   onError?: (error: any) => void
 ): () => void {
   const usersCol = collection(db, 'users');
+  const approvedQuery = usersCol;
 
-  return onSnapshot(
-    usersCol,
-    (snapshot) => {
-      const approvedCreators: CatalogCreator[] = [];
-      const rawApprovedUsers: UserSession[] = [];
+  let isDisposed = false;
+  let snapshotUnsub: (() => void) | null = null;
+  let retryTimer: ReturnType<typeof setTimeout> | null = null;
+  let lastUid: string | null | undefined = undefined;
+  let hasEmitted = false;
 
-      snapshot.docs.forEach((docSnap) => {
-        const data = docSnap.data() as UserSession;
-        const uid = docSnap.id;
-        const role = data.role || 'bloger';
-        const isCreator = role === 'bloger' || (role as string) === 'kreator';
-        const isApproved = data.accountStatus === 'approved';
+  const parseDocs = (docs: any[]) => {
+    const approvedCreators: CatalogCreator[] = [];
+    const rawApprovedUsers: UserSession[] = [];
 
-        if (isCreator && isApproved) {
-          const userObj: UserSession = { ...data, uid };
-          rawApprovedUsers.push(userObj);
-          approvedCreators.push(userSessionToCatalogCreator(userObj));
-        }
-      });
+    docs.forEach((docSnap) => {
+      const data = docSnap.data() as UserSession;
+      const uid = docSnap.id;
+      const role = data.role || 'bloger';
+      const isCreator = role === 'bloger' || (role as string) === 'kreator';
+      const isActive = data.accountStatus !== 'rejected';
 
-      callback(approvedCreators, rawApprovedUsers);
-    },
-    (error) => {
-      if (error?.code !== 'unavailable') {
-        console.warn("subscribeToApprovedCreators error:", error?.message || error);
+      if (isCreator && isActive) {
+        const userObj: UserSession = {
+          ...data,
+          uid,
+          accountStatus: 'approved',
+        };
+        rawApprovedUsers.push(userObj);
+        approvedCreators.push(userSessionToCatalogCreator(userObj));
       }
-      if (onError) onError(error);
+    });
+
+    hasEmitted = true;
+    callback(approvedCreators, rawApprovedUsers);
+  };
+
+  const cleanupSnapshot = () => {
+    if (retryTimer) {
+      clearTimeout(retryTimer);
+      retryTimer = null;
     }
-  );
+    if (snapshotUnsub) {
+      snapshotUnsub();
+      snapshotUnsub = null;
+    }
+  };
+
+  const attachListener = (allowRetry: boolean) => {
+    if (isDisposed) return;
+    cleanupSnapshot();
+
+    snapshotUnsub = onSnapshot(
+      approvedQuery,
+      (snapshot) => {
+        if (isDisposed) return;
+        parseDocs(snapshot.docs);
+      },
+      async (error) => {
+        if (isDisposed) return;
+        const code = error?.code || '';
+
+        try {
+          const fallbackSnap = await getDocs(approvedQuery);
+          if (!isDisposed) {
+            parseDocs(fallbackSnap.docs);
+            return;
+          }
+        } catch {
+          // Ignore fallback error; retry or resolve empty below
+        }
+
+        if (!hasEmitted && !isDisposed) {
+          callback([], []);
+        }
+
+        if (allowRetry && !isDisposed && (code === 'permission-denied' || code === 'unavailable' || code === 'unauthenticated')) {
+          retryTimer = setTimeout(() => {
+            if (!isDisposed) {
+              attachListener(false);
+            }
+          }, 2000);
+          return;
+        }
+
+        if (code !== 'unavailable' && code !== 'permission-denied') {
+          console.warn("subscribeToApprovedCreators warning:", error?.message || error);
+          if (onError) onError(error);
+        }
+      }
+    );
+  };
+
+  const authUnsub = onAuthStateChanged(auth, (fbUser) => {
+    if (isDisposed) return;
+    const nextUid = fbUser?.uid || null;
+    if (lastUid === nextUid && snapshotUnsub) {
+      return;
+    }
+    lastUid = nextUid;
+    attachListener(true);
+  });
+
+  return () => {
+    isDisposed = true;
+    authUnsub();
+    cleanupSnapshot();
+  };
 }
 
 /**
@@ -2455,10 +2608,12 @@ export function subscribeToUserConversations(
       convs.sort((a, b) => (b.updatedAtMillis || 0) - (a.updatedAtMillis || 0));
       onUpdate(convs);
     },
-    (err) => {
-      if (err?.code !== 'unavailable') {
-        console.warn("subscribeToUserConversations error:", err?.message || err);
+    (err: any) => {
+      if (err?.code === 'permission-denied' || err?.code === 'unavailable') {
+        onUpdate([]);
+        return;
       }
+      console.warn("subscribeToUserConversations error:", err?.message || err);
       if (onError) onError(err);
     }
   );
@@ -2494,10 +2649,12 @@ export function subscribeToConversationMessages(
       });
       onUpdate(msgs);
     },
-    (err) => {
-      if (err?.code !== 'unavailable') {
-        console.warn("subscribeToConversationMessages error:", err?.message || err);
+    (err: any) => {
+      if (err?.code === 'permission-denied' || err?.code === 'unavailable') {
+        onUpdate([]);
+        return;
       }
+      console.warn("subscribeToConversationMessages error:", err?.message || err);
       if (onError) onError(err);
     }
   );
@@ -2779,10 +2936,12 @@ export function subscribeToAgencyApplications(
       items.sort((a, b) => (b.createdAtMillis || 0) - (a.createdAtMillis || 0));
       callback(items);
     },
-    (err) => {
-      if (err?.code !== 'unavailable') {
-        console.warn("Agentlik arizalarini tinglashda xatolik:", err?.message || err);
+    (err: any) => {
+      if (err?.code === 'permission-denied' || err?.code === 'unavailable') {
+        callback([]);
+        return;
       }
+      console.warn("Agentlik arizalarini tinglashda xatolik:", err?.message || err);
       if (onError) onError(err);
     }
   );
@@ -3278,8 +3437,12 @@ export function subscribeToPaymentRequests(
       list.sort((a, b) => (b.createdAtMillis || 0) - (a.createdAtMillis || 0));
       callback(list);
     },
-    (err) => {
-      console.error("subscribeToPaymentRequests xatosi:", err);
+    (err: any) => {
+      if (err?.code === 'permission-denied' || err?.code === 'unavailable') {
+        callback([]);
+        return;
+      }
+      console.warn("subscribeToPaymentRequests xatosi:", err?.message || err);
       if (onError) onError(err);
     }
   );

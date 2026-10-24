@@ -179,7 +179,7 @@ export function AdminDashboardPage({ onLogout, onGoToSite, onUnauthorized }: Adm
           <div className="min-w-0">
             <h1 className="text-xl sm:text-2xl font-heading font-extrabold text-slate-900 dark:text-white tracking-tight">
               {activeTab === 'approvals'
-                ? 'Foydalanuvchilarni tasdiqlash'
+                ? 'Barcha foydalanuvchilar'
                 : activeTab === 'payment_requests'
                 ? 'Toʻlov soʻrovlari (Pro rejim)'
                 : activeTab === 'cancellations'
@@ -190,7 +190,7 @@ export function AdminDashboardPage({ onLogout, onGoToSite, onUnauthorized }: Adm
             </h1>
             <p className="text-xs sm:text-sm font-body text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
               {activeTab === 'approvals'
-                ? 'Yangi roʻyxatdan oʻtgan kreator va brendlar arizalarini tekshirish va tasdiqlash markazi.'
+                ? 'Platformada roʻyxatdan oʻtgan barcha bloger va brendlar roʻyxati hamda hisoblarni boshqarish.'
                 : activeTab === 'payment_requests'
                 ? 'Bank kartasi orqali yuborilgan toʻlov cheklari va screenshotlarini tekshirish hamda Pro rejimni faollashtirish.'
                 : activeTab === 'cancellations'
@@ -212,10 +212,10 @@ export function AdminDashboardPage({ onLogout, onGoToSite, onUnauthorized }: Adm
                   : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/50'
               }`}
             >
-              <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-              <span>Tasdiqlashni kutayotganlar</span>
+              <Users className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+              <span>Barcha foydalanuvchilar</span>
               {pendingCount > 0 && (
-                <span className="px-1.5 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-mono font-bold leading-none">
+                <span className="px-1.5 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-mono font-bold leading-none">
                   {pendingCount}
                 </span>
               )}

@@ -639,7 +639,7 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
     ? rawAvatarUrl
     : `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=6366f1&color=fff&bold=true`;
 
-  const isVerified = creatorProfile.verified ?? (creatorProfile.accountStatus === 'approved');
+  const isVerified = creatorProfile.verified ?? (creatorProfile.accountStatus !== 'rejected');
   const category = creatorProfile.categories?.[0] || 'Blogger';
   const city = creatorProfile.city || 'Toshkent';
   const rating = typeof creatorProfile.rating === 'number' ? creatorProfile.rating : 5.0;

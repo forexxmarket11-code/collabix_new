@@ -76,8 +76,10 @@ export const AdminCancellationReasons: React.FC<AdminCancellationReasonsProps> =
           onCountChange(data.length);
         }
       },
-      (err) => {
-        console.error("Cancellations fetch error:", err);
+      (err: any) => {
+        if (err?.code !== 'permission-denied' && err?.code !== 'unavailable') {
+          console.warn("Cancellations fetch warning:", err?.message || err);
+        }
         setIsLoading(false);
         setIsRefreshing(false);
       }

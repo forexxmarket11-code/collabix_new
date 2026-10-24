@@ -63,8 +63,8 @@ service cloud.firestore {
       return data.uid == userId
         && data.name is string && data.name.size() >= 1 && data.name.size() <= 200
         && data.role in ['bloger', 'brend']
-        && (!('accountStatus' in data) || data.accountStatus == 'pending')
-        && (!('status' in data) || data.status == 'pending')
+        && (!('accountStatus' in data) || data.accountStatus in ['pending', 'approved'])
+        && (!('status' in data) || data.status in ['pending', 'approved'])
         && (!('verified' in data) || data.verified == false)
         && (!('isVerified' in data) || data.isVerified == false)
         && (!('subscriptionStatus' in data) || data.subscriptionStatus in ['free', 'none'])

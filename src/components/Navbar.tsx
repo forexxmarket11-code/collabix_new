@@ -36,7 +36,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const isRestricted = currentUser && (currentUser.accountStatus === 'pending' || currentUser.accountStatus === 'rejected');
+  const isRestricted = Boolean(currentUser && currentUser.accountStatus === 'rejected');
   const isPro = currentUser && (currentUser.subscriptionStatus === 'trial' || currentUser.subscriptionStatus === 'active') && !isRestricted;
 
   const handleNavClick = (sectionId: string) => {
@@ -91,13 +91,9 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Desktop Navigation Links */}
           {isRestricted ? (
             <div className="hidden md:flex items-center gap-3">
-              <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-xs font-heading font-medium text-amber-800 dark:text-amber-200">
-                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                <span>
-                  {currentUser?.accountStatus === 'rejected'
-                    ? 'Arizangiz tasdiqlanmadi (Rad etilgan)'
-                    : 'Arizangiz koʻrib chiqilmoqda (Tasdiqlash kutilmoqda)'}
-                </span>
+              <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 text-xs font-heading font-medium text-rose-800 dark:text-rose-200">
+                <span className="w-2 h-2 rounded-full bg-rose-500" />
+                <span>Hisobingiz cheklangan</span>
               </span>
             </div>
           ) : (
@@ -288,19 +284,13 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="flex flex-col space-y-3 font-heading font-semibold text-sm text-slate-800 dark:text-slate-200">
             {isRestricted ? (
               <div className="space-y-3">
-                <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60">
-                  <p className="text-xs font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                    <span>
-                      {currentUser?.accountStatus === 'rejected'
-                        ? 'Arizangiz tasdiqlanmadi'
-                        : 'Arizangiz koʻrib chiqilmoqda'}
-                    </span>
+                <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60">
+                  <p className="text-xs font-bold text-rose-900 dark:text-rose-200 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-rose-500" />
+                    <span>Hisobingiz cheklangan</span>
                   </p>
-                  <p className="text-[11px] text-amber-700 dark:text-amber-300 mt-1">
-                    {currentUser?.accountStatus === 'rejected'
-                      ? 'Profil maʼlumotlarini toʻgʻrilab, qayta yuborishingiz mumkin.'
-                      : 'Profilingiz admin tomonidan tasdiqlangach, barcha platforma funksiyalari avtomatik ochiladi.'}
+                  <p className="text-[11px] text-rose-700 dark:text-rose-300 mt-1">
+                    Profil maʼlumotlarini tahrirlashingiz mumkin.
                   </p>
                 </div>
 

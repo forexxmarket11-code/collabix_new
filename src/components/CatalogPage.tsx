@@ -54,7 +54,9 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
         setIsLoading(false);
       },
       (error) => {
-        console.error("Firestore creators subscription error:", error);
+        if (error?.code !== 'permission-denied' && error?.code !== 'unavailable') {
+          console.warn("Firestore creators subscription warning:", error?.message || error);
+        }
         setIsLoading(false);
       }
     );
@@ -312,11 +314,11 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
           </div>
 
           <h3 className="font-heading font-extrabold text-xl text-slate-900 dark:text-white mb-2">
-            Hozircha tasdiqlangan kreatorlar yo'q, tez orada qo'shiladi
+            Hozircha kreatorlar yoʻq, tez orada qoʻshiladi
           </h3>
 
           <p className="text-sm text-slate-600 dark:text-[#D0D0D8] font-body leading-relaxed max-w-md mx-auto mb-6">
-            Yangi arizalar moderatorlar tomonidan ko'rib chiqilib tasdiqlangach, barcha saralangan kreatorlar ushbu katalogda avtomatik ravishda paydo bo'ladi.
+            Roʻyxatdan oʻtgan bloger va kreatorlar ushbu katalogda avtomatik ravishda paydo boʻladi.
           </p>
 
           <button
@@ -325,7 +327,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
             onClick={onOpenRegister}
             className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-heading font-bold text-xs uppercase tracking-wider shadow-md shadow-indigo-600/20 active:scale-95 transition-all cursor-pointer"
           >
-            <span>Kreator sifatida ro'yxatdan o'tish</span>
+            <span>Kreator sifatida roʻyxatdan oʻtish</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>

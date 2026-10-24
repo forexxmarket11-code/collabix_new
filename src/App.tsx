@@ -59,11 +59,11 @@ export default function App() {
         return 'admin';
       }
 
-      // Check if logged-in user is restricted (pending approval or rejected)
+      // Check if logged-in user is blocked (rejected)
       const savedUserStr = localStorage.getItem('collabix_user');
       if (savedUserStr) {
         const savedUser: UserSession = JSON.parse(savedUserStr);
-        if (savedUser.accountStatus === 'pending' || savedUser.accountStatus === 'rejected') {
+        if (savedUser.accountStatus === 'rejected') {
           if (hash === '#edit-profile' || hash === '#tahrirlash') {
             return 'edit-profile';
           }
@@ -139,7 +139,7 @@ export default function App() {
     authUid !== ADMIN_UID &&
       currentUser?.uid !== ADMIN_UID &&
       currentUser &&
-      (currentUser.accountStatus === 'pending' || currentUser.accountStatus === 'rejected')
+      currentUser.accountStatus === 'rejected'
   );
 
   // Real-time Firestore subscription to notifications for current authenticated user
@@ -248,9 +248,9 @@ export default function App() {
         } catch {
           // ignore
         }
-        if (userProfile.uid === ADMIN_UID || userProfile.accountStatus === 'approved') {
+        if (userProfile.uid === ADMIN_UID || userProfile.accountStatus !== 'rejected') {
           setCurrentPage((prev) => (prev === 'pending-approval' ? 'home' : prev));
-        } else if (userProfile.accountStatus === 'pending' || userProfile.accountStatus === 'rejected') {
+        } else if (userProfile.accountStatus === 'rejected') {
           setCurrentPage((prev) => (prev === 'edit-profile' || prev === 'admin' ? prev : 'pending-approval'));
         }
       } else {
@@ -286,7 +286,7 @@ export default function App() {
         if (
           activeUser &&
           activeUser.uid !== ADMIN_UID &&
-          (activeUser.accountStatus === 'pending' || activeUser.accountStatus === 'rejected')
+          activeUser.accountStatus === 'rejected'
         ) {
           if (hash === '#edit-profile' || hash === '#tahrirlash') {
             target = 'edit-profile';
@@ -501,7 +501,7 @@ export default function App() {
     } catch {
       // ignore
     }
-    if (user.accountStatus === 'pending' || user.accountStatus === 'rejected') {
+    if (user.accountStatus === 'rejected') {
       handlePageChange('pending-approval');
     } else {
       handlePageChange('home');
