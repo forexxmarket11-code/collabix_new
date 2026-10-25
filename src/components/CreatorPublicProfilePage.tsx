@@ -40,8 +40,11 @@ import {
   subscribeToCreatorDocument,
   incrementCreatorViews,
   isContactUnlockedForUser,
+  fetchPrivateContact,
+  pickPhoneFromContact,
   unlockCreatorContact,
 } from '../firebase';
+import type { PrivateContact } from '../firebase';
 import { checkProUserAndProceed } from '../utils/subscription';
 import { ContactPackagesModal } from './ContactPackagesModal';
 
@@ -483,6 +486,30 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
       )
   );
 
+  // Yopiq kontaktni faqat ochilgan bo'lsa serverdan so'raymiz (ruxsat bo'lmasa null qaytadi)
+  const [privateContact, setPrivateContact] = useState<PrivateContact | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    if (!effectiveId || !isContactUnlocked) {
+      setPrivateContact(null);
+      return;
+    }
+    fetchPrivateContact(effectiveId).then((c) => {
+      if (!cancelled) setPrivateContact(c);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [effectiveId, isContactUnlocked, currentUser?.unlockedContactsCount, currentUser?.subscriptionStatus]);
+
+  // Qabul qilingan brifda saqlangan kontakt (zaxira manba)
+  const acceptedBriefContact = useMemo(() => {
+    const b = userBriefs.find(
+      (br) => br.selectedCreatorId === effectiveId && (br.creatorPhoneNumber || br.creatorTelegramUsername)
+    );
+    return b ? { phone: b.creatorPhoneNumber, telegram: b.creatorTelegramUsername } : null;
+  }, [userBriefs, effectiveId]);
+
   const handleShare = () => {
     if (navigator.clipboard) {
       navigator.clipboard.writeText(window.location.href);
@@ -710,25 +737,29 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
 
   // Contact details for unlock section
   const rawPhone = (
-    creatorProfile.contact ||
-    (creatorProfile as any).phone ||
-    '+998 90 123 45 67'
+    pickPhoneFromContact(privateContact) ||
+    acceptedBriefContact?.phone ||
+    'Koʻrsatilmagan'
   ).trim();
 
   const rawTelegram = (
+    privateContact?.telegramUsername ||
+    acceptedBriefContact?.telegram ||
     creatorProfile.socialLinks?.telegram ||
-    creatorProfile.instagramHandle ||
-    (creatorProfile as any).telegram ||
-    '@kreator'
+    ''
   ).trim();
 
-  const telegramHandle = rawTelegram.startsWith('@')
+  const telegramHandle = !rawTelegram
+    ? 'Koʻrsatilmagan'
+    : rawTelegram.startsWith('@')
     ? rawTelegram
     : rawTelegram.startsWith('http')
-    ? `@${rawTelegram.split('/').filter(Boolean).pop() || 'kreator'}`
+    ? `@${rawTelegram.split('/').filter(Boolean).pop() || ''}`
     : `@${rawTelegram}`;
 
-  const telegramUrl = rawTelegram.startsWith('http')
+  const telegramUrl = !rawTelegram
+    ? '#'
+    : rawTelegram.startsWith('http')
     ? rawTelegram
     : `https://t.me/${rawTelegram.replace(/^@/, '')}`;
 

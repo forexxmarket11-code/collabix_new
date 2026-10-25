@@ -16,7 +16,8 @@ import {
   Zap,
 } from 'lucide-react';
 import { UserSession } from '../types';
-import { purchaseContactPackage, unlockCreatorContact } from '../firebase';
+import { unlockCreatorContact } from '../firebase';
+import { ManualPaymentPanel } from './ManualPaymentPanel';
 
 export interface ContactPackagesModalProps {
   isOpen: boolean;
@@ -51,7 +52,7 @@ export const CONTACT_PACKAGES: ContactPackageItem[] = [
     features: [
       "Kreatorning telefon va Telegram ma'lumotlari",
       "72 soatlik to'liq kirish",
-      "Xavfsiz to'lov: Click, Payme, Uzcard",
+      "Karta orqali to'lov, admin tasdig'i bilan",
     ],
   },
   // Qolgan paketlar keyinchalik yoqish uchun saqlangan:
@@ -137,37 +138,6 @@ export const ContactPackagesModal: React.FC<ContactPackagesModalProps> = ({
       return;
     }
     setStep('payment');
-  };
-
-  const handleConfirmPurchase = async () => {
-    setIsProcessing(true);
-    try {
-      await new Promise((r) => setTimeout(r, 800)); // Simulyatsiya qilingan to'lov kechikishi
-
-      if (currentUser?.uid) {
-        const updated = await purchaseContactPackage(currentUser.uid, selectedPackage.id, selectedPackage.contactsCount);
-        onUpdateUser(updated);
-
-        // Agar ochmoqchi bo'lgan kreator bo'lsa, darhol 1 tasini ishlatib ochish
-        if (targetCreator?.id) {
-          try {
-            const unlockRes = await unlockCreatorContact(currentUser.uid, targetCreator.id);
-            onUpdateUser(unlockRes.updatedUser);
-            if (onContactUnlockedSuccess) {
-              onContactUnlockedSuccess(targetCreator.id);
-            }
-          } catch (e) {
-            console.warn("Avtomatik ochishda xatolik:", e);
-          }
-        }
-      }
-
-      setStep('success');
-    } catch (err) {
-      console.error("To'lovda xatolik:", err);
-    } finally {
-      setIsProcessing(false);
-    }
   };
 
   return (
@@ -327,91 +297,15 @@ export const ContactPackagesModal: React.FC<ContactPackagesModalProps> = ({
 
           {/* Payment Step */}
           {step === 'payment' && (
-            <div className="p-4 sm:p-7 space-y-5">
-              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <span className="text-xs font-body text-slate-500 dark:text-slate-400">Tanlangan paket:</span>
-                  <div className="font-heading font-bold text-[15px] sm:text-base text-slate-900 dark:text-white">
-                    {selectedPackage.title} ({selectedPackage.contactsCount} ta kontakt)
-                  </div>
-                </div>
-                <div className="sm:text-right">
-                  <span className="text-xs font-body text-slate-500 dark:text-slate-400">Jami to'lov:</span>
-                  <div className="font-mono font-black text-lg text-indigo-600 dark:text-indigo-400">
-                    {selectedPackage.formattedPrice}
-                  </div>
-                </div>
-              </div>
-
-              {/* Provider selection */}
-              <div>
-                <label className="block text-xs font-heading font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
-                  To'lov tizimini tanlang:
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
-                  {[
-                    { id: 'click', label: 'Click Up', desc: "Click orqali to'lash" },
-                    { id: 'payme', label: 'Payme', desc: "Payme orqali to'lash" },
-                    { id: 'uzcard', label: 'Uzcard/Humo', desc: "To'g'ridan-to'g'ri karta" },
-                  ].map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => setSelectedProvider(item.id as any)}
-                      className={`min-h-[52px] p-3.5 rounded-2xl border text-left cursor-pointer transition-all flex sm:block items-center justify-between gap-2 ${
-                        selectedProvider === item.id
-                          ? 'border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/40 shadow-xs'
-                          : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60'
-                      }`}
-                    >
-                      <div className="font-heading font-bold text-[15px] sm:text-sm text-slate-900 dark:text-white">
-                        {item.label}
-                      </div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400 font-body sm:mt-0.5">
-                        {item.desc}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 flex items-start gap-2.5 text-[14px] sm:text-xs text-amber-800 dark:text-amber-300 font-body leading-relaxed">
-                <ShieldCheck className="w-4 h-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
-                <span>
-                  Toʻlov xavfsiz amalga oshiriladi. Tasdiqlangach, kontakt ochish balansingizga darhol qoʻshiladi va 72 soatlik kirish beriladi.
-                </span>
-              </div>
-
-              <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setStep('select')}
-                  disabled={isProcessing}
-                  className="w-full sm:w-auto min-h-[48px] px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-heading font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer flex items-center justify-center"
-                >
-                  Ortga
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleConfirmPurchase}
-                  disabled={isProcessing}
-                  className="w-full sm:w-auto min-h-[50px] px-5 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-indigo-600 hover:from-emerald-700 hover:to-indigo-700 text-white font-heading font-extrabold text-[15px] sm:text-sm shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
-                >
-                  {isProcessing ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin shrink-0" />
-                      <span>To'lov amalga oshirilmoqda...</span>
-                    </>
-                  ) : (
-                    <>
-                      <CreditCard className="w-4 h-4 shrink-0" />
-                      <span>To'lovni tasdiqlash ({selectedPackage.formattedPrice})</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
+            <ManualPaymentPanel
+              currentUser={currentUser}
+              purpose="contacts"
+              amount={selectedPackage.price}
+              purposeLabel={`${selectedPackage.title} — ${selectedPackage.contactsCount} ta kontakt`}
+              contactsCount={selectedPackage.contactsCount}
+              onBack={() => setStep('select')}
+              onSubmitted={() => setStep('success')}
+            />
           )}
 
           {/* Success Step */}
@@ -422,15 +316,15 @@ export const ContactPackagesModal: React.FC<ContactPackagesModalProps> = ({
               </div>
 
               <h3 className="font-heading font-black text-xl sm:text-2xl text-slate-900 dark:text-white">
-                To'lov muvaffaqiyatli yakunlandi!
+                Chek yuborildi!
               </h3>
 
               <p className="text-[15px] sm:text-sm text-slate-600 dark:text-slate-300 font-body max-w-md mx-auto leading-relaxed">
-                Sizga <strong>{selectedPackage.contactsCount} ta kontakt</strong> ochish balansi berildi.
+                Admin toʻlovni tekshirgach, hisobingizga <strong>{selectedPackage.contactsCount} ta kontakt</strong> ochish balansi qoʻshiladi.
                 {targetCreator?.name && (
                   <>
                     <br />
-                    <strong>{targetCreator.name}</strong> ning kontakt ma'lumotlari 72 soatga ochildi.
+                    Shundan soʻng <strong>{targetCreator.name}</strong> profiliga qaytib, &quot;Kontaktni ochish&quot; tugmasini bosing.
                   </>
                 )}
               </p>

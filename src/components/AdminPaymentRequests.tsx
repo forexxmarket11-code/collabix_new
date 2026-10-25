@@ -38,6 +38,21 @@ interface AdminPaymentRequestsProps {
   onUnauthorized?: () => void;
 }
 
+function describePaymentRequest(req: PaymentRequest): { label: string; amountText: string; approvedText: string } {
+  const amount = typeof req.amount === 'number' ? req.amount : 59000;
+  const amountText = `${amount.toLocaleString('ru-RU').replace(/,/g, ' ')} soʻm`;
+  const purpose = req.purpose || 'pro';
+  if (purpose === 'contacts') {
+    const n = req.contactsCount || 1;
+    return { label: req.purposeLabel || `Kontakt paketi — ${n} ta`, amountText, approvedText: `✓ Hisobiga ${n} ta kontakt ochish balansi qoʻshilgan` };
+  }
+  if (purpose === 'top') {
+    const d = req.topDays || 7;
+    return { label: req.purposeLabel || `TOP joylashuv — ${d} kun`, amountText, approvedText: `✓ Profili ${d} kunga TOP ga chiqarilgan` };
+  }
+  return { label: req.purposeLabel || 'Pro rejim — 1 oy', amountText, approvedText: '✓ Foydalanuvchiga 30 kunlik Pro rejim faollashtirilgan' };
+}
+
 export const AdminPaymentRequests: React.FC<AdminPaymentRequestsProps> = ({
   onCountChange,
   onUnauthorized,
@@ -93,7 +108,7 @@ export const AdminPaymentRequests: React.FC<AdminPaymentRequestsProps> = ({
     setActionLoadingId(req.id);
     try {
       await approvePaymentRequest(req.id, req.userId);
-      setToastMessage(`✓ ${req.userName} toʻlovi tasdiqlandi va 30 kunlik Pro rejim faollashtirildi!`);
+      setToastMessage(`✓ ${req.userName} toʻlovi tasdiqlandi: ${describePaymentRequest(req).label}`);
       setTimeout(() => setToastMessage(null), 4000);
     } catch (err: any) {
       if (err?.code === 'auth/not-admin') {
@@ -379,7 +394,11 @@ export const AdminPaymentRequests: React.FC<AdminPaymentRequestsProps> = ({
                     <div className="mt-1 flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 font-body flex-wrap">
                       <span className="flex items-center gap-1 text-slate-700 dark:text-slate-300 font-heading font-bold">
                         <CreditCard className="w-3.5 h-3.5 text-indigo-500" />
-                        <span>59 000 soʻm</span>
+                        <span>{describePaymentRequest(req).amountText}</span>
+                      </span>
+                      <span>•</span>
+                      <span className="px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 font-heading font-bold">
+                        {describePaymentRequest(req).label}
                       </span>
                       <span>•</span>
                       <span className="flex items-center gap-1">
@@ -407,7 +426,7 @@ export const AdminPaymentRequests: React.FC<AdminPaymentRequestsProps> = ({
                     {/* Approved info if any */}
                     {isApproved && (
                       <p className="mt-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-body">
-                        ✓ Foydalanuvchiga 30 kunlik Pro rejim faollashtirilgan
+                        {describePaymentRequest(req).approvedText}
                       </p>
                     )}
                   </div>
@@ -514,7 +533,7 @@ export const AdminPaymentRequests: React.FC<AdminPaymentRequestsProps> = ({
 
             <div className="px-4 sm:px-6 pt-3 pb-[max(16px,calc(env(safe-area-inset-bottom,0px)+12px))] sm:pb-5 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shrink-0">
               <span className="text-xs text-slate-500 font-body break-words">
-                Karta: 9860 0901 0699 8728 (Sobirov Aziz) · 59 000 soʻm
+                Karta: 9860 0901 0699 8728 (Sobirov Aziz)
               </span>
               <a
                 href={previewImage.url}

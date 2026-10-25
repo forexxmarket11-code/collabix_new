@@ -26,6 +26,8 @@ import {
   writeBatch,
   increment,
   deleteDoc,
+  deleteField,
+  Timestamp,
 } from 'firebase/firestore';
 import {
   getStorage,
@@ -56,6 +58,7 @@ import {
   AgencyApplicationStatus,
   PaymentRequest,
   PaymentRequestStatus,
+  PaymentPurpose,
 } from './types';
 import {
   isUserPro,
@@ -269,6 +272,118 @@ export function calculateProfileCompletion(user: Partial<UserSession>): number {
 /**
  * Sign up a new user with Email and Password, and save their profile in Firestore 'users' collection
  */
+/**
+ * ===== Yopiq kontakt ma'lumotlari =====
+ * Telefon, Telegram, email va login kontakti endi umumiy users/{uid} hujjatida emas,
+ * users/{uid}/private/contact hujjatida saqlanadi. Uni faqat egasi, admin,
+ * Pro brendlar, 72 soatlik kontakt ochgan brendlar va ruxsat (grant) berilganlar o'qiy oladi.
+ */
+export const PRIVATE_CONTACT_FIELDS = ['email', 'contact', 'phoneNumber', 'telegramUsername'] as const;
+type PrivateContactField = (typeof PRIVATE_CONTACT_FIELDS)[number];
+export type PrivateContact = Partial<Record<PrivateContactField, string>>;
+
+function pickPrivateFields(raw: any): PrivateContact {
+  const out: PrivateContact = {};
+  for (const key of PRIVATE_CONTACT_FIELDS) {
+    if (raw && typeof raw[key] === 'string') out[key] = raw[key];
+  }
+  return out;
+}
+
+function privateContactRef(uid: string) {
+  return doc(db, 'users', uid, 'private', 'contact');
+}
+
+export function splitPrivateContact<T extends Record<string, any>>(
+  data: T
+): { publicPart: Record<string, any>; privatePart: PrivateContact; hasPrivate: boolean } {
+  const publicPart: Record<string, any> = {};
+  const privatePart: PrivateContact = {};
+  let hasPrivate = false;
+  for (const [key, value] of Object.entries(data || {})) {
+    if ((PRIVATE_CONTACT_FIELDS as readonly string[]).includes(key)) {
+      hasPrivate = true;
+      if (typeof value === 'string') {
+        privatePart[key as PrivateContactField] = value;
+      }
+    } else {
+      publicPart[key] = value;
+    }
+  }
+  return { publicPart, privatePart, hasPrivate };
+}
+
+/**
+ * Kreator/brendning yopiq kontaktini o'qish. Ruxsat bo'lmasa null qaytaradi (xato chiqarmaydi).
+ */
+export async function fetchPrivateContact(uid: string): Promise<PrivateContact | null> {
+  if (!uid || !auth.currentUser) return null;
+  try {
+    const snap = await getDoc(privateContactRef(uid));
+    return snap.exists() ? pickPrivateFields(snap.data()) : {};
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Eski hujjatlarda umumiy profilda qolib ketgan kontaktlarni yopiq joyga ko'chiradi
+ * (egasi yoki admin chaqiradi). Yopiq hujjatdagi yangi qiymatlar ustidan yozilmaydi.
+ */
+export async function migrateLegacyPrivateContact(uid: string, publicData: Record<string, any>): Promise<PrivateContact> {
+  const { privatePart, hasPrivate } = splitPrivateContact(publicData || {});
+  if (!hasPrivate || !auth.currentUser) return {};
+  if (auth.currentUser.uid !== uid && !isCurrentUserAdmin()) return {};
+  try {
+    const existing = (await fetchPrivateContact(uid)) || {};
+    const toWrite: PrivateContact = {};
+    for (const key of PRIVATE_CONTACT_FIELDS) {
+      if (!existing[key] && privatePart[key]) {
+        toWrite[key] = privatePart[key];
+      }
+    }
+    if (Object.keys(toWrite).length > 0) {
+      await setDoc(privateContactRef(uid), { ...toWrite, updatedAt: serverTimestamp() }, { merge: true });
+    }
+    const removals: Record<string, any> = {};
+    for (const key of PRIVATE_CONTACT_FIELDS) {
+      if (key in publicData) removals[key] = deleteField();
+    }
+    await updateDoc(doc(db, 'users', uid), removals);
+    return { ...privatePart, ...existing };
+  } catch (err) {
+    console.warn("Kontaktni yopiq joyga ko'chirishda xatolik:", err);
+    return {};
+  }
+}
+
+/**
+ * Brif qabul qilinganda hamkorga o'z kontaktini ko'rish ruxsatini berish
+ * (users/{ownerUid}/contactGrants/{granteeUid}). Faqat egasi yoza oladi.
+ */
+export async function grantContactAccess(granteeUid: string): Promise<void> {
+  const ownerUid = auth.currentUser?.uid;
+  if (!ownerUid || !granteeUid || ownerUid === granteeUid) return;
+  try {
+    await setDoc(doc(db, 'users', ownerUid, 'contactGrants', granteeUid), {
+      granteeUid,
+      grantedAt: serverTimestamp(),
+    });
+  } catch (err) {
+    console.warn('Kontakt ruxsatini berishda xatolik:', err);
+  }
+}
+
+/**
+ * Telefon raqamini yopiq kontaktdan aniqlash (login kontakti email bo'lsa olinmaydi)
+ */
+export function pickPhoneFromContact(c?: PrivateContact | null): string | undefined {
+  if (!c) return undefined;
+  if (c.phoneNumber && c.phoneNumber.trim()) return c.phoneNumber.trim();
+  if (c.contact && !c.contact.includes('@') && c.contact.trim()) return c.contact.trim();
+  return undefined;
+}
+
 export async function registerUser(
   email: string,
   pass: string,
@@ -305,9 +420,10 @@ export async function registerUser(
 
   try {
     // Save to Firestore under 'users/{uid}' with serverTimestamp(), profileCompletion, and accountStatus: 'approved'
+    const { publicPart: publicProfile, privatePart: privateProfile } = splitPrivateContact(newUserProfile);
     try {
       await setDoc(doc(db, 'users', fbUser.uid), {
-        ...newUserProfile,
+        ...publicProfile,
         accountStatus: 'approved',
         profileCompletion: initialCompletion,
         createdAt: serverTimestamp(),
@@ -315,7 +431,7 @@ export async function registerUser(
       });
     } catch (initialWriteErr: any) {
       if (initialWriteErr?.code === 'permission-denied') {
-        const { accountStatus: _omittedStatus, ...profileWithoutStatus } = newUserProfile;
+        const { accountStatus: _omittedStatus, ...profileWithoutStatus } = publicProfile;
         await setDoc(doc(db, 'users', fbUser.uid), {
           ...profileWithoutStatus,
           profileCompletion: initialCompletion,
@@ -325,6 +441,12 @@ export async function registerUser(
       } else {
         throw initialWriteErr;
       }
+    }
+    // Telefon/email faqat yopiq hujjatga yoziladi
+    try {
+      await setDoc(privateContactRef(fbUser.uid), { ...privateProfile, updatedAt: serverTimestamp() }, { merge: true });
+    } catch (privateErr) {
+      console.warn("Yopiq kontaktni saqlashda xatolik:", privateErr);
     }
     console.log("[registerUser] Firestore'ga yangi foydalanuvchi hujjati muvaffaqiyatli saqlandi! UID:", fbUser.uid);
 
@@ -373,7 +495,10 @@ export async function loginUser(email: string, pass: string): Promise<UserSessio
     const userDocRef = doc(db, 'users', fbUser.uid);
     const snap = await getDoc(userDocRef);
     if (snap.exists()) {
-      profile = snap.data() as UserSession;
+      const rawData = snap.data() as Record<string, any>;
+      const migrated = await migrateLegacyPrivateContact(fbUser.uid, rawData);
+      const privateData = (await fetchPrivateContact(fbUser.uid)) || {};
+      profile = { ...(rawData as UserSession), ...migrated, ...privateData };
       if (!profile.accountStatus || profile.accountStatus === 'pending') {
         profile.accountStatus = 'approved';
       }
@@ -423,7 +548,8 @@ export async function fetchUserProfile(uid: string): Promise<UserSession | null>
   try {
     const snap = await getDoc(doc(db, 'users', uid));
     if (snap.exists()) {
-      return snap.data() as UserSession;
+      const privateData = (await fetchPrivateContact(uid)) || {};
+      return { ...(snap.data() as UserSession), ...privateData };
     }
   } catch (err) {
     console.error("fetchUserProfile xatosi:", err);
@@ -506,8 +632,8 @@ export function isContactUnlockedForUser(
     return { isUnlocked: false };
   }
 
-  // 1. Pro users have unlimited access (active & unexpired)
-  if (isUserPro(currentUser)) {
+  // 1. Pro brands have unlimited access (active & unexpired)
+  if (isUserPro(currentUser) && currentUser.role === 'brend') {
     return { isUnlocked: true, source: 'pro' };
   }
 
@@ -539,6 +665,8 @@ export async function purchaseContactPackage(
   packageType: 'single' | 'mini' | 'standard',
   contactsToAdd: number
 ): Promise<UserSession> {
+  // Faqat admin to'lovni tasdiqlaganda chaqiriladi
+  requireAdminAuth();
   const userDocRef = doc(db, 'users', userId);
   const snap = await getDoc(userDocRef);
   const existing = (snap.exists() ? snap.data() : {}) as UserSession;
@@ -576,6 +704,9 @@ export async function unlockCreatorContact(
   userId: string,
   creatorId: string
 ): Promise<{ success: boolean; updatedUser: UserSession; expiresAt: string }> {
+  if (!auth.currentUser || auth.currentUser.uid !== userId) {
+    throw new Error('Kontakt ochish uchun oʻz hisobingizga kiring.');
+  }
   const userDocRef = doc(db, 'users', userId);
   const snap = await getDoc(userDocRef);
   if (!snap.exists()) {
@@ -583,13 +714,13 @@ export async function unlockCreatorContact(
   }
 
   const existing = snap.data() as UserSession;
-  const balance = existing.unlockedContactsCount || 0;
+  const balance = typeof existing.unlockedContactsCount === 'number' ? existing.unlockedContactsCount : 0;
   if (balance <= 0) {
     throw new Error("Sizda kontakt ochish balansi mavjud emas. Iltimos, paket xarid qiling.");
   }
 
   const now = new Date();
-  const expiresDate = new Date(now.getTime() + 72 * 60 * 60 * 1000); // 72 hours
+  const expiresDate = new Date(now.getTime() + 72 * 60 * 60 * 1000); // 72 soat
   const expiresAt = expiresDate.toISOString();
   const unlockedAt = now.toISOString();
 
@@ -597,28 +728,25 @@ export async function unlockCreatorContact(
   const safeCreatorKey = creatorId.replace(/\./g, '_');
   const updatedUnlockedMap = {
     ...currentUnlockedMap,
-    [safeCreatorKey]: {
-      unlockedAt,
-      expiresAt,
-    },
-    ...(safeCreatorKey !== creatorId
-      ? {
-          [creatorId]: {
-            unlockedAt,
-            expiresAt,
-          },
-        }
-      : {}),
+    [safeCreatorKey]: { unlockedAt, expiresAt },
   };
 
-  const newBalance = Math.max(0, balance - 1);
-  const updates: Partial<UserSession> = {
+  const newBalance = balance - 1;
+
+  // Bitta paket ichida: ochish yozuvi + balansdan 1 ta yechish (qoidalar ikkalasini birga tekshiradi)
+  const batch = writeBatch(db);
+  batch.set(doc(db, 'users', userId, 'unlocks', creatorId), {
+    creatorId,
+    unlockedAt: serverTimestamp(),
+    expiresAt: Timestamp.fromDate(expiresDate),
+  });
+  batch.update(userDocRef, {
     unlockedContactsCount: newBalance,
     unlockedCreators: updatedUnlockedMap,
+    lastUnlockedCreatorId: creatorId,
     updatedAt: serverTimestamp(),
-  };
-
-  await updateDoc(userDocRef, updates);
+  });
+  await batch.commit();
 
   const updatedUser: UserSession = {
     ...existing,
@@ -643,8 +771,10 @@ export async function unlockCreatorContact(
  */
 export async function activateTopPlacement(
   creatorId: string,
-  durationDays: 7 | 15 | 30
+  durationDays: number
 ): Promise<{ updatedUntil: string }> {
+  // Faqat admin to'lovni tasdiqlaganda chaqiriladi
+  requireAdminAuth();
   const userDocRef = doc(db, 'users', creatorId);
   const snap = await getDoc(userDocRef);
   const existing = (snap.exists() ? snap.data() : {}) as UserSession;
@@ -847,8 +977,10 @@ export async function saveUserProfile(uid: string, profile: Partial<UserSession>
     } catch {}
   }
 
+  const { publicPart, privatePart, hasPrivate } = splitPrivateContact(filteredProfile);
+
   const rawPayload = {
-    ...filteredProfile,
+    ...publicPart,
     profileCompletion,
     updatedAt: serverTimestamp(),
   };
@@ -857,12 +989,16 @@ export async function saveUserProfile(uid: string, profile: Partial<UserSession>
 
   await setDoc(docRef, cleanPayload, { merge: true });
 
+  if (hasPrivate) {
+    await setDoc(privateContactRef(uid), { ...privatePart, updatedAt: serverTimestamp() }, { merge: true });
+  }
+
   // Update local storage
   try {
     const currentStr = localStorage.getItem('collabix_user');
     if (currentStr) {
       const parsed = JSON.parse(currentStr);
-      localStorage.setItem('collabix_user', JSON.stringify({ ...parsed, ...cleanPayload, profileCompletion }));
+      localStorage.setItem('collabix_user', JSON.stringify({ ...parsed, ...cleanPayload, ...privatePart, profileCompletion }));
     }
   } catch {}
 }
@@ -1097,7 +1233,8 @@ export async function activateProSubscription(
   requireAdminAuth();
   const now = new Date();
   const trialStartDate = now.toISOString();
-  const trialEndDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+  const proEndMs = now.getTime() + 30 * 24 * 60 * 60 * 1000;
+  const trialEndDate = new Date(proEndMs).toISOString();
   const subscriptionStatus: SubscriptionStatus = 'active';
   const subscriptionPlanPrice = 59000;
 
@@ -1107,6 +1244,7 @@ export async function activateProSubscription(
     {
       trialStartDate,
       trialEndDate,
+      proExpiresAtMillis: proEndMs,
       subscriptionStatus,
       subscriptionPlanPrice,
       reminderSent: false,
@@ -1398,18 +1536,46 @@ export function subscribeToUsersForAdmin(
     return () => {};
   }
   const usersCol = collection(db, 'users');
+  const privateCache: Record<string, PrivateContact> = {};
+  const migrated = new Set<string>();
+  let generation = 0;
   return onSnapshot(
     usersCol,
     (snapshot) => {
-      const users: UserSession[] = snapshot.docs.map((docSnap) => {
+      const currentGen = ++generation;
+      const baseUsers: UserSession[] = snapshot.docs.map((docSnap) => {
         const data = docSnap.data() as UserSession;
+        if (!migrated.has(docSnap.id) && splitPrivateContact(data as any).hasPrivate) {
+          migrated.add(docSnap.id);
+          migrateLegacyPrivateContact(docSnap.id, data as any)
+            .then((moved) => {
+              if (moved && Object.keys(moved).length > 0) {
+                privateCache[docSnap.id] = { ...(privateCache[docSnap.id] || {}), ...pickPrivateFields(moved) };
+              }
+            })
+            .catch(() => {});
+        }
         return {
           ...data,
+          ...(privateCache[docSnap.id] || {}),
           uid: docSnap.id,
           accountStatus: data.accountStatus || 'approved',
         };
       });
-      callback(users);
+      callback(baseUsers);
+
+      // Admin uchun yopiq kontaktlarni fon rejimida yuklash
+      const missing = snapshot.docs.map((d) => d.id).filter((id) => !privateCache[id]);
+      if (missing.length === 0) return;
+      Promise.all(
+        missing.map(async (id) => {
+          const c = await fetchPrivateContact(id);
+          privateCache[id] = c || {};
+        })
+      ).then(() => {
+        if (currentGen !== generation) return;
+        callback(baseUsers.map((u) => ({ ...u, ...(privateCache[u.uid || ''] || {}) })));
+      });
     },
     (error) => {
       if (error?.code !== 'unavailable') {
@@ -1427,14 +1593,18 @@ export async function fetchUsersForAdmin(): Promise<UserSession[]> {
   try {
     const usersCol = collection(db, 'users');
     const snap = await getDocs(usersCol);
-    return snap.docs.map((docSnap) => {
-      const data = docSnap.data() as UserSession;
-      return {
-        ...data,
-        uid: docSnap.id,
-        accountStatus: data.accountStatus || 'approved',
-      };
-    });
+    return await Promise.all(
+      snap.docs.map(async (docSnap) => {
+        const data = docSnap.data() as UserSession;
+        const privateData = (await fetchPrivateContact(docSnap.id)) || {};
+        return {
+          ...data,
+          ...privateData,
+          uid: docSnap.id,
+          accountStatus: data.accountStatus || 'approved',
+        };
+      })
+    );
   } catch (err) {
     console.error("fetchUsersForAdmin xatosi:", err);
     return [];
@@ -1446,25 +1616,53 @@ export async function fetchUsersForAdmin(): Promise<UserSession[]> {
  */
 export function onAuthUserChanged(callback: (user: UserSession | null, fbUser: FirebaseUser | null) => void) {
   let docUnsubscribe: (() => void) | null = null;
+  let privateUnsubscribe: (() => void) | null = null;
 
   const authUnsubscribe = onAuthStateChanged(auth, async (fbUser) => {
     if (docUnsubscribe) {
       docUnsubscribe();
       docUnsubscribe = null;
     }
+    if (privateUnsubscribe) {
+      privateUnsubscribe();
+      privateUnsubscribe = null;
+    }
 
     if (fbUser) {
       const isSuperAdmin = fbUser.uid === ADMIN_UID;
+      let latestPrivate: PrivateContact = {};
+      let latestSnapshot: any = null;
+      let migrationAttempted = false;
+      let emitProfile: (() => void) | null = null;
+
+      // O'z yopiq kontaktini real vaqtda kuzatish
+      privateUnsubscribe = onSnapshot(
+        privateContactRef(fbUser.uid),
+        (privSnap) => {
+          latestPrivate = privSnap.exists() ? pickPrivateFields(privSnap.data()) : {};
+          if (emitProfile) emitProfile();
+        },
+        () => {}
+      );
+
       // Attach real-time snapshot listener on the user's document in Firestore
       const userDocRef = doc(db, 'users', fbUser.uid);
       docUnsubscribe = onSnapshot(
         userDocRef,
         (snapshot) => {
+          latestSnapshot = snapshot;
+          emitProfile = () => {
+          const snapshot = latestSnapshot;
           if (snapshot.exists()) {
             const data = snapshot.data() as UserSession;
+            if (!migrationAttempted && splitPrivateContact(data as any).hasPrivate) {
+              migrationAttempted = true;
+              migrateLegacyPrivateContact(fbUser.uid, data as any).catch(() => {});
+            }
             const fullProfile: UserSession = {
               uid: fbUser.uid,
               ...data,
+              ...latestPrivate,
               accountStatus: isSuperAdmin
                 ? 'approved'
                 : data.accountStatus === 'rejected'
@@ -1491,6 +1689,8 @@ export function onAuthUserChanged(callback: (user: UserSession | null, fbUser: F
             };
             callback(fallback, fbUser);
           }
+          };
+          emitProfile();
         },
         (error) => {
           if (error?.code !== 'unavailable') {
@@ -1522,6 +1722,9 @@ export function onAuthUserChanged(callback: (user: UserSession | null, fbUser: F
   return () => {
     if (docUnsubscribe) {
       docUnsubscribe();
+    }
+    if (privateUnsubscribe) {
+      privateUnsubscribe();
     }
     authUnsubscribe();
   };
@@ -2219,6 +2422,8 @@ export async function createBriefInFirestore(brief: BriefData): Promise<string> 
 
   // If this is a direct brief, notify the selected creator immediately!
   if (brief.recipientType === 'direct' && brief.selectedCreatorId) {
+    // Shaxsiy brif yuborgan brend kreatorga o'z kontaktini ko'rish ruxsatini beradi
+    await grantContactAccess(brief.selectedCreatorId);
     try {
       await createNotificationInFirestore({
         userId: brief.selectedCreatorId,
@@ -2271,6 +2476,11 @@ export async function applyToBriefInFirestore(
     applications: existingApps,
     updatedAt: serverTimestamp(),
   });
+
+  // Ariza topshirgan kreator brendga o'z kontaktini ko'rish ruxsatini beradi
+  if (data.brandId && auth.currentUser?.uid === application.creatorId) {
+    await grantContactAccess(data.brandId);
+  }
 
   // Notify the brand that a creator applied to their brief
   if (data.brandId && data.brandId !== application.creatorId) {
@@ -2331,15 +2541,19 @@ export async function respondToBriefInFirestore(
   };
 
   if (status === 'qabul_qilindi') {
+    // Brifni qabul qilgan kreator brendga o'z kontaktini ko'rish ruxsatini beradi
+    if (data.brandId) {
+      await grantContactAccess(data.brandId);
+    }
     let cPhone = creator.phoneNumber;
     let cTg = creator.telegramUsername;
 
     // If creator contact was not directly passed, attempt lookup in users collection
     if ((!cPhone || !cTg) && creator.uid) {
       try {
-        const creatorSnap = await getDoc(doc(db, 'users', creator.uid));
-        if (creatorSnap.exists()) {
-          const cData = creatorSnap.data() as UserSession;
+        const cDataProfile = await fetchUserProfile(creator.uid);
+        if (cDataProfile) {
+          const cData = cDataProfile as UserSession;
           if (!cPhone) cPhone = cData.phoneNumber || (cData as any).phone || (cData.contact && !cData.contact.includes('@') ? cData.contact : undefined);
           if (!cTg) cTg = cData.telegramUsername || (cData.socialLinks?.telegram ? cData.socialLinks.telegram.replace(/^https?:\/\/t\.me\//, '').replace(/^@/, '') : undefined);
         }
@@ -2354,9 +2568,9 @@ export async function respondToBriefInFirestore(
     // Also populate brand's contact from Firestore if missing on the brief
     if (data.brandId && (!data.brandPhoneNumber || !data.brandTelegramUsername)) {
       try {
-        const brandSnap = await getDoc(doc(db, 'users', data.brandId));
-        if (brandSnap.exists()) {
-          const bData = brandSnap.data() as UserSession;
+        const bDataProfile = await fetchUserProfile(data.brandId);
+        if (bDataProfile) {
+          const bData = bDataProfile as UserSession;
           const bPhone = bData.phoneNumber || (bData as any).phone || (bData.contact && !bData.contact.includes('@') ? bData.contact : undefined);
           const bTg = bData.telegramUsername || (bData.socialLinks?.telegram ? bData.socialLinks.telegram.replace(/^https?:\/\/t\.me\//, '').replace(/^@/, '') : undefined);
           if (bPhone && !data.brandPhoneNumber) updates.brandPhoneNumber = bPhone;
@@ -2448,6 +2662,11 @@ export async function respondToBriefApplicationInFirestore(
     throw new Error("Ariza topilmadi");
   }
 
+  // Arizani qabul qilgan brend kreatorga o'z kontaktini ko'rish ruxsatini beradi
+  if (status === 'qabul_qilindi' && existingApps[appIndex]?.creatorId) {
+    await grantContactAccess(existingApps[appIndex].creatorId);
+  }
+
   const targetApp = { ...existingApps[appIndex] };
   const nowIso = new Date().toISOString();
 
@@ -2461,9 +2680,9 @@ export async function respondToBriefApplicationInFirestore(
     // Lookup brand profile if missing
     if ((!bPhone || !bTg) && brand.uid) {
       try {
-        const brandSnap = await getDoc(doc(db, 'users', brand.uid));
-        if (brandSnap.exists()) {
-          const bData = brandSnap.data() as UserSession;
+        const bDataProfile = await fetchUserProfile(brand.uid);
+        if (bDataProfile) {
+          const bData = bDataProfile as UserSession;
           if (!bPhone) bPhone = bData.phoneNumber || (bData as any).phone || (bData.contact && !bData.contact.includes('@') ? bData.contact : undefined);
           if (!bTg) bTg = bData.telegramUsername || (bData.socialLinks?.telegram ? bData.socialLinks.telegram.replace(/^https?:\/\/t\.me\//, '').replace(/^@/, '') : undefined);
         }
@@ -2478,9 +2697,9 @@ export async function respondToBriefApplicationInFirestore(
     // Lookup creator profile if missing on targetApp
     if ((!targetApp.creatorPhoneNumber || !targetApp.creatorTelegramUsername) && targetApp.creatorId) {
       try {
-        const creatorSnap = await getDoc(doc(db, 'users', targetApp.creatorId));
-        if (creatorSnap.exists()) {
-          const cData = creatorSnap.data() as UserSession;
+        const cDataProfile = await fetchUserProfile(targetApp.creatorId);
+        if (cDataProfile) {
+          const cData = cDataProfile as UserSession;
           if (!targetApp.creatorPhoneNumber) {
             targetApp.creatorPhoneNumber = cData.phoneNumber || (cData as any).phone || (cData.contact && !cData.contact.includes('@') ? cData.contact : undefined);
           }
@@ -3332,7 +3551,15 @@ export async function submitPaymentRequest(params: {
   userRole?: string;
   screenshotFile: File | null;
   screenshotDataUrl?: string;
+  purpose?: PaymentPurpose;
+  amount?: number;
+  contactsCount?: number;
+  topDays?: number;
+  purposeLabel?: string;
 }): Promise<string> {
+  const purpose: PaymentPurpose = params.purpose || 'pro';
+  const amount = typeof params.amount === 'number' && params.amount > 0 ? Math.round(params.amount) : 59000;
+  const purposeLabel = params.purposeLabel || (purpose === 'pro' ? 'Pro rejim — 1 oy' : purpose === 'contacts' ? 'Kontakt paketi' : 'TOP joylashuv');
   if (typeof navigator !== 'undefined' && navigator.onLine === false) {
     throw new Error("Internet aloqasi yo'q. Iltimos, internetingizni tekshirib qayta urinib ko'ring.");
   }
@@ -3403,7 +3630,11 @@ export async function submitPaymentRequest(params: {
       userPhone: params.userPhone || '',
       userEmail: params.userEmail || auth.currentUser?.email || '',
       userRole: params.userRole || '',
-      amount: 59000,
+      amount,
+      purpose,
+      purposeLabel,
+      ...(purpose === 'contacts' ? { contactsCount: Math.max(1, Math.round(params.contactsCount || 1)) } : {}),
+      ...(purpose === 'top' ? { topDays: Math.max(1, Math.round(params.topDays || 7)) } : {}),
       screenshotUrl: screenshotUrl || '',
       sana: now.toISOString(),
       createdAtMillis: now.getTime(),
@@ -3443,7 +3674,7 @@ export async function submitPaymentRequest(params: {
         type: 'payment_request',
         data: {
           userName: realName,
-          amount: "59 000 so'm",
+          amount: `${amount.toLocaleString('ru-RU').replace(/,/g, ' ')} so'm — ${purposeLabel}`,
         },
       }),
       ...(tgController ? { signal: tgController.signal } : {}),
@@ -3476,6 +3707,10 @@ export async function fetchPaymentRequests(): Promise<PaymentRequest[]> {
         userEmail: data.userEmail || '',
         userRole: data.userRole || '',
         amount: data.amount || 59000,
+        purpose: (data.purpose as PaymentPurpose) || 'pro',
+        purposeLabel: data.purposeLabel || '',
+        contactsCount: data.contactsCount,
+        topDays: data.topDays,
         screenshotUrl: data.screenshotUrl || '',
         sana: data.sana || (data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : new Date().toISOString()),
         createdAtMillis: data.createdAtMillis || 0,
@@ -3522,6 +3757,10 @@ export function subscribeToPaymentRequests(
           userEmail: data.userEmail || '',
           userRole: data.userRole || '',
           amount: data.amount || 59000,
+          purpose: (data.purpose as PaymentPurpose) || 'pro',
+          purposeLabel: data.purposeLabel || '',
+          contactsCount: data.contactsCount,
+          topDays: data.topDays,
           screenshotUrl: data.screenshotUrl || '',
           sana: data.sana || (data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : new Date().toISOString()),
           createdAtMillis: data.createdAtMillis || 0,
@@ -3556,49 +3795,48 @@ export async function approvePaymentRequest(
 ): Promise<void> {
   requireAdminAuth();
   const reqRef = doc(db, 'paymentRequests', requestId);
+  const reqSnap = await getDoc(reqRef);
+  const reqData = (reqSnap.exists() ? reqSnap.data() : {}) as Partial<PaymentRequest>;
+  if (reqData.status === 'approved') {
+    return; // ikki marta tasdiqlanib, ikki marta berilib ketmasin
+  }
+  const purpose: PaymentPurpose = reqData.purpose || 'pro';
+  const targetUid = userId || reqData.userId || '';
   const now = new Date();
+
+  if (targetUid) {
+    const userRef = doc(db, 'users', targetUid);
+    if (purpose === 'contacts') {
+      const count = Math.max(1, Math.round(reqData.contactsCount || 1));
+      await setDoc(userRef, { unlockedContactsCount: increment(count), updatedAt: serverTimestamp() }, { merge: true });
+    } else if (purpose === 'top') {
+      await activateTopPlacement(targetUid, Math.max(1, Math.round(reqData.topDays || 7)));
+    } else {
+      const trialStartDate = now.toISOString();
+      const endMs = now.getTime() + 30 * 24 * 60 * 60 * 1000;
+      const trialEndDate = new Date(endMs).toISOString();
+      await setDoc(
+        userRef,
+        {
+          subscriptionStatus: 'active',
+          trialStartDate,
+          trialEndDate,
+          proExpiresAtMillis: endMs,
+          subscriptionPlanPrice: 59000,
+          reminderSent: false,
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true }
+      );
+    }
+  }
+
   await updateDoc(reqRef, {
     status: 'approved',
     approvedAt: now.toISOString(),
     reviewedBy: reviewerName,
     updatedAt: serverTimestamp(),
   });
-
-  if (userId) {
-    const userRef = doc(db, 'users', userId);
-    const trialStartDate = now.toISOString();
-    const trialEndDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
-    await setDoc(
-      userRef,
-      {
-        subscriptionStatus: 'active',
-        trialStartDate,
-        trialEndDate,
-        subscriptionPlanPrice: 59000,
-        reminderSent: false,
-        updatedAt: serverTimestamp(),
-      },
-      { merge: true }
-    );
-
-    // If active logged-in user matches this ID, update localStorage
-    try {
-      const currentStr = localStorage.getItem('collabix_user');
-      if (currentStr) {
-        const parsed = JSON.parse(currentStr);
-        if (parsed.uid === userId) {
-          localStorage.setItem('collabix_user', JSON.stringify({
-            ...parsed,
-            subscriptionStatus: 'active',
-            trialStartDate,
-            trialEndDate,
-            subscriptionPlanPrice: 59000,
-            reminderSent: false,
-          }));
-        }
-      }
-    } catch {}
-  }
 }
 
 /**
@@ -3624,7 +3862,7 @@ export async function rejectPaymentRequest(
 /**
  * Fetch latest payment request for specific user (scoped to owner or admin)
  */
-export async function fetchUserLatestPaymentRequest(userId: string): Promise<PaymentRequest | null> {
+export async function fetchUserLatestPaymentRequest(userId: string, purposeFilter: PaymentPurpose = 'pro'): Promise<PaymentRequest | null> {
   const targetUid = userId || auth.currentUser?.uid || '';
   if (!targetUid || !auth.currentUser) return null;
   if (auth.currentUser.uid !== targetUid && !isCurrentUserAdmin()) return null;
@@ -3643,6 +3881,10 @@ export async function fetchUserLatestPaymentRequest(userId: string): Promise<Pay
         userEmail: data.userEmail || '',
         userRole: data.userRole || '',
         amount: data.amount || 59000,
+        purpose: (data.purpose as PaymentPurpose) || 'pro',
+        purposeLabel: data.purposeLabel || '',
+        contactsCount: data.contactsCount,
+        topDays: data.topDays,
         screenshotUrl: data.screenshotUrl || '',
         sana: data.sana || (data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : new Date().toISOString()),
         createdAtMillis: data.createdAtMillis || 0,
@@ -3653,8 +3895,9 @@ export async function fetchUserLatestPaymentRequest(userId: string): Promise<Pay
         reviewedBy: data.reviewedBy || '',
       };
     });
-    userReqs.sort((a, b) => (b.createdAtMillis || 0) - (a.createdAtMillis || 0));
-    return userReqs[0] || null;
+    const filtered = userReqs.filter((r) => (r.purpose || 'pro') === purposeFilter);
+    filtered.sort((a, b) => (b.createdAtMillis || 0) - (a.createdAtMillis || 0));
+    return filtered[0] || null;
   } catch {
     return null;
   }

@@ -224,6 +224,8 @@ export interface UserSession {
   mediaGallery?: CreatorMediaItem[];
   unlockedContactsCount?: number;
   unlockedCreators?: Record<string, { unlockedAt: string; expiresAt: string }>;
+  lastUnlockedCreatorId?: string;
+  proExpiresAtMillis?: number;
   topPlacementUntil?: string | null;
   createdAt?: any;
   updatedAt?: any;
@@ -371,5 +373,15 @@ export interface PaymentRequest {
   approvedAt?: string;
   rejectedAt?: string;
   reviewedBy?: string;
+  /** Nima uchun to'lov: Pro obuna, kontakt paketi yoki TOP joylashuv */
+  purpose?: PaymentPurpose;
+  /** Kontakt paketi uchun: nechta kontakt */
+  contactsCount?: number;
+  /** TOP uchun: necha kun */
+  topDays?: number;
+  /** Ko'rinadigan nom, masalan "TOP — 7 kun" */
+  purposeLabel?: string;
 }
+
+export type PaymentPurpose = 'pro' | 'contacts' | 'top';
 

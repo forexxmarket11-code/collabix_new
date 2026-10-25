@@ -13,7 +13,7 @@ import {
   Flame,
 } from 'lucide-react';
 import { UserSession } from '../types';
-import { activateTopPlacement } from '../firebase';
+import { ManualPaymentPanel } from './ManualPaymentPanel';
 
 export interface TopPlacementModalProps {
   isOpen: boolean;
@@ -75,27 +75,6 @@ export const TopPlacementModal: React.FC<TopPlacementModalProps> = ({
   const isCurrentlyTop = Boolean(
     currentUser?.topPlacementUntil && new Date(currentUser.topPlacementUntil).getTime() > Date.now()
   );
-
-  const handleConfirmPurchase = async () => {
-    if (!currentUser?.uid) return;
-    setIsProcessing(true);
-    try {
-      await new Promise((r) => setTimeout(r, 800)); // Simulyatsiya qilingan to'lov kechikishi
-      const res = await activateTopPlacement(currentUser.uid, selectedOption.days);
-
-      const updated: UserSession = {
-        ...currentUser,
-        topPlacementUntil: res.updatedUntil,
-      };
-      onUpdateUser(updated);
-
-      setStep('success');
-    } catch (err) {
-      console.error("TOP joylashuvni faollashtirishda xatolik:", err);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
 
   return (
     <div
@@ -257,88 +236,17 @@ export const TopPlacementModal: React.FC<TopPlacementModalProps> = ({
 
           {/* Step 2: Payment */}
           {step === 'payment' && (
-            <div className="p-4 sm:p-7 space-y-5">
-              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <span className="text-xs font-body text-slate-500 dark:text-slate-400">Tanlangan muddat:</span>
-                  <div className="font-heading font-bold text-[15px] sm:text-base text-slate-900 dark:text-white">
-                    TOP joylashuv — {selectedOption.label}
-                  </div>
-                </div>
-                <div className="sm:text-right">
-                  <span className="text-xs font-body text-slate-500 dark:text-slate-400">Jami narx:</span>
-                  <div className="font-mono font-black text-lg text-amber-600 dark:text-amber-400">
-                    {selectedOption.formattedPrice}
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-heading font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
-                  To'lov usulini tanlang:
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
-                  {[
-                    { id: 'click', label: 'Click Up' },
-                    { id: 'payme', label: 'Payme' },
-                    { id: 'uzcard', label: 'Uzcard/Humo' },
-                  ].map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => setSelectedProvider(item.id as any)}
-                      className={`min-h-[48px] p-3 rounded-2xl border text-center cursor-pointer transition-all flex items-center justify-center ${
-                        selectedProvider === item.id
-                          ? 'border-amber-500 bg-amber-50/50 dark:bg-amber-950/40 shadow-xs font-bold text-amber-900 dark:text-amber-200'
-                          : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300'
-                      }`}
-                    >
-                      <div className="text-[15px] sm:text-sm font-heading font-bold">{item.label}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 flex items-start gap-2.5 text-[14px] sm:text-xs text-amber-800 dark:text-amber-300 font-body leading-relaxed">
-                <ShieldCheck className="w-4 h-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
-                <span>
-                  To'lov tasdiqlangach, profilingiz darhol katalogning eng yuqori qismiga ko'tariladi va {selectedOption.days} kun davomida ustuvor ko'rsatiladi.
-                </span>
-              </div>
-
-              <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setStep('select')}
-                  disabled={isProcessing}
-                  className="w-full sm:w-auto min-h-[48px] px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-heading font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer flex items-center justify-center"
-                >
-                  Ortga
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleConfirmPurchase}
-                  disabled={isProcessing}
-                  className="w-full sm:w-auto min-h-[50px] px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-white font-heading font-extrabold text-[15px] sm:text-sm shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
-                >
-                  {isProcessing ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin shrink-0" />
-                      <span>To'lov amalga oshirilmoqda...</span>
-                    </>
-                  ) : (
-                    <>
-                      <CreditCard className="w-4 h-4 shrink-0" />
-                      <span>To'lovni tasdiqlash ({selectedOption.formattedPrice})</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
+            <ManualPaymentPanel
+              currentUser={currentUser}
+              purpose="top"
+              amount={selectedOption.price}
+              purposeLabel={`TOP joylashuv — ${selectedOption.label}`}
+              topDays={selectedOption.days}
+              onBack={() => setStep('select')}
+              onSubmitted={() => setStep('success')}
+            />
           )}
 
-          {/* Step 3: Success */}
           {step === 'success' && (
             <div className="p-6 sm:p-8 text-center space-y-4">
               <div className="w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400 mx-auto flex items-center justify-center shadow-lg">
@@ -346,11 +254,11 @@ export const TopPlacementModal: React.FC<TopPlacementModalProps> = ({
               </div>
 
               <h3 className="font-heading font-black text-xl sm:text-2xl text-slate-900 dark:text-white">
-                Tabriklaymiz! Profilingiz TOP ga chiqarildi!
+                Chek yuborildi!
               </h3>
 
               <p className="text-[15px] sm:text-sm text-slate-600 dark:text-slate-300 font-body max-w-md mx-auto leading-relaxed">
-                Profilingiz endi <strong>{selectedOption.days} kun</strong> davomida katalog va barcha qidiruvlar boshida "TOP" belgisi bilan ko'rsatiladi.
+                Admin toʻlovni tasdiqlagach, profilingiz <strong>{selectedOption.days} kun</strong> davomida katalog boshida &quot;TOP&quot; belgisi bilan koʻrsatiladi.
               </p>
 
               <div className="pt-4">
