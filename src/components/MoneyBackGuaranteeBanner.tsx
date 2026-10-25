@@ -16,9 +16,9 @@ export const MoneyBackGuaranteeBanner: React.FC<MoneyBackGuaranteeBannerProps> =
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
-      className="w-full max-w-5xl mx-auto px-4 sm:px-6 my-6 sm:my-8"
+      className="w-full max-w-6xl mx-auto px-4 sm:px-6 my-8 sm:my-12"
     >
-      <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-r from-emerald-50/90 via-teal-50/80 to-slate-50/90 dark:from-emerald-950/30 dark:via-teal-950/25 dark:to-[#121826] border border-emerald-200/80 dark:border-emerald-800/50 shadow-sm dark:shadow-md p-5 sm:p-7 md:p-8 transition-all">
+      <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-r from-emerald-50/90 via-teal-50/80 to-slate-50/90 dark:from-emerald-950/30 dark:via-teal-950/25 dark:to-[#121826] border border-emerald-200/80 dark:border-emerald-800/50 shadow-sm dark:shadow-md p-5 sm:p-8 md:p-10 transition-all">
         {/* Soft background glow accents for security atmosphere */}
         <div
           aria-hidden="true"
@@ -29,15 +29,15 @@ export const MoneyBackGuaranteeBanner: React.FC<MoneyBackGuaranteeBannerProps> =
           className="absolute left-1/3 -bottom-10 w-48 h-48 bg-teal-400/15 dark:bg-teal-500/10 rounded-full blur-2xl pointer-events-none"
         />
 
-        <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
+        <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 md:gap-8">
           {/* Shield Icon with gentle ambient glow */}
           <div className="relative shrink-0">
             <div
               aria-hidden="true"
               className="absolute inset-0 rounded-2xl bg-emerald-400/30 dark:bg-emerald-500/25 blur-md pointer-events-none"
             />
-            <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 dark:from-emerald-400 dark:to-teal-500 text-white flex items-center justify-center shadow-md shadow-emerald-600/20">
-              <ShieldCheck className="w-7 h-7 sm:w-8 sm:h-8 text-white stroke-[2.2]" />
+            <div className="relative w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 dark:from-emerald-400 dark:to-teal-500 text-white flex items-center justify-center shadow-md shadow-emerald-600/20">
+              <ShieldCheck className="w-7 h-7 sm:w-9 sm:h-9 md:w-10 md:h-10 text-white stroke-[2.2]" />
             </div>
           </div>
 
@@ -50,11 +50,11 @@ export const MoneyBackGuaranteeBanner: React.FC<MoneyBackGuaranteeBannerProps> =
               </span>
             </div>
 
-            <h3 className="font-heading font-extrabold text-lg sm:text-lg md:text-xl text-slate-900 dark:text-white tracking-tight">
+            <h3 className="font-heading font-extrabold text-xl sm:text-2xl md:text-3xl text-slate-900 dark:text-white tracking-tight">
               100% pul qaytarish kafolati
             </h3>
 
-            <p className="mt-1.5 text-[15px] sm:text-sm text-slate-600 dark:text-slate-300 font-body leading-relaxed max-w-2xl">
+            <p className="mt-2 text-[15px] sm:text-base text-slate-600 dark:text-slate-300 font-body leading-relaxed max-w-3xl">
               30 kun ichida birorta ham kreator javob bermasa, 59 000 soʻm toʻliq qaytariladi. Kreator koʻrib chiqib javob bersa (qabul qilsa yoki rad etsa), kafolat talabi qanoatlantirilgan hisoblanadi.
             </p>
 
