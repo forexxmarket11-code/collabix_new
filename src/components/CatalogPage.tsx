@@ -422,7 +422,10 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
                   <span className="w-2 h-2 rounded-full bg-indigo-600 shrink-0" />
                   <span>{creator.category}</span>
                 </span>
-                {creator.tags.slice(0, 3).map((tag, idx) => {
+                {Array.from(new Set((creator.tags || []).map((t) => String(t).trim()).filter(Boolean)))
+                  .filter((t) => t.toLowerCase() !== String(creator.category || '').trim().toLowerCase())
+                  .slice(0, 3)
+                  .map((tag, idx) => {
                   const dotColors = ['bg-purple-500', 'bg-pink-500', 'bg-amber-500'];
                   const dotColor = dotColors[idx % dotColors.length];
                   return (
