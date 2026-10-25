@@ -63,6 +63,7 @@ import {
   PaymentRequest,
   PaymentRequestStatus,
   PaymentPurpose,
+  ReferralWithdrawal,
 } from './types';
 import {
   isUserPro,
@@ -449,6 +450,12 @@ export async function registerUser(
     accountStatus: 'approved',
   };
 
+  // Referal havola orqali kelgan bo'lsa, kim taklif qilganini yozib qo'yamiz
+  const storedRef = getStoredReferral();
+  if (storedRef && storedRef !== fbUser.uid) {
+    newUserProfile.referredBy = storedRef;
+  }
+
   try {
     // Save to Firestore under 'users/{uid}' with serverTimestamp(), profileCompletion, and accountStatus: 'approved'
     const { publicPart: publicProfile, privatePart: privateProfile } = splitPrivateContact(newUserProfile);
@@ -508,6 +515,7 @@ export async function registerUser(
   try {
     localStorage.setItem('collabix_user', JSON.stringify(newUserProfile));
   } catch {}
+  if (newUserProfile.referredBy) clearStoredReferral();
 
   return newUserProfile;
 }
@@ -1012,6 +1020,10 @@ const PROTECTED_USER_FIELDS = new Set([
   'unlockedContactsCount',
   'unlockedCreators',
   'referralCount',
+  'referredBy',
+  'referralBalance',
+  'referralEarnedTotal',
+  'referralRewarded',
   'createdAt',
 ]);
 
@@ -2269,11 +2281,14 @@ export async function fetchReferralStatistics(): Promise<ReferralStatistics> {
         handle: r.handle.startsWith('@') ? r.handle : `@${r.handle}`,
         role: r.role,
         referralCount: r.count,
-        rewardAmount: `${(r.count * 30000).toLocaleString('uz-UZ')} soʻm`,
+        rewardAmount: `${(r.count * 29000).toLocaleString('uz-UZ')} soʻm`,
         status: 'Toʻlangan',
       }));
 
-    const totalRewardsPaid = totalReferralUsers * 30000;
+    const totalRewardsPaid = docs.reduce(
+      (sum: number, d: any) => sum + (Number((d.data() as any)?.referralEarnedTotal) || 0),
+      0
+    );
     const referralPercentage =
       docs.length > 0
         ? Math.round((totalReferralUsers / docs.length) * 1000) / 10
@@ -3929,6 +3944,11 @@ export async function approvePaymentRequest(
         },
         { merge: true }
       );
+      try {
+        await grantReferralRewardIfEligible(targetUid);
+      } catch (refErr) {
+        console.error('Referal mukofotini berishda xato:', refErr);
+      }
     }
   }
 
@@ -4033,4 +4053,233 @@ export async function deleteBriefAdmin(briefId: string): Promise<void> {
   requireAdminAuth();
   if (!briefId) throw new Error('Brif ID topilmadi.');
   await deleteDoc(doc(db, 'briefs', briefId));
+}
+
+
+/* =========================================================================
+ * REFERAL TIZIMI
+ * - Havolani faqat Pro foydalanuvchi oladi: collabix.uz/?ref=<uid>
+ * - Do'st shu havola orqali ro'yxatdan o'tsa, users/{uid}.referredBy yoziladi
+ * - Do'stning BIRINCHI Pro to'lovi admin tomonidan tasdiqlanganda,
+ *   taklif qilgan odam (o'sha paytda Pro bo'lsa) 29 000 so'm mukofot oladi
+ * - Mukofot balansdan kartaga yechib olinadi, pulni admin qo'lda o'tkazadi
+ * ========================================================================= */
+
+export const REFERRAL_REWARD = 29000;
+export const REFERRAL_MIN_WITHDRAWAL = 29000;
+const REFERRAL_STORAGE_KEY = 'collabix_ref';
+const REFERRAL_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+
+export function buildReferralLink(uid: string): string {
+  return `https://collabix.uz/?ref=${encodeURIComponent(uid)}`;
+}
+
+/** Sahifa ochilganda URL'dagi ?ref= ni eslab qoladi va manzildan olib tashlaydi */
+export function captureReferralFromUrl(): void {
+  try {
+    const url = new URL(window.location.href);
+    const ref = (url.searchParams.get('ref') || '').trim();
+    if (!ref) return;
+    if (/^[A-Za-z0-9_-]{6,128}$/.test(ref)) {
+      localStorage.setItem(REFERRAL_STORAGE_KEY, JSON.stringify({ ref, at: Date.now() }));
+    }
+    url.searchParams.delete('ref');
+    window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+  } catch {}
+}
+
+export function getStoredReferral(): string | null {
+  try {
+    const raw = localStorage.getItem(REFERRAL_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed?.ref || typeof parsed.ref !== 'string') return null;
+    if (typeof parsed.at === 'number' && Date.now() - parsed.at > REFERRAL_TTL_MS) {
+      localStorage.removeItem(REFERRAL_STORAGE_KEY);
+      return null;
+    }
+    return parsed.ref;
+  } catch {
+    return null;
+  }
+}
+
+export function clearStoredReferral(): void {
+  try {
+    localStorage.removeItem(REFERRAL_STORAGE_KEY);
+  } catch {}
+}
+
+/**
+ * Admin: do'stning birinchi Pro to'lovi tasdiqlanganda taklif qilganga mukofot beradi.
+ * Bir foydalanuvchi uchun faqat bir marta (referralRewarded bayrog'i).
+ */
+async function grantReferralRewardIfEligible(referredUid: string): Promise<boolean> {
+  requireAdminAuth();
+  const referredRef = doc(db, 'users', referredUid);
+  const referredSnap = await getDoc(referredRef);
+  if (!referredSnap.exists()) return false;
+  const referred = referredSnap.data() as UserSession;
+  const referrerUid = (referred.referredBy || '').trim();
+  if (!referrerUid || referrerUid === referredUid || referred.referralRewarded) return false;
+
+  const referrerRef = doc(db, 'users', referrerUid);
+  const referrerSnap = await getDoc(referrerRef);
+  if (!referrerSnap.exists()) return false;
+  const referrer = referrerSnap.data() as UserSession;
+
+  // Belgilangan yagona mukofot — har bir do'st uchun bir marta
+  await setDoc(referredRef, { referralRewarded: true, updatedAt: serverTimestamp() }, { merge: true });
+
+  if (!isUserPro(referrer)) {
+    // Taklif qilgan odamning Pro'si faol emas — mukofot berilmaydi
+    return false;
+  }
+
+  await setDoc(
+    referrerRef,
+    {
+      referralBalance: increment(REFERRAL_REWARD),
+      referralEarnedTotal: increment(REFERRAL_REWARD),
+      referralCount: increment(1),
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true }
+  );
+
+  try {
+    await createNotificationInFirestore({
+      userId: referrerUid,
+      type: 'tizim',
+      title: 'Referal mukofoti 🎉',
+      message: `${referred.name || 'Doʻstingiz'} Pro rejimni faollashtirdi. Balansingizga 29 000 soʻm qoʻshildi!`,
+      read: false,
+      createdAt: new Date().toISOString(),
+      createdAtMillis: Date.now(),
+    });
+  } catch {}
+  return true;
+}
+
+/** Foydalanuvchining referal statistikasi: nechta odam havola orqali kelgan */
+export async function fetchMyReferralInvitedCount(uid: string): Promise<{ invited: number; paid: number }> {
+  if (!uid) return { invited: 0, paid: 0 };
+  try {
+    const snap = await getDocs(query(collection(db, 'users'), where('referredBy', '==', uid)));
+    let paid = 0;
+    snap.forEach((d) => {
+      if ((d.data() as UserSession).referralRewarded) paid++;
+    });
+    return { invited: snap.size, paid };
+  } catch {
+    return { invited: 0, paid: 0 };
+  }
+}
+
+export async function fetchMyReferralWithdrawals(uid: string): Promise<ReferralWithdrawal[]> {
+  if (!uid || !auth.currentUser) return [];
+  try {
+    const snap = await getDocs(query(collection(db, 'referrals'), where('userId', '==', uid)));
+    return snap.docs
+      .map((d) => ({ ...(d.data() as ReferralWithdrawal), id: d.id }))
+      .filter((w) => w.type === 'withdrawal')
+      .sort((a, b) => (b.createdAtMillis || 0) - (a.createdAtMillis || 0));
+  } catch {
+    return [];
+  }
+}
+
+/** Mukofotni kartaga yechib olish so'rovi (butun balans) */
+export async function requestReferralWithdrawal(params: {
+  userName: string;
+  amount: number;
+  cardNumber: string;
+  cardOwner: string;
+}): Promise<void> {
+  const uid = auth.currentUser?.uid;
+  if (!uid) throw new Error('Avval tizimga kiring.');
+  const cardNumber = params.cardNumber.replace(/\D/g, '');
+  if (cardNumber.length < 16 || cardNumber.length > 19) {
+    throw new Error('Karta raqamini toʻliq kiriting (16 ta raqam).');
+  }
+  const amount = Math.floor(params.amount);
+  if (amount < REFERRAL_MIN_WITHDRAWAL) {
+    throw new Error('Yechib olish uchun balans kamida 29 000 soʻm boʻlishi kerak.');
+  }
+  const id = `wd_${uid.slice(0, 8)}_${Date.now()}`;
+  const now = new Date();
+  await setDoc(doc(db, 'referrals', id), {
+    id,
+    type: 'withdrawal',
+    userId: uid,
+    userName: (params.userName || '').slice(0, 200),
+    amount,
+    cardNumber,
+    cardOwner: (params.cardOwner || '').trim().slice(0, 100),
+    status: 'pending',
+    createdAt: now.toISOString(),
+    createdAtMillis: now.getTime(),
+  });
+
+  try {
+    await fetch('/api/telegram', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'referral_withdrawal',
+        data: {
+          userName: params.userName || 'Foydalanuvchi',
+          amount: `${amount.toLocaleString('ru-RU').replace(/,/g, ' ')} so'm`,
+        },
+      }),
+    });
+  } catch {}
+}
+
+/** Admin: barcha yechib olish so'rovlari */
+export async function fetchAllReferralWithdrawalsAdmin(): Promise<ReferralWithdrawal[]> {
+  requireAdminAuth();
+  const snap = await getDocs(collection(db, 'referrals'));
+  return snap.docs
+    .map((d) => ({ ...(d.data() as ReferralWithdrawal), id: d.id }))
+    .filter((w) => w.type === 'withdrawal')
+    .sort((a, b) => (b.createdAtMillis || 0) - (a.createdAtMillis || 0));
+}
+
+/** Admin: pul kartaga o'tkazildi — balansdan ayiriladi */
+export async function markReferralWithdrawalPaid(withdrawalId: string): Promise<void> {
+  requireAdminAuth();
+  const ref = doc(db, 'referrals', withdrawalId);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) throw new Error('Soʻrov topilmadi.');
+  const w = snap.data() as ReferralWithdrawal;
+  if (w.status !== 'pending') return;
+  const userRef = doc(db, 'users', w.userId);
+  const userSnap = await getDoc(userRef);
+  const balance = Number((userSnap.data() as UserSession | undefined)?.referralBalance || 0);
+  const deduct = Math.min(balance, w.amount);
+  if (deduct > 0) {
+    await setDoc(userRef, { referralBalance: increment(-deduct), updatedAt: serverTimestamp() }, { merge: true });
+  }
+  await updateDoc(ref, { status: 'paid', paidAt: new Date().toISOString(), updatedAt: serverTimestamp() });
+  try {
+    await createNotificationInFirestore({
+      userId: w.userId,
+      type: 'tizim',
+      title: 'Mukofot toʻlandi ✅',
+      message: `${w.amount.toLocaleString('ru-RU').replace(/,/g, ' ')} soʻm kartangizga oʻtkazildi.`,
+      read: false,
+      createdAt: new Date().toISOString(),
+      createdAtMillis: Date.now(),
+    });
+  } catch {}
+}
+
+export async function rejectReferralWithdrawal(withdrawalId: string, reason: string): Promise<void> {
+  requireAdminAuth();
+  await updateDoc(doc(db, 'referrals', withdrawalId), {
+    status: 'rejected',
+    rejectionReason: (reason || 'Karta maʼlumotlari notoʻgʻri').slice(0, 300),
+    updatedAt: serverTimestamp(),
+  });
 }

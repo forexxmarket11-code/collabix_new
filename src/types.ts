@@ -205,6 +205,12 @@ export interface UserSession {
   trialStartDate?: string;
   trialEndDate?: string;
   subscriptionStatus?: SubscriptionStatus;
+  /** Referal tizimi */
+  referredBy?: string;
+  referralCount?: number;
+  referralBalance?: number;
+  referralEarnedTotal?: number;
+  referralRewarded?: boolean;
   reminderSent?: boolean;
   subscriptionPlanPrice?: number;
   cancellationReason?: string;
@@ -387,3 +393,20 @@ export interface PaymentRequest {
 
 export type PaymentPurpose = 'pro' | 'contacts' | 'top';
 
+
+export type ReferralWithdrawalStatus = 'pending' | 'paid' | 'rejected';
+
+export interface ReferralWithdrawal {
+  id: string;
+  type: 'withdrawal';
+  userId: string;
+  userName: string;
+  amount: number;
+  cardNumber: string;
+  cardOwner?: string;
+  status: ReferralWithdrawalStatus;
+  rejectionReason?: string;
+  createdAt: string;
+  createdAtMillis: number;
+  paidAt?: string;
+}

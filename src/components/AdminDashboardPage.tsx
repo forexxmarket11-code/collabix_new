@@ -50,6 +50,8 @@ import { AdminPaymentRequests } from './AdminPaymentRequests';
 import { AdminCancellationReasons } from './AdminCancellationReasons';
 import { AdminAgencyApplications } from './AdminAgencyApplications';
 import { AdminBriefs } from './AdminBriefs';
+import { AdminReferralPayouts } from './AdminReferralPayouts';
+import { Gift as GiftIcon } from 'lucide-react';
 import { FileText as FileTextIcon } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { Building2 } from 'lucide-react';
@@ -61,8 +63,9 @@ interface AdminDashboardPageProps {
 }
 
 export function AdminDashboardPage({ onLogout, onGoToSite, onUnauthorized }: AdminDashboardPageProps) {
-  const [activeTab, setActiveTab] = useState<'approvals' | 'payment_requests' | 'briefs' | 'reports' | 'cancellations' | 'agency_applications'>('approvals');
+  const [activeTab, setActiveTab] = useState<'approvals' | 'payment_requests' | 'briefs' | 'referral_payouts' | 'reports' | 'cancellations' | 'agency_applications'>('approvals');
   const [briefsCount, setBriefsCount] = useState<number>(0);
+  const [payoutsCount, setPayoutsCount] = useState<number>(0);
   const [pendingCount, setPendingCount] = useState<number>(0);
   const [paymentRequestsCount, setPaymentRequestsCount] = useState<number>(0);
   const [cancellationsCount, setCancellationsCount] = useState<number>(0);
@@ -229,6 +232,8 @@ export function AdminDashboardPage({ onLogout, onGoToSite, onUnauthorized }: Adm
                 ? 'Toʻlov soʻrovlari (Pro rejim)'
                 : activeTab === 'briefs'
                 ? 'Eʼlonlar (briflar)'
+                : activeTab === 'referral_payouts'
+                ? 'Referal toʻlovlar'
                 : activeTab === 'cancellations'
                 ? 'Obunani bekor qilish sabablari'
                 : activeTab === 'agency_applications'
@@ -240,6 +245,8 @@ export function AdminDashboardPage({ onLogout, onGoToSite, onUnauthorized }: Adm
                 ? 'Platformada roʻyxatdan oʻtgan barcha bloger va brendlar roʻyxati hamda hisoblarni boshqarish.'
                 : activeTab === 'payment_requests'
                 ? 'Bank kartasi orqali yuborilgan toʻlov cheklari va screenshotlarini tekshirish hamda Pro rejimni faollashtirish.'
+                : activeTab === 'referral_payouts'
+                ? 'Referal mukofotini yechib olish soʻrovlari: pulni kartaga oʻtkazing va „Toʻladim“ bosing.'
                 : activeTab === 'briefs'
                 ? 'Brendlar joylagan ochiq eʼlonlar va shaxsiy briflarni koʻrish hamda keraksizlarini oʻchirish.'
                 : activeTab === 'cancellations'
@@ -304,6 +311,25 @@ export function AdminDashboardPage({ onLogout, onGoToSite, onUnauthorized }: Adm
               {briefsCount > 0 && (
                 <span className="px-1.5 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-mono font-bold leading-none">
                   {briefsCount}
+                </span>
+              )}
+            </button>
+
+            <button
+              type="button"
+              id="tab-btn-referral-payouts"
+              onClick={() => setActiveTab('referral_payouts')}
+              className={`min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-heading font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 whitespace-nowrap ${
+                activeTab === 'referral_payouts'
+                  ? 'bg-white dark:bg-[#1A1A24] text-slate-900 dark:text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/50'
+              }`}
+            >
+              <GiftIcon className="w-4 h-4 text-pink-600 dark:text-pink-400 shrink-0" />
+              <span>Referal toʻlovlar</span>
+              {payoutsCount > 0 && (
+                <span className="px-1.5 py-0.5 rounded-full bg-pink-500 text-white text-[10px] font-mono font-bold leading-none">
+                  {payoutsCount}
                 </span>
               )}
             </button>
@@ -973,6 +999,10 @@ export function AdminDashboardPage({ onLogout, onGoToSite, onUnauthorized }: Adm
           </div>
         </section>
           </div>
+        )}
+
+        {activeTab === 'referral_payouts' && (
+          <AdminReferralPayouts onCountChange={setPayoutsCount} onUnauthorized={handleUnauthorized} />
         )}
 
         {activeTab === 'briefs' && (

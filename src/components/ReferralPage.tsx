@@ -1,4 +1,6 @@
 import React from 'react';
+import { UserSession } from '../types';
+import { ReferralDashboard } from './ReferralDashboard';
 import {
   Gift,
   ArrowLeft,
@@ -17,17 +19,27 @@ import {
 interface ReferralPageProps {
   onBackToHome: () => void;
   onOpenRegister: () => void;
+  currentUser: UserSession | null;
+  onOpenProModal: () => void;
 }
 
 export const ReferralPage: React.FC<ReferralPageProps> = ({
   onBackToHome,
   onOpenRegister,
+  currentUser,
+  onOpenProModal,
 }) => {
+  const scrollToDashboard = () => {
+    try {
+      document.getElementById('referral-dashboard')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch {}
+  };
+
   const steps = [
     {
       num: '01',
       title: 'Doʻstingizni taklif qiling',
-      desc: 'Tanish bloger, ekspert yoki biznes egalariga Collabix platformasi haqida soʻzlab bering yoki xabar yuboring.',
+      desc: 'Pro rejimingiz faol boʻlsa, shaxsiy havolangizni tanish bloger va biznes egalariga yuboring.',
       icon: Share2,
       badge: '1-qadam',
       color: 'from-indigo-500 to-indigo-600',
@@ -35,7 +47,7 @@ export const ReferralPage: React.FC<ReferralPageProps> = ({
     {
       num: '02',
       title: 'U roʻyxatdan oʻtib, obuna boʻladi',
-      desc: 'Doʻstingiz platformada oʻz hisobini ochadi va 59 000 soʻmlik oylik obunani muvaffaqiyatli faollashtiradi.',
+      desc: 'Doʻstingiz havolangiz orqali hisob ochadi va 59 000 soʻmlik Pro rejimni birinchi marta faollashtiradi.',
       icon: CheckCircle2,
       badge: '2-qadam',
       color: 'from-purple-500 to-purple-600',
@@ -43,7 +55,7 @@ export const ReferralPage: React.FC<ReferralPageProps> = ({
     {
       num: '03',
       title: 'Siz 29 000 soʻm mukofot olasiz',
-      desc: 'Doʻstingiz toʻlagan summaning deyarli yarmi — 29 000 soʻm toʻgʻridan-toʻgʻri sizning mukofot balansizga oʻtkaziladi.',
+      desc: 'Doʻstingiz toʻlagan summaning deyarli yarmi — 29 000 soʻm balansingizga tushadi va uni kartangizga yechib olasiz.',
       icon: Coins,
       badge: '3-qadam',
       color: 'from-pink-500 to-rose-500',
@@ -53,7 +65,7 @@ export const ReferralPage: React.FC<ReferralPageProps> = ({
   const benefits = [
     {
       title: 'Kimlar uchun moʻljallangan?',
-      desc: 'Har qanday roʻyxatdan oʻtgan foydalanuvchi: blogerlar, brend vakillari, marketologlar va hatto oddiy tashrif buyuruvchilar ham qatnashishi mumkin.',
+      desc: 'Pro rejimi faol boʻlgan har qanday foydalanuvchi — bloger ham, brend ham. Shaxsiy havola faqat Pro foydalanuvchilarga ochiladi.',
     },
     {
       title: 'Takliflar sonida cheklov bormi?',
@@ -61,7 +73,7 @@ export const ReferralPage: React.FC<ReferralPageProps> = ({
     },
     {
       title: 'Mukofot qachon va qanday toʻlanadi?',
-      desc: 'Taklif qilingan doʻstingiz obuna toʻlovini amalga oshirishi bilan mukofotingiz tasdiqlanadi va shaxsiy hisobingizga biriktiriladi.',
+      desc: 'Doʻstingizning birinchi Pro toʻlovi tasdiqlangach, 29 000 soʻm balansingizga qoʻshiladi (har bir doʻst uchun bir marta). Balansni kartangizga yechib olish soʻrovini yuborasiz — pul 1–3 ish kuni ichida oʻtkaziladi.',
     },
   ];
 
@@ -101,14 +113,14 @@ export const ReferralPage: React.FC<ReferralPageProps> = ({
 
           <p className="mt-4 text-[15px] sm:text-base text-slate-300 font-body leading-relaxed">
             Collabix platformasini kengaytirishga hissa qoʻshing va har bir yangi faol obunachidan daromad oling.
-            Dastur blogerlar, brendlar va barcha ijodkorlar uchun birdek ochiq!
+            Dastur Pro rejimi faol blogerlar va brendlar uchun.
           </p>
 
           <div className="mt-6 flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3">
             <button
               type="button"
               id="btn-referral-hero-start"
-              onClick={onOpenRegister}
+              onClick={scrollToDashboard}
               className="w-full sm:w-auto min-h-[48px] inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-400 hover:to-pink-400 text-white font-heading font-bold text-sm shadow-lg shadow-indigo-500/25 active:scale-98 transition-all cursor-pointer"
             >
               <span>Dasturda ishtirok etish</span>
@@ -124,6 +136,12 @@ export const ReferralPage: React.FC<ReferralPageProps> = ({
           </div>
         </div>
       </div>
+
+      <ReferralDashboard
+        currentUser={currentUser}
+        onOpenRegister={onOpenRegister}
+        onOpenProModal={onOpenProModal}
+      />
 
       {/* 3-Step Walkthrough */}
       <div className="mb-12">
@@ -265,14 +283,14 @@ export const ReferralPage: React.FC<ReferralPageProps> = ({
           Hozirdan boshlab doʻstlaringizga Collabix haqida soʻzlab bering!
         </h3>
         <p className="text-[15px] sm:text-sm text-slate-300 mb-6 max-w-lg mx-auto">
-          Hisobingizni roʻyxatdan oʻtkazing yoki mavjud profilingiz orqali platformaga kiring.
+          Shaxsiy havolangizni nusxalab, doʻstlaringizga yuboring.
         </p>
         <button
           type="button"
-          onClick={onOpenRegister}
+          onClick={scrollToDashboard}
           className="w-full sm:w-auto min-h-[48px] inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white font-heading font-bold text-sm shadow-md cursor-pointer hover:opacity-95 transition-opacity"
         >
-          <span>Roʻyxatdan oʻtish / Kirish</span>
+          <span>Havolamni olish</span>
           <ArrowRight className="w-4 h-4" />
         </button>
       </div>

@@ -1,4 +1,4 @@
-const ALLOWED_TYPES = new Set(['new_user', 'payment_request', 'test']);
+const ALLOWED_TYPES = new Set(['new_user', 'payment_request', 'referral_withdrawal', 'test']);
 const MAX_FIELD_LENGTH = 200;
 
 function sanitizeData(raw) {
@@ -28,6 +28,12 @@ function buildTelegramMessage(type, data) {
     const userName = data.userName || data.name || "Noma'lum foydalanuvchi";
     const amount = data.amount || "59 000 so'm";
     return `💳 Yangi to'lov so'rovi!\nFoydalanuvchi: ${userName}\nSumma: ${amount}`;
+  }
+
+  if (type === 'referral_withdrawal') {
+    const userName = data.userName || data.name || "Noma'lum foydalanuvchi";
+    const amount = data.amount || "29 000 so'm";
+    return `🎁 Referal mukofotini yechib olish so'rovi!\nFoydalanuvchi: ${userName}\nSumma: ${amount}\nAdmin panel → Referal to'lovlar`;
   }
 
   const text = data.text || data.message || 'Collabix Telegram integratsiyasi ishlayapti.';

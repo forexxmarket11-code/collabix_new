@@ -4,7 +4,9 @@ import App from './App';
 import './index.css';
 import { ThemeProvider } from './context/ThemeContext';
 import { registerServiceWorker } from './pwa';
+import { captureReferralFromUrl } from './firebase';
 
+captureReferralFromUrl();
 registerServiceWorker();
 
 createRoot(document.getElementById('root')!).render(

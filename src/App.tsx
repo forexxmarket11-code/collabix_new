@@ -799,6 +799,8 @@ export default function App() {
           <ReferralPage
             onBackToHome={handleGoHome}
             onOpenRegister={handleStart}
+            currentUser={currentUser}
+            onOpenProModal={() => setIsProModalOpen(true)}
           />
         )}
 
