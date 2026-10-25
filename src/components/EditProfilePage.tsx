@@ -28,6 +28,8 @@ import {
 } from 'lucide-react';
 import { UserSession, CreatorMediaItem, PastCollaboration } from '../types';
 import { PortfolioCollabsEditor, cleanPastCollaborations } from './PortfolioCollabs';
+import { GalleryVideoThumb, isVideoLikeItem } from './GalleryMedia';
+import { looksLikeVideoUrl } from '../utils/media';
 import { saveUserProfile, fetchUserProfile, calculateProfileCompletion } from '../firebase';
 import { getBloggerCatalogReadiness, isFilledSocialValue } from '../utils/subscription';
 
@@ -415,7 +417,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
     }
 
     const trimmed = newMediaUrl.trim();
-    const isVideo = newMediaType === 'video' || trimmed.endsWith('.mp4') || trimmed.endsWith('.mov') || trimmed.includes('youtube') || trimmed.includes('vimeo');
+    const isVideo = newMediaType === 'video' || looksLikeVideoUrl(trimmed);
     setGallery((prev) => [
       ...prev,
       {
@@ -1430,18 +1432,8 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
                       key={item.id}
                       className="group relative aspect-[3/4] rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-900 shadow-2xs"
                     >
-                      {item.type === 'video' ? (
-                        <div className="w-full h-full relative bg-slate-900 flex items-center justify-center text-white">
-                          <video
-                            src={item.url}
-                            className="w-full h-full object-cover opacity-80"
-                            muted
-                            preload="metadata"
-                          />
-                          <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                            <Film className="w-6 h-6 text-white" />
-                          </div>
-                        </div>
+                      {isVideoLikeItem(item) ? (
+                        <GalleryVideoThumb url={item.url} />
                       ) : (
                         <img
                           src={item.url}

@@ -36,6 +36,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { PortfolioCollabsSection } from './PortfolioCollabs';
+import { GalleryVideoPlayer, GalleryVideoThumb, isVideoLikeItem } from './GalleryMedia';
 import { CatalogCreator, UserSession, BriefData, CreatorMediaItem } from '../types';
 import {
   subscribeToCreatorDocument,
@@ -665,7 +666,7 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
     initialCreator?.category === 'Model' ||
     initialCreator?.category === 'Brand Face';
 
-  const videoCount = portfolioItems.filter((it) => it.type === 'video').length;
+  const videoCount = portfolioItems.filter((it) => isVideoLikeItem(it)).length;
   const activeMedia: CreatorMediaItem = portfolioItems[currentSlideIndex] || portfolioItems[0] || {
     id: 'fallback',
     url: rawAvatarUrl,
@@ -798,14 +799,8 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
             {/* Katta, asosiy rasm ko'rinishi (portret format) */}
             <div className="relative max-w-2xl mx-auto rounded-3xl overflow-hidden shadow-2xl bg-black border border-slate-200/40 dark:border-slate-800">
               <div className="relative w-full aspect-[3/4] sm:aspect-[4/5] bg-slate-950 flex items-center justify-center overflow-hidden">
-                {activeMedia.type === 'video' ? (
-                  <video
-                    key={activeMedia.url}
-                    src={activeMedia.url}
-                    controls
-                    playsInline
-                    className="w-full h-full object-cover"
-                  />
+                {isVideoLikeItem(activeMedia) ? (
+                  <GalleryVideoPlayer key={activeMedia.url} url={activeMedia.url} title={activeMedia.title} />
                 ) : (
                   <img
                     key={activeMedia.url}
@@ -818,7 +813,7 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
                 )}
 
                 {/* Subtle gradient overlay at bottom for controls readability */}
-                <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/85 via-black/30 to-transparent pointer-events-none z-10" />
+                {!isVideoLikeItem(activeMedia) && <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/85 via-black/30 to-transparent pointer-events-none z-10" />}
 
                 {/* Tagida / ichida: "oldingi/keyingi" strelkalar (‹ ›) bilan slayd almashtirish */}
                 {portfolioItems.length > 1 && (
@@ -875,13 +870,8 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
                         : 'opacity-70 hover:opacity-100 border border-slate-200 dark:border-slate-800'
                     }`}
                   >
-                    {item.type === 'video' ? (
-                      <div className="w-full h-full relative">
-                        <video src={item.url} className="w-full h-full object-cover" muted preload="metadata" />
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-white">
-                          <Play className="w-4 h-4 fill-white" />
-                        </div>
-                      </div>
+                    {isVideoLikeItem(item) ? (
+                      <GalleryVideoThumb url={item.url} />
                     ) : (
                       <img src={item.url} alt={`Thumbnail ${idx + 1}`} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                     )}
