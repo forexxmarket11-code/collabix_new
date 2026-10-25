@@ -35,6 +35,7 @@ import {
   Check,
   Loader2,
 } from 'lucide-react';
+import { PortfolioCollabsSection } from './PortfolioCollabs';
 import { CatalogCreator, UserSession, BriefData, CreatorMediaItem } from '../types';
 import {
   subscribeToCreatorDocument,
@@ -1027,6 +1028,9 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
             </p>
           </div>
 
+          {/* Portfolio — kimlar bilan ishlagan */}
+          <PortfolioCollabsSection items={creatorProfile?.pastCollaborations} id="model-portfolio-section" />
+
           {/* KONTAKTNI OCHISH BO'LIMI (Model va Brand Face uchun) */}
           <ContactUnlockSection
             isContactUnlocked={isContactUnlocked}
@@ -1403,6 +1407,9 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
             {bio}
           </p>
         </div>
+
+        {/* Portfolio — kimlar bilan ishlagan */}
+        <PortfolioCollabsSection items={creatorProfile?.pastCollaborations} />
 
         {/* 4. IJTIMOIY TARMOQLAR (Mini Blogger uchun) / KONTAKTNI OCHISH (Blogger uchun) */}
         {isMiniBlogger ? (

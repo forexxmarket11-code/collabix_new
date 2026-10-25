@@ -480,7 +480,15 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
                 <div className="flex items-center gap-2.5 ml-auto">
                   {/* Completed works count */}
                   <span className="text-xs font-body text-slate-500 dark:text-slate-400 font-medium hidden sm:inline">
-                    <span className="text-slate-800 dark:text-slate-200 font-semibold">{creator.reviewsCount || 0}</span> ta ish
+                    {creator.collabCount && creator.collabCount > 0 ? (
+                      <>
+                        <span className="text-slate-800 dark:text-slate-200 font-semibold">{creator.collabCount}</span> ta brend bilan ishlagan
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-slate-800 dark:text-slate-200 font-semibold">{creator.reviewsCount || 0}</span> ta ish
+                      </>
+                    )}
                   </span>
 
                   {/* "Brif yuborish" direct action button on card (>=44px touch target) */}

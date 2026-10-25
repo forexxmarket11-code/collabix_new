@@ -26,7 +26,8 @@ import {
   Phone,
   PhoneCall,
 } from 'lucide-react';
-import { UserSession, CreatorMediaItem } from '../types';
+import { UserSession, CreatorMediaItem, PastCollaboration } from '../types';
+import { PortfolioCollabsEditor, cleanPastCollaborations } from './PortfolioCollabs';
 import { saveUserProfile, fetchUserProfile, calculateProfileCompletion } from '../firebase';
 import { getBloggerCatalogReadiness, isFilledSocialValue } from '../utils/subscription';
 
@@ -215,6 +216,10 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
     }
     return [];
   });
+  // 9. Portfolio: avval kimlar bilan ishlagan
+  const [pastCollabs, setPastCollabs] = useState<PastCollaboration[]>(() =>
+    Array.isArray(user?.pastCollaborations) ? user!.pastCollaborations! : []
+  );
   const [newMediaUrl, setNewMediaUrl] = useState<string>('');
   const [newMediaType, setNewMediaType] = useState<'image' | 'video'>('image');
   const [galleryInputError, setGalleryInputError] = useState<string | null>(null);
@@ -267,6 +272,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
         if (fresh.weight) setWeight(fresh.weight.toString());
         if (fresh.age) setAge(fresh.age.toString());
         if (fresh.experienceYears) setExperienceYears(fresh.experienceYears.toString());
+        if (Array.isArray(fresh.pastCollaborations)) setPastCollabs(fresh.pastCollaborations);
         if (fresh.gallery && Array.isArray(fresh.gallery) && fresh.gallery.length > 0) {
           setGallery(fresh.gallery);
         } else if (fresh.mediaGallery && Array.isArray(fresh.mediaGallery) && fresh.mediaGallery.length > 0) {
@@ -565,6 +571,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
       experienceYears: experienceYears.trim() || undefined,
       gallery: cleanGallery,
       mediaGallery: cleanGallery,
+      pastCollaborations: cleanPastCollaborations(pastCollabs),
       profileCompletion: completion,
       accountStatus: user?.accountStatus === 'rejected' ? 'rejected' : 'approved',
     };
@@ -1475,6 +1482,11 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
               )}
             </div>
           </section>
+        )}
+
+        {/* 4.2 PORTFOLIO — kimlar bilan ishlagan (faqat kreatorlar uchun) */}
+        {user?.role !== 'brend' && (
+          <PortfolioCollabsEditor items={pastCollabs} onChange={setPastCollabs} />
         )}
 
         {/* 5. NARX (XIZMAT NARXI ORALIG'I) */}

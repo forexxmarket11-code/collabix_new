@@ -36,6 +36,7 @@ export interface CatalogCreator {
   experienceYears?: string | number;
   views?: number;
   gallery?: CreatorMediaItem[];
+  collabCount?: number;
   topPlacementUntil?: string | null;
   isTopPlacement?: boolean;
 }
@@ -230,6 +231,8 @@ export interface UserSession {
   views?: number;
   gallery?: CreatorMediaItem[];
   mediaGallery?: CreatorMediaItem[];
+  /** Portfolio: avval kimlar bilan ishlagan */
+  pastCollaborations?: PastCollaboration[];
   unlockedContactsCount?: number;
   unlockedCreators?: Record<string, { unlockedAt: string; expiresAt: string }>;
   lastUnlockedCreatorId?: string;
@@ -411,3 +414,13 @@ export interface ReferralWithdrawal {
   createdAtMillis: number;
   paidAt?: string;
 }
+
+export interface PastCollaboration {
+  id: string;
+  brand: string;
+  description?: string;
+  link?: string;
+  year?: string;
+}
+
+export const MAX_PAST_COLLABORATIONS = 12;

@@ -1876,6 +1876,7 @@ export function userSessionToCatalogCreator(user: UserSession): CatalogCreator {
     verified: Boolean(user.verified ?? (user.accountStatus !== 'rejected')),
     engagementRate: user.engagementRate || '—',
     tiktokFollowers: user.socialLinks?.tiktokFollowers || '',
+    collabCount: Array.isArray(user.pastCollaborations) ? user.pastCollaborations.length : 0,
     profileCompletion: typeof user.profileCompletion === 'number' ? user.profileCompletion : undefined,
     bio: user.bio || '',
     tags: user.categories && user.categories.length > 0 ? user.categories : ['Blogger', 'Kontent'],
