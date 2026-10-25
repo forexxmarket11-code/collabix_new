@@ -54,6 +54,8 @@ service cloud.firestore {
         'balance',
         'unlockedContactsCount',
         'unlockedCreators',
+        'lastUnlockedCreatorId',
+        'proExpiresAtMillis',
         'referralCount'
       ]);
     }
@@ -80,7 +82,9 @@ service cloud.firestore {
         && !('balance' in data)
         && (!('referralCount' in data) || data.referralCount == 0)
         && !('isAdmin' in data)
-        && !('permissions' in data);
+        && !('permissions' in data)
+        && !('proExpiresAtMillis' in data)
+        && !('lastUnlockedCreatorId' in data);
     }
 
     // 1. Users Collection:
@@ -95,7 +99,7 @@ service cloud.firestore {
         && isValidInitialUserCreate(userId)
       );
 
-      allow update: if isAdmin() || (
+      allow update: if isAdmin() || isSpendingUnlockCredit(userId) || (
         isOwner(userId)
         && isValidId(userId)
         && !hasProtectedUserFieldChanges()
@@ -107,6 +111,73 @@ service cloud.firestore {
       );
 
       allow delete: if isAdmin();
+    }
+
+    // ===== Kontakt ochish (72 soat) va yopiq kontaktlar =====
+    function userPath(uid) {
+      return /databases/$(database)/documents/users/$(uid);
+    }
+
+    // Brend o'z balansidan aynan 1 ta kontakt sarflaydi va shu paketda ochish yozuvi yaratiladi
+    function isSpendingUnlockCredit(userId) {
+      let before = resource.data;
+      let after = request.resource.data;
+      return isOwner(userId)
+        && after.diff(before).affectedKeys().hasOnly(['unlockedContactsCount', 'unlockedCreators', 'lastUnlockedCreatorId', 'updatedAt'])
+        && before.get('unlockedContactsCount', 0) is int
+        && before.get('unlockedContactsCount', 0) > 0
+        && after.unlockedContactsCount == before.get('unlockedContactsCount', 0) - 1
+        && after.lastUnlockedCreatorId is string
+        && existsAfter(/databases/$(database)/documents/users/$(userId)/unlocks/$(after.lastUnlockedCreatorId));
+    }
+
+    function isReaderProBrand() {
+      let d = get(userPath(request.auth.uid)).data;
+      return d.get('role', '') == 'brend'
+        && d.get('subscriptionStatus', '') in ['trial', 'active']
+        && (d.get('proExpiresAtMillis', 0) == 0 || timestamp.value(d.get('proExpiresAtMillis', 0)) > request.time);
+    }
+
+    function hasValidUnlock(ownerId) {
+      let p = /databases/$(database)/documents/users/$(request.auth.uid)/unlocks/$(ownerId);
+      return exists(p) && get(p).data.expiresAt > request.time;
+    }
+
+    function hasContactGrant(ownerId) {
+      return exists(/databases/$(database)/documents/users/$(ownerId)/contactGrants/$(request.auth.uid));
+    }
+
+    // Telefon, Telegram, email: faqat egasi, admin, Pro brend, 72 soat ochgan brend yoki ruxsat berilgan hamkor
+    match /users/{userId}/private/{docId} {
+      allow read: if isSignedIn() && (
+        isOwner(userId) || isAdmin() || hasContactGrant(userId) || hasValidUnlock(userId) || isReaderProBrand()
+      );
+      allow create, update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Brendning kontakt ochish yozuvlari
+    match /users/{userId}/unlocks/{creatorId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create, update: if isAdmin() || (
+        isOwner(userId)
+        && request.resource.data.keys().hasOnly(['creatorId', 'unlockedAt', 'expiresAt'])
+        && request.resource.data.creatorId == creatorId
+        && request.resource.data.expiresAt is timestamp
+        && request.resource.data.expiresAt > request.time
+        && request.resource.data.expiresAt <= request.time + duration.value(73, 'h')
+        && get(userPath(userId)).data.get('unlockedContactsCount', 0) > 0
+        && getAfter(userPath(userId)).data.get('unlockedContactsCount', 0) == get(userPath(userId)).data.get('unlockedContactsCount', 0) - 1
+        && getAfter(userPath(userId)).data.get('lastUnlockedCreatorId', '') == creatorId
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Hamkorga o'z kontaktini ko'rish ruxsati (brif qabul qilinganda)
+    match /users/{userId}/contactGrants/{granteeId} {
+      allow read: if isOwner(userId) || isAdmin() || (isSignedIn() && request.auth.uid == granteeId);
+      allow create, update: if isOwner(userId) && granteeId != userId;
+      allow delete: if isOwner(userId) || isAdmin();
     }
 
     // 2. Conversations & Messages:
