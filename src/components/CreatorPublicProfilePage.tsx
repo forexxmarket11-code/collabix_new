@@ -46,7 +46,6 @@ import {
 } from '../firebase';
 import type { PrivateContact } from '../firebase';
 import { checkProUserAndProceed } from '../utils/subscription';
-import { ContactPackagesModal } from './ContactPackagesModal';
 
 
 interface CreatorPublicProfilePageProps {
@@ -280,7 +279,7 @@ const ContactUnlockSection: React.FC<ContactUnlockSectionProps> = ({
 
       {!isContactUnlocked ? (
         <div className="space-y-3 pt-1">
-          {/* 3. Pastda katta tugma: "Kontaktni ochish — 19 000 so'm" */}
+          {/* 3. Pastda katta tugma: Pro bilan kontaktni ochish */}
           <button
             type="button"
             id="btn-unlock-contact-main"
@@ -297,23 +296,21 @@ const ContactUnlockSection: React.FC<ContactUnlockSectionProps> = ({
               <>
                 <Lock className="w-5 h-5 text-amber-100 shrink-0" />
                 <span>
-                  {availableBalance > 0
-                    ? `Kontaktni ochish (${availableBalance} ta balansingiz bor)`
-                    : "Kontaktni ochish — 19 000 so'm"}
+                  {"Pro rejim bilan kontaktni ochish"}
                 </span>
               </>
             )}
           </button>
 
-          {/* 4. Tugma ostida kichik matn: "72 soatlik kirish · bir martalik to'lov" */}
+          {/* 4. Tugma ostida kichik matn: Pro narxi */}
           <div className="text-center text-xs text-slate-500 dark:text-slate-400 font-body">
-            72 soatlik kirish · bir martalik to'lov
+            Pro rejim — oyiga 59 000 soʻm · barcha kreatorlar kontaktlari ochiq
           </div>
 
           {/* 5. Pastroqda: "Har bir profil tekshirilgan. Xavfsiz to'lov: Payme, Click." degan ishonch matni */}
           <div className="pt-2 flex items-center justify-center gap-2 text-xs text-slate-600 dark:text-slate-300 font-body text-center">
             <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
-            <span>Har bir profil tekshirilgan. Xavfsiz to'lov: Payme, Click.</span>
+            <span>Har bir profil tekshirilgan. Toʻlov karta orqali, admin tasdigʻi bilan.</span>
           </div>
 
           {/* 6. Shundan keyin: "Pro paket olish" qatori — "30 kontakt = 11,633 so'mdan" kabi */}
@@ -324,7 +321,7 @@ const ContactUnlockSection: React.FC<ContactUnlockSectionProps> = ({
               className="inline-flex items-center justify-center gap-1.5 min-h-[44px] px-2 text-xs sm:text-sm font-heading font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors cursor-pointer group"
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-500 group-hover:scale-110 transition-transform shrink-0" />
-              <span>30 kontakt = 11,633 so'mdan · Pro paket olish →</span>
+              <span>Pro rejim imkoniyatlari bilan tanishish →</span>
             </button>
           </div>
         </div>
@@ -724,6 +721,7 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
 
   const availableBalance = currentUser?.unlockedContactsCount || 0;
 
+  // Kontaktlar faqat Pro rejim orqali ochiladi
   const handleUnlockContactAction = async () => {
     if (!currentUser) {
       if (onOpenRegisterModal) {
@@ -733,30 +731,11 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
       }
       return;
     }
-
     if (isContactUnlocked) {
       return;
     }
-
-    // Agar foydalanuvchida bo'sh (ishlatilmagan) kontakt mavjud bo'lsa
-    if (availableBalance > 0) {
-      setIsUnlocking(true);
-      try {
-        const res = await unlockCreatorContact(currentUser.uid, effectiveId);
-        if (onUpdateUser) {
-          onUpdateUser(res.updatedUser);
-        }
-        setUnlockSuccessMsg("Kontakt 72 soatga muvaffaqiyatli ochildi! To'liq ma'lumotlar ko'rinmoqda.");
-        setTimeout(() => setUnlockSuccessMsg(null), 5000);
-      } catch (err: any) {
-        console.error("Kontaktni ochishda xatolik:", err);
-        setIsContactModalOpen(true);
-      } finally {
-        setIsUnlocking(false);
-      }
-    } else {
-      // Agar bo'sh kontakt bo'lmasa, to'g'ridan-to'g'ri to'lov/paket tanlash oynasi ochilsin
-      setIsContactModalOpen(true);
+    if (onOpenProModal) {
+      onOpenProModal();
     }
   };
 
@@ -1061,7 +1040,7 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
             unlockSuccessMsg={unlockSuccessMsg}
             copiedField={copiedField}
             onUnlock={handleUnlockContactAction}
-            onOpenPackages={() => setIsContactModalOpen(true)}
+            onOpenPackages={handleUnlockContactAction}
             onOpenProModal={onOpenProModal}
             onCopy={handleCopyContact}
           />
@@ -1202,9 +1181,7 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
                         <>
                           <Lock className="w-4 h-4 text-amber-100 shrink-0" />
                           <span>
-                            {availableBalance > 0
-                              ? `Kontaktni ochish (${availableBalance} ta bor)`
-                              : "Kontaktni ochish — 19 000 so'm"}
+                            {"Pro bilan kontaktni ochish"}
                           </span>
                         </>
                       )}
@@ -1216,24 +1193,6 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
           </div>
         </div>
 
-        {/* Contact Packages Pay-Per-Contact Modal */}
-        <ContactPackagesModal
-          isOpen={isContactModalOpen}
-          onClose={() => setIsContactModalOpen(false)}
-          currentUser={currentUser}
-          targetCreator={{
-            id: effectiveId,
-            name,
-            avatar: effectiveAvatarForChat,
-          }}
-          onUpdateUser={(updated) => {
-            if (onUpdateUser) {
-              onUpdateUser(updated);
-            }
-          }}
-          onOpenProModal={onOpenProModal}
-          onOpenRegisterModal={onOpenRegisterModal}
-        />
       </div>
     );
   }
@@ -1478,11 +1437,11 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
                 <button
                   type="button"
                   id="btn-blogger-unlock-contact-pay"
-                  onClick={() => setIsContactModalOpen(true)}
+                  onClick={handleUnlockContactAction}
                   className="min-h-[44px] px-3.5 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 text-xs font-heading font-bold transition-all flex items-center gap-1.5 cursor-pointer"
                 >
                   <Key className="w-3.5 h-3.5" />
-                  <span>Shu kontaktni ochish (72 soat)</span>
+                  <span>Kontaktni koʻrish</span>
                 </button>
               </div>
             ) : (
@@ -1503,12 +1462,12 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
               <div className="flex items-start sm:items-center gap-2 text-slate-600 dark:text-slate-300">
                 <Lock className="w-4 h-4 text-amber-500 shrink-0 mt-0.5 sm:mt-0" />
                 <span>
-                  Kreatorning rasmiy profillari qulflangan. <strong>19,000 so'm</strong> evaziga 72 soatlik kirish oling yoki Pro obuna bilan cheksiz foydalaning.
+                  Kreatorning kontaktlari qulflangan. <strong>Pro rejim</strong> (oyiga 59 000 soʻm) bilan barcha kreatorlar kontaktlarini cheksiz koʻring.
                 </span>
               </div>
               <button
                 type="button"
-                onClick={() => setIsContactModalOpen(true)}
+                onClick={handleUnlockContactAction}
                 className="w-full sm:w-auto min-h-[44px] px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-heading font-bold shrink-0 cursor-pointer flex items-center justify-center"
               >
                 Ochish variantlari
@@ -1554,7 +1513,7 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
                 ) : (
                   <button
                     type="button"
-                    onClick={() => setIsContactModalOpen(true)}
+                    onClick={handleUnlockContactAction}
                     className="flex items-center justify-center gap-1.5 min-h-[44px] px-3.5 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/70 hover:bg-indigo-100 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-heading font-bold shrink-0 cursor-pointer"
                   >
                     <Lock className="w-3.5 h-3.5 text-amber-500" />
@@ -1599,7 +1558,7 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
                 ) : (
                   <button
                     type="button"
-                    onClick={() => setIsContactModalOpen(true)}
+                    onClick={handleUnlockContactAction}
                     className="flex items-center justify-center gap-1.5 min-h-[44px] px-3.5 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/70 hover:bg-indigo-100 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-heading font-bold shrink-0 cursor-pointer"
                   >
                     <Lock className="w-3.5 h-3.5 text-amber-500" />
@@ -1644,7 +1603,7 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
                 ) : (
                   <button
                     type="button"
-                    onClick={() => setIsContactModalOpen(true)}
+                    onClick={handleUnlockContactAction}
                     className="flex items-center justify-center gap-1.5 min-h-[44px] px-3.5 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/70 hover:bg-indigo-100 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-heading font-bold shrink-0 cursor-pointer"
                   >
                     <Lock className="w-3.5 h-3.5 text-amber-500" />
@@ -1687,7 +1646,7 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
                 ) : (
                   <button
                     type="button"
-                    onClick={() => setIsContactModalOpen(true)}
+                    onClick={handleUnlockContactAction}
                     className="flex items-center justify-center gap-1.5 min-h-[44px] px-3.5 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/70 hover:bg-indigo-100 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-heading font-bold shrink-0 cursor-pointer"
                   >
                     <Lock className="w-3.5 h-3.5 text-amber-500" />
@@ -1711,7 +1670,7 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
             unlockSuccessMsg={unlockSuccessMsg}
             copiedField={copiedField}
             onUnlock={handleUnlockContactAction}
-            onOpenPackages={() => setIsContactModalOpen(true)}
+            onOpenPackages={handleUnlockContactAction}
             onOpenProModal={onOpenProModal}
             onCopy={handleCopyContact}
           />
@@ -1897,9 +1856,7 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
                       <>
                         <Lock className="w-4 h-4 text-amber-100 shrink-0" />
                         <span>
-                          {availableBalance > 0
-                            ? `Kontaktni ochish (${availableBalance} ta bor)`
-                            : "Kontaktni ochish — 19 000 so'm"}
+                          {"Pro bilan kontaktni ochish"}
                         </span>
                       </>
                     )}
@@ -1911,24 +1868,6 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
         </div>
       </div>
 
-      {/* Contact Packages Pay-Per-Contact Modal */}
-      <ContactPackagesModal
-        isOpen={isContactModalOpen}
-        onClose={() => setIsContactModalOpen(false)}
-        currentUser={currentUser}
-        targetCreator={{
-          id: effectiveId,
-          name,
-          avatar: effectiveAvatarForChat,
-        }}
-        onUpdateUser={(updated) => {
-          if (onUpdateUser) {
-            onUpdateUser(updated);
-          }
-        }}
-        onOpenProModal={onOpenProModal}
-        onOpenRegisterModal={onOpenRegisterModal}
-      />
     </div>
   );
 };

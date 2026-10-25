@@ -572,8 +572,8 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
       )}
       */}
 
-      {/* Pay-per-contact unlocks summary for brand */}
-      {!isBlogger && typeof user.unlockedContactsCount === 'number' && (
+      {/* Pay-per-contact unlocks summary for brand — o'chirilgan: endi faqat Pro obuna orqali */}
+      {false && !isBlogger && typeof user.unlockedContactsCount === 'number' && (
         <div
           id="profile-brand-contacts-card"
           className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 p-5 sm:p-6 shadow-xs mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
