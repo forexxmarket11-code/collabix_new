@@ -117,6 +117,13 @@ export const Footer: React.FC<FooterProps> = ({ onCatalogClick, onNavigate, onRe
         <div className="pt-6 sm:pt-8 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-mono gap-3 text-center sm:text-left">
           <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
             <p>© {new Date().getFullYear()} Collabix. Barcha huquqlar himoyalangan.</p>
+            <a
+              href="/privacy.html"
+              id="link-footer-privacy"
+              className="min-h-[44px] px-3 py-2 rounded-xl text-xs text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-colors inline-flex items-center justify-center"
+            >
+              Maxfiylik siyosati
+            </a>
             {onAdminClick && (
               <button
                 type="button"

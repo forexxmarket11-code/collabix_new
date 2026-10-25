@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Maxfiylik siyosati — Collabix</title>
+  <meta name="description" content="Collabix platformasi va ilovasining maxfiylik siyosati: qanday ma'lumotlar yig'iladi, nima uchun ishlatiladi va qanday himoyalanadi." />
+  <link rel="icon" href="/favicon.ico" sizes="48x48" />
+  <style>
+    :root { --bg: #F8FAFD; --card: #ffffff; --text: #0F172A; --muted: #475569; --line: #E2E8F0; --accent: #4F46E5; }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #0B0F19; --card: #111827; --text: #F1F5F9; --muted: #94A3B8; --line: #1E293B; --accent: #818CF8; }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
+    main { max-width: 760px; margin: 0 auto; padding: 32px 16px 64px; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 24px 20px; }
+    a { color: var(--accent); }
+    h1 { font-size: 28px; line-height: 1.25; margin: 0 0 6px; }
+    h2 { font-size: 19px; margin: 28px 0 8px; }
+    p, li { color: var(--muted); }
+    ul { padding-left: 20px; }
+    .meta { font-size: 14px; color: var(--muted); margin-bottom: 20px; }
+    .back { display: inline-block; margin-bottom: 18px; font-weight: 600; text-decoration: none; }
+    hr { border: 0; border-top: 1px solid var(--line); margin: 32px 0; }
+  </style>
+</head>
+<body>
+<main>
+  <a class="back" href="/">← Collabix bosh sahifasi</a>
+  <div class="card">
+    <h1>Maxfiylik siyosati</h1>
+    <div class="meta">Oxirgi yangilanish: 25-oktabr, 2026-yil</div>
+
+    <p>Ushbu siyosat Collabix veb-sayti (<a href="https://collabix.uz">collabix.uz</a>) va Collabix Android ilovasi (birgalikda — «Platforma») foydalanuvchilarning shaxsiy ma'lumotlarini qanday yig'ishi, ishlatishi va himoya qilishini tushuntiradi. Platforma blogerlar (kreatorlar) va brendlarni hamkorlik uchun bog'laydi.</p>
+
+    <h2>1. Qanday ma'lumotlar yig'iladi</h2>
+    <ul>
+      <li><strong>Ro'yxatdan o'tish ma'lumotlari:</strong> ism va familiya, email yoki telefon raqami, parol (parol faqat Google Firebase Authentication tomonidan shifrlangan holda saqlanadi, bizga ko'rinmaydi), hisob turi (bloger yoki brend).</li>
+      <li><strong>Profil ma'lumotlari:</strong> rasm, bio, shahar, kategoriya, ijtimoiy tarmoq havolalari, narxlar, galereya va siz o'zingiz kiritgan boshqa ma'lumotlar.</li>
+      <li><strong>Kontakt ma'lumotlari:</strong> telefon raqami va Telegram username. Ular yopiq saqlanadi (2-bo'limga qarang).</li>
+      <li><strong>Platformadagi faoliyat:</strong> briflar, arizalar, xabarlar (chat), bildirishnomalar, profil ko'rishlar soni.</li>
+      <li><strong>To'lov ma'lumotlari:</strong> karta orqali to'lov qilganingizda yuklagan chek rasmi, summa va to'lov turi. Bank karta raqamingizni biz so'ramaymiz va saqlamaymiz.</li>
+      <li><strong>Texnik ma'lumotlar:</strong> qurilma va brauzer turi, foydalanish statistikasi (Google Analytics for Firebase orqali), ilovani tezroq ochish uchun qurilmangizda saqlanadigan sessiya ma'lumotlari.</li>
+    </ul>
+
+    <h2>2. Ma'lumotlar kimga ko'rinadi</h2>
+    <ul>
+      <li><strong>Hammaga ochiq:</strong> blogerlarning ommaviy profili — ism, rasm, bio, kategoriya, shahar, ijtimoiy tarmoq havolalari, narxlar. Bu katalogda brendlar sizni topishi uchun kerak.</li>
+      <li><strong>Yopiq:</strong> telefon raqami, Telegram username va email faqat quyidagilarga ko'rinadi: sizning o'zingizga; Platforma administratoriga; kontaktni ochish uchun to'lov qilgan brendga (72 soat); Pro obunasi faol brendga; siz bilan brif orqali hamkorlikni boshlagan foydalanuvchiga.</li>
+      <li><strong>Xabarlar:</strong> faqat suhbat ishtirokchilari va administrator o'qiy oladi.</li>
+      <li><strong>To'lov cheklari:</strong> faqat siz va administrator ko'ra oladi.</li>
+    </ul>
+
+    <h2>3. Ma'lumotlar nima uchun ishlatiladi</h2>
+    <ul>
+      <li>Hisobingizni yaratish va unga kirishni ta'minlash;</li>
+      <li>blogerlar va brendlarni bog'lash, briflar va xabarlarni yetkazish;</li>
+      <li>to'lovlarni tekshirish va Pro, kontakt ochish yoki TOP xizmatlarini faollashtirish;</li>
+      <li>xavfsizlik, firibgarlik va spamning oldini olish;</li>
+      <li>Platformani yaxshilash.</li>
+    </ul>
+    <p>Biz ma'lumotlaringizni <strong>sotmaymiz</strong> va reklama maqsadida uchinchi shaxslarga bermaymiz.</p>
+
+    <h2>4. Xizmat ko'rsatuvchi uchinchi tomonlar</h2>
+    <ul>
+      <li><strong>Google Firebase</strong> (Authentication, Firestore, Analytics) — hisob, ma'lumotlar bazasi va statistika;</li>
+      <li><strong>Vercel</strong> — saytni joylashtirish (hosting);</li>
+      <li><strong>Telegram</strong> — yangi ro'yxatdan o'tish va to'lov so'rovlari haqida administratorga xizmat xabarlari (faqat ism, hisob turi va summa yuboriladi).</li>
+    </ul>
+    <p>Ushbu xizmatlar ma'lumotlarni O'zbekistondan tashqaridagi serverlarda saqlashi mumkin.</p>
+
+    <h2>5. Ma'lumotlarni saqlash va himoya</h2>
+    <p>Ma'lumotlar shifrlangan aloqa (HTTPS) orqali uzatiladi va kirish qoidalari bilan himoyalangan bazada saqlanadi. Hisobingiz faol bo'lgan muddat davomida saqlanadi. Hisob o'chirilganda shaxsiy ma'lumotlaringiz 30 kun ichida o'chiriladi; qonun talab qiladigan yozuvlar (masalan, to'lovlar) bundan mustasno bo'lishi mumkin.</p>
+
+    <h2>6. Sizning huquqlaringiz</h2>
+    <ul>
+      <li>Profilingizdagi ma'lumotlarni istalgan vaqtda ko'rish va tahrirlash;</li>
+      <li>hisobingiz va ma'lumotlaringizni o'chirishni so'rash;</li>
+      <li>ma'lumotlaringiz qanday ishlatilayotgani haqida savol berish.</li>
+    </ul>
+    <p>Hisobni o'chirish yoki boshqa so'rovlar uchun quyidagi emailga yozing. So'rovingizga 30 kun ichida javob beramiz.</p>
+
+    <h2>7. Yosh cheklovi</h2>
+    <p>Platforma 16 yoshdan katta foydalanuvchilar uchun mo'ljallangan. Biz 16 yoshga to'lmagan bolalardan bila turib ma'lumot yig'maymiz.</p>
+
+    <h2>8. O'zgarishlar</h2>
+    <p>Siyosat yangilanganda shu sahifadagi sana o'zgaradi. Muhim o'zgarishlar haqida Platformada xabar beramiz.</p>
+
+    <h2>9. Bog'lanish</h2>
+    <p>Email: <a href="mailto:forexxmarket11@gmail.com">forexxmarket11@gmail.com</a><br />Sayt: <a href="https://collabix.uz">collabix.uz</a></p>
+
+    <hr />
+
+    <h1 style="font-size:22px">Privacy Policy (summary in English)</h1>
+    <p>Collabix (collabix.uz and the Collabix Android app) connects bloggers and brands in Uzbekistan. We collect account data (name, email or phone, password handled by Firebase Authentication), profile data you enter, contact details (phone, Telegram), in-app activity (briefs, applications, chat messages), payment receipt images you upload, and basic analytics. Public blogger profiles are visible to everyone; phone, Telegram and email are private and shown only to you, the administrator, brands that paid to unlock a contact or have an active Pro plan, and partners in an accepted brief. We do not sell personal data. Service providers: Google Firebase, Vercel, Telegram (admin notifications only). You can request access to or deletion of your account and data at <a href="mailto:forexxmarket11@gmail.com">forexxmarket11@gmail.com</a>; we respond within 30 days and delete personal data within 30 days of account deletion. The service is intended for users aged 16 and over.</p>
+  </div>
+</main>
+</body>
+</html>
