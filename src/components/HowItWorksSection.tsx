@@ -25,18 +25,24 @@ export const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ onStartSte
       tagBg: 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border-indigo-100 dark:border-indigo-900',
       accentBorder: 'border-indigo-200 dark:border-indigo-800',
       numColor: 'text-indigo-600 dark:text-indigo-400',
+      hoverBorder: 'hover:border-indigo-400 dark:hover:border-indigo-500/70 hover:shadow-indigo-500/10',
+      bar: 'from-indigo-500 to-indigo-400',
     },
     {
       icon: <UserCheck className="w-5 h-5 text-purple-600 dark:text-purple-400" />,
       tagBg: 'bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border-purple-100 dark:border-purple-900',
       accentBorder: 'border-purple-200 dark:border-purple-800',
       numColor: 'text-purple-600 dark:text-purple-400',
+      hoverBorder: 'hover:border-purple-400 dark:hover:border-purple-500/70 hover:shadow-purple-500/10',
+      bar: 'from-purple-500 to-purple-400',
     },
     {
       icon: <MessageSquare className="w-5 h-5 text-orange-600 dark:text-orange-400" />,
       tagBg: 'bg-orange-50 dark:bg-orange-950/60 text-orange-700 dark:text-orange-300 border-orange-100 dark:border-orange-900',
       accentBorder: 'border-orange-200 dark:border-orange-800',
       numColor: 'text-orange-600 dark:text-orange-400',
+      hoverBorder: 'hover:border-orange-400 dark:hover:border-orange-500/70 hover:shadow-orange-500/10',
+      bar: 'from-orange-500 to-orange-400',
     },
   ];
 
@@ -72,18 +78,16 @@ export const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ onStartSte
               <div
                 key={stepItem.step}
                 id={`how-it-works-step-${idx + 1}`}
-                className="p-6 sm:p-8 bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-2xl shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col justify-between opacity-100 translate-y-0"
-                style={{
-                  opacity: 1,
-                  transform: 'none',
-                }}
+                className={`group relative overflow-hidden p-6 sm:p-8 bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-2xl shadow-xs hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between opacity-100 ${detail.hoverBorder}`}
+                style={{ opacity: 1 }}
               >
                 <div>
+                  <div aria-hidden="true" className={`absolute top-0 inset-x-0 h-1 bg-gradient-to-r ${detail.bar} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
                   <div className="flex items-center justify-between pb-5 mb-5 border-b border-slate-100 dark:border-slate-800">
                     <span className={`font-heading font-extrabold text-3xl sm:text-4xl ${detail.numColor}`}>
                       {stepItem.step}
                     </span>
-                    <div className="w-12 h-12 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 flex items-center justify-center group-hover:scale-110 transition-transform">
                       {detail.icon}
                     </div>
                   </div>
