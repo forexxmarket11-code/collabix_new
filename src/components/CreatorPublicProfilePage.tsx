@@ -48,51 +48,6 @@ import type { PrivateContact } from '../firebase';
 import { checkProUserAndProceed } from '../utils/subscription';
 import { ContactPackagesModal } from './ContactPackagesModal';
 
-// Suggested aesthetic model portfolio items when creator hasn't uploaded custom gallery
-const DEFAULT_MODEL_PORTFOLIO: CreatorMediaItem[] = [
-  {
-    id: 'dm_1',
-    url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=1080&auto=format&fit=crop&q=80',
-    type: 'image',
-    title: 'Editorial portret',
-  },
-  {
-    id: 'dm_2',
-    url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=1080&auto=format&fit=crop&q=80',
-    type: 'image',
-    title: 'Studio lookbook',
-  },
-  {
-    id: 'dm_3',
-    url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=1080&auto=format&fit=crop&q=80',
-    type: 'image',
-    title: 'Moda koʻrgazmasi',
-  },
-  {
-    id: 'dm_4',
-    url: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=1080&auto=format&fit=crop&q=80',
-    type: 'image',
-    title: 'Katalog fotosessiyasi',
-  },
-  {
-    id: 'dm_5',
-    url: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=1080&auto=format&fit=crop&q=80',
-    type: 'image',
-    title: 'Brend reklamasi',
-  },
-  {
-    id: 'dm_6',
-    url: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=1080&auto=format&fit=crop&q=80',
-    type: 'image',
-    title: 'Podium backstage',
-  },
-  {
-    id: 'dm_7',
-    url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1080&auto=format&fit=crop&q=80',
-    type: 'image',
-    title: 'Yuz va obraz',
-  },
-];
 
 interface CreatorPublicProfilePageProps {
   creatorId: string;
@@ -537,7 +492,8 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
     ''
   ).trim();
 
-  const hasValidAvatar = Boolean(rawAvatarUrl && !imageError);
+  // Avvalgi 'tayyor avatar' (begona odamlarning stok rasmlari) haqiqiy rasm hisoblanmaydi
+  const hasValidAvatar = Boolean(rawAvatarUrl && !imageError && !rawAvatarUrl.includes('images.unsplash.com'));
 
   // Hook called unconditionally on every render before any early returns
   const portfolioItems: CreatorMediaItem[] = useMemo(() => {
@@ -550,17 +506,20 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
         return item;
       });
     }
-    const defaults = [...DEFAULT_MODEL_PORTFOLIO];
-    if (hasValidAvatar) {
-      defaults[0] = {
+    // Galereya yuklanmagan bo'lsa begona odamlarning rasmlarini ko'rsatmaymiz:
+    // faqat o'z rasmi yoki ism bosh harflari
+    const displayName = creatorProfile?.name || initialCreator?.name || 'Kreator';
+    return [
+      {
         id: 'avatar_first',
-        url: rawAvatarUrl,
+        url: hasValidAvatar
+          ? rawAvatarUrl
+          : `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=6366f1&color=fff&bold=true&size=512`,
         type: 'image',
         title: 'Asosiy portret',
-      };
-    }
-    return defaults;
-  }, [creatorProfile?.gallery, creatorProfile?.mediaGallery, initialCreator?.gallery, hasValidAvatar, rawAvatarUrl]);
+      },
+    ];
+  }, [creatorProfile?.gallery, creatorProfile?.mediaGallery, initialCreator?.gallery, hasValidAvatar, rawAvatarUrl, creatorProfile?.name, initialCreator?.name]);
 
   // 1. SKELETON LOADING STATE (Never show demo data while loading)
   if (isLoading) {

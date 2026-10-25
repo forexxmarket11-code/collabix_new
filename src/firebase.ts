@@ -1851,7 +1851,7 @@ export function userSessionToCatalogCreator(user: UserSession): CatalogCreator {
     specialty: user.bio || (user.categories && user.categories.join(', ')) || 'Kreativ kontent muallifi',
     city: user.city || 'Toshkent',
     avatar:
-      user.avatar ||
+      (user.avatar && !user.avatar.includes('images.unsplash.com') ? user.avatar : '') ||
       `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(user.name || user.uid || 'collabix')}`,
     followers: followersStr,
     followersCount: typeof (user as any).followersCount === 'number' ? (user as any).followersCount : 0,

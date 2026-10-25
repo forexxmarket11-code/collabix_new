@@ -86,14 +86,6 @@ const CONTENT_TYPES = [
   'Boshqa',
 ];
 
-// Suggested preset avatars for instant selection
-const PRESET_AVATARS = [
-  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=300&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=300&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300&auto=format&fit=crop&q=80',
-];
 
 /**
  * Resizes and compresses image to prevent oversized data URLs from exceeding Firestore document limits
@@ -884,34 +876,6 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
                 JPG, PNG yoki WEBP formatidagi tiniq rasm yuklang (maksimal 5MB).
               </p>
 
-              {/* Optional Quick Presets */}
-              <div className="mt-3.5">
-                <span className="block text-[11px] font-heading font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
-                  Yoki tayyor avatarlardan tanlang:
-                </span>
-                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
-                  {PRESET_AVATARS.map((url, i) => (
-                    <button
-                      key={i}
-                      type="button"
-                      onClick={() => setAvatar(url)}
-                      className={`w-11 h-11 min-w-[44px] min-h-[44px] rounded-full overflow-hidden border-2 transition-all cursor-pointer ${
-                        avatar === url ? 'border-indigo-600 ring-2 ring-indigo-300 scale-105' : 'border-slate-200 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-500'
-                      }`}
-                    >
-                      <img
-                        src={url}
-                        alt={`Preset ${i}`}
-                        loading="lazy"
-                        decoding="async"
-                        width={44}
-                        height={44}
-                        className="w-full h-full object-cover"
-                      />
-                    </button>
-                  ))}
-                </div>
-              </div>
 
               {errors.avatar && (
                 <p className="text-xs text-red-500 font-body mt-2 flex items-center gap-1">
