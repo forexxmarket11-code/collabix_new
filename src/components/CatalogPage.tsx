@@ -11,6 +11,7 @@ import {
   ArrowRight,
   X,
   Send,
+  PhoneCall,
   CheckCircle2,
   Filter,
   Loader2,
@@ -476,7 +477,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
                   </span>
 
                   {/* "Brif yuborish" direct action button on card (>=44px touch target) */}
-                  {currentUser?.role !== 'bloger' && (
+                  {currentUser?.role !== 'bloger' && (creator.category === 'Mini Blogger' ? (
                   <button
                     type="button"
                     id={`btn-card-send-brief-${creator.id}`}
@@ -486,7 +487,24 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
                     <Send className="w-3.5 h-3.5 text-amber-300 shrink-0" />
                     <span>Brif yuborish</span>
                   </button>
-                  )}
+                  ) : (
+                  <button
+                    type="button"
+                    id={`btn-card-unlock-contact-${creator.id}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (onViewCreatorProfile) {
+                        onViewCreatorProfile(creator);
+                      } else {
+                        setSelectedCreator(creator);
+                      }
+                    }}
+                    className="inline-flex items-center justify-center gap-1.5 min-h-[44px] py-2 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-indigo-600 hover:from-emerald-500 hover:to-indigo-500 text-white font-heading font-bold text-[13px] sm:text-xs shadow-xs hover:shadow-md active:scale-95 transition-all cursor-pointer shrink-0"
+                  >
+                    <PhoneCall className="w-3.5 h-3.5 shrink-0" />
+                    <span>Kontaktni ochish</span>
+                  </button>
+                  ))}
                 </div>
               </div>
             </div>
