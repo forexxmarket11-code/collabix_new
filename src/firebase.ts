@@ -4006,3 +4006,31 @@ export async function fetchUserLatestPaymentRequest(userId: string, purposeFilte
 
 
 
+
+/**
+ * Admin: barcha briflarni (eng yangisi birinchi) olish.
+ */
+export async function fetchAllBriefsAdmin(): Promise<BriefData[]> {
+  requireAdminAuth();
+  const snap = await getDocs(collection(db, 'briefs'));
+  const list: BriefData[] = snap.docs.map((d) => {
+    const data = d.data() as BriefData;
+    return {
+      ...data,
+      id: d.id,
+      applications: Array.isArray(data.applications) ? data.applications : [],
+    };
+  });
+  const ts = (b: BriefData) =>
+    typeof b.createdAtMillis === 'number' ? b.createdAtMillis : Date.parse(b.createdAt || '') || 0;
+  return list.sort((a, b) => ts(b) - ts(a));
+}
+
+/**
+ * Admin: brifni (e'lonni) butunlay o'chirish.
+ */
+export async function deleteBriefAdmin(briefId: string): Promise<void> {
+  requireAdminAuth();
+  if (!briefId) throw new Error('Brif ID topilmadi.');
+  await deleteDoc(doc(db, 'briefs', briefId));
+}
