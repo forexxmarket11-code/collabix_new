@@ -15,6 +15,8 @@ import {
   Send,
   Video,
   Loader2,
+  Gift,
+  Crown,
 } from 'lucide-react';
 import { UserSession } from '../types';
 import {
@@ -22,8 +24,9 @@ import {
   updateUserAccountStatus,
   isCurrentUserAdmin,
   calculateProfileCompletion,
+  giftProAdmin,
 } from '../firebase';
-import { getBloggerCatalogReadiness } from '../utils/subscription';
+import { getBloggerCatalogReadiness, isUserPro } from '../utils/subscription';
 
 interface AdminUserApprovalsProps {
   catalogProOnly?: boolean;
@@ -48,6 +51,43 @@ export const AdminUserApprovals: React.FC<AdminUserApprovalsProps> = ({
   const [rejectingUser, setRejectingUser] = useState<UserSession | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
+
+  // Pro sovg'a qilish oynasi
+  const [giftingUser, setGiftingUser] = useState<UserSession | null>(null);
+  const [giftDays, setGiftDays] = useState<number>(30);
+  const [isGifting, setIsGifting] = useState(false);
+
+  const handleConfirmGift = async () => {
+    if (!giftingUser?.uid || isGifting) return;
+    if (!isCurrentUserAdmin()) {
+      onUnauthorized?.();
+      return;
+    }
+    setIsGifting(true);
+    try {
+      const { endMs } = await giftProAdmin(giftingUser.uid, giftDays);
+      const endText = new Date(endMs).toLocaleDateString('ru-RU');
+      showToast(`${giftingUser.name} ga ${giftDays} kunlik Pro sovgʻa qilindi (${endText} gacha)`);
+      if (selectedUser?.uid === giftingUser.uid) {
+        setSelectedUser({
+          ...selectedUser,
+          subscriptionStatus: 'active',
+          trialEndDate: new Date(endMs).toISOString(),
+          proExpiresAtMillis: endMs,
+        });
+      }
+      setGiftingUser(null);
+    } catch (err: any) {
+      if (err?.code === 'auth/not-admin') {
+        onUnauthorized?.();
+        return;
+      }
+      console.error('Pro sovgʻa qilishda xatolik:', err);
+      showToast('Pro sovgʻa qilib boʻlmadi. Qayta urinib koʻring', 'error');
+    } finally {
+      setIsGifting(false);
+    }
+  };
 
   // Notification toast
   const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
@@ -553,6 +593,12 @@ export const AdminUserApprovals: React.FC<AdminUserApprovalsProps> = ({
                     );
                   })()}
                 </div>
+                {isUserPro(selectedUser) && (
+                  <span className="inline-flex items-center gap-1 font-bold text-purple-800 dark:text-purple-300 bg-purple-100 dark:bg-purple-950/60 px-2 py-0.5 rounded-md text-xs">
+                    <Crown className="w-3.5 h-3.5" />
+                    Pro{selectedUser.trialEndDate ? `: ${new Date(selectedUser.trialEndDate).toLocaleDateString('ru-RU')} gacha` : ''}
+                  </span>
+                )}
                 <span className="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400">
                   {typeof selectedUser.profileCompletion === 'number'
                     ? selectedUser.profileCompletion
@@ -678,7 +724,7 @@ export const AdminUserApprovals: React.FC<AdminUserApprovalsProps> = ({
             </div>
 
             {/* Action Bar */}
-            <div className="px-5 sm:px-8 pt-3.5 pb-[max(16px,calc(env(safe-area-inset-bottom,0px)+12px))] sm:pb-6 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-3 shrink-0">
+            <div className="px-5 sm:px-8 pt-3.5 pb-[max(16px,calc(env(safe-area-inset-bottom,0px)+12px))] sm:pb-6 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-end gap-2 sm:gap-3 shrink-0">
               <button
                 type="button"
                 onClick={() => setSelectedUser(null)}
@@ -686,6 +732,20 @@ export const AdminUserApprovals: React.FC<AdminUserApprovalsProps> = ({
               >
                 Yopish
               </button>
+
+              {selectedUser.accountStatus !== 'rejected' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setGiftDays(30);
+                    setGiftingUser(selectedUser);
+                  }}
+                  className="min-h-[48px] px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-heading font-bold text-xs sm:text-sm shadow-md shadow-purple-600/20 transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Gift className="w-4 h-4" />
+                  <span>{isUserPro(selectedUser) ? 'Pro muddatini uzaytirish' : 'Pro sovgʻa qilish'}</span>
+                </button>
+              )}
 
               {selectedUser.accountStatus === 'rejected' ? (
                 <button
@@ -798,6 +858,85 @@ export const AdminUserApprovals: React.FC<AdminUserApprovalsProps> = ({
                   <Ban className="w-4 h-4" />
                 )}
                 <span>Bloklash</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* MODAL 3: Pro sovg'a qilish */}
+      {giftingUser && (
+        <div
+          className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-xs"
+          onClick={() => !isGifting && setGiftingUser(null)}
+        >
+          <div
+            className="w-full max-w-md max-h-[92dvh] flex flex-col bg-white dark:bg-[#1A1A24] rounded-t-3xl sm:rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-800 overflow-hidden animate-in fade-in zoom-in-95"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-5 sm:px-7 pt-5 sm:pt-6 pb-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 shrink-0 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 text-white flex items-center justify-center">
+                  <Gift className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="font-heading font-extrabold text-lg text-slate-900 dark:text-white">Pro sovgʻa qilish</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{giftingUser.name}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setGiftingUser(null)}
+                disabled={isGifting}
+                aria-label="Yopish"
+                className="w-11 h-11 shrink-0 flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer disabled:opacity-50"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="px-5 sm:px-7 py-5 space-y-4">
+              <div className="text-sm font-semibold text-slate-700 dark:text-slate-200">Necha kunga?</div>
+              <div className="grid grid-cols-4 gap-2">
+                {[7, 30, 90, 365].map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => setGiftDays(d)}
+                    className={`min-h-[48px] rounded-xl text-sm font-heading font-bold border cursor-pointer transition-colors ${
+                      giftDays === d
+                        ? 'bg-purple-600 border-purple-600 text-white'
+                        : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    {d === 365 ? '1 yil' : `${d} kun`}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                {isUserPro(giftingUser)
+                  ? 'Foydalanuvchida Pro allaqachon bor — muddat hozirgi tugash sanasidan uzaytiriladi.'
+                  : 'Pro darhol yoqiladi. Foydalanuvchiga bildirishnoma boradi.'}{' '}
+                Sovgʻa toʻlov hisobotiga kirmaydi va referal mukofotini bermaydi.
+              </p>
+            </div>
+
+            <div className="px-5 sm:px-7 pt-3.5 pb-[max(16px,calc(env(safe-area-inset-bottom,0px)+12px))] sm:pb-6 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setGiftingUser(null)}
+                disabled={isGifting}
+                className="min-h-[48px] px-4 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 font-heading font-semibold text-sm cursor-pointer disabled:opacity-50"
+              >
+                Bekor qilish
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmGift}
+                disabled={isGifting}
+                className="min-h-[48px] px-5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-heading font-bold text-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-60"
+              >
+                {isGifting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Gift className="w-4 h-4" />}
+                <span>{giftDays === 365 ? '1 yil' : `${giftDays} kun`} sovgʻa qilish</span>
               </button>
             </div>
           </div>

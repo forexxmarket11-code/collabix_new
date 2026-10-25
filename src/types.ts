@@ -234,6 +234,7 @@ export interface UserSession {
   unlockedCreators?: Record<string, { unlockedAt: string; expiresAt: string }>;
   lastUnlockedCreatorId?: string;
   proExpiresAtMillis?: number;
+  proGifted?: boolean;
   topPlacementUntil?: string | null;
   createdAt?: any;
   updatedAt?: any;

@@ -1024,6 +1024,8 @@ const PROTECTED_USER_FIELDS = new Set([
   'referralBalance',
   'referralEarnedTotal',
   'referralRewarded',
+  'proExpiresAtMillis',
+  'proGifted',
   'createdAt',
 ]);
 
@@ -2128,7 +2130,7 @@ export async function fetchRevenueStatistics(): Promise<RevenueStatistics> {
         data.subscriptionStatus === 'active' ||
         data.subscriptionStatus === 'trial';
 
-      if (isSubscribed) {
+      if (isSubscribed && !(data as any).proGifted) {
         const planPrice = typeof data.subscriptionPlanPrice === 'number' && data.subscriptionPlanPrice > 0
           ? data.subscriptionPlanPrice
           : 59000;
@@ -3939,6 +3941,7 @@ export async function approvePaymentRequest(
           trialEndDate,
           proExpiresAtMillis: endMs,
           subscriptionPlanPrice: 59000,
+          proGifted: false,
           reminderSent: false,
           updatedAt: serverTimestamp(),
         },
@@ -4282,4 +4285,59 @@ export async function rejectReferralWithdrawal(withdrawalId: string, reason: str
     rejectionReason: (reason || 'Karta maʼlumotlari notoʻgʻri').slice(0, 300),
     updatedAt: serverTimestamp(),
   });
+}
+
+
+/**
+ * Admin: foydalanuvchiga Pro rejimni sovg'a qilish (to'lovsiz).
+ * Pro allaqachon faol bo'lsa, muddat mavjud tugash sanasidan uzaytiriladi.
+ * Sovg'a referal mukofotini bermaydi va daromad hisobotiga kirmaydi.
+ */
+export async function giftProAdmin(uid: string, days: number): Promise<{ endMs: number }> {
+  requireAdminAuth();
+  if (!uid) throw new Error('Foydalanuvchi topilmadi.');
+  const safeDays = Math.min(365, Math.max(1, Math.round(days)));
+  const userRef = doc(db, 'users', uid);
+  const snap = await getDoc(userRef);
+  if (!snap.exists()) throw new Error('Foydalanuvchi topilmadi.');
+  const user = snap.data() as UserSession;
+
+  const now = Date.now();
+  let base = now;
+  if (isUserPro(user)) {
+    const currentEnd =
+      (typeof user.proExpiresAtMillis === 'number' && user.proExpiresAtMillis) ||
+      (user.trialEndDate ? new Date(user.trialEndDate).getTime() : 0);
+    if (currentEnd && !Number.isNaN(currentEnd) && currentEnd > now) base = currentEnd;
+  }
+  const endMs = base + safeDays * 24 * 60 * 60 * 1000;
+  const alreadyPro = isUserPro(user);
+
+  await setDoc(
+    userRef,
+    {
+      subscriptionStatus: 'active',
+      ...(alreadyPro && user.trialStartDate ? {} : { trialStartDate: new Date(now).toISOString() }),
+      trialEndDate: new Date(endMs).toISOString(),
+      proExpiresAtMillis: endMs,
+      ...(alreadyPro ? {} : { proGifted: true }),
+      reminderSent: false,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true }
+  );
+
+  try {
+    await createNotificationInFirestore({
+      userId: uid,
+      type: 'tizim',
+      title: 'Sizga Pro rejim sovgʻa qilindi 🎁',
+      message: `Collabix sizga ${safeDays} kunlik Pro rejimni sovgʻa qildi. Tugash sanasi: ${new Date(endMs).toLocaleDateString('ru-RU')}.`,
+      read: false,
+      createdAt: new Date().toISOString(),
+      createdAtMillis: Date.now(),
+    });
+  } catch {}
+
+  return { endMs };
 }
