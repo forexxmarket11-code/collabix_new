@@ -588,20 +588,20 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
   if (!user) {
     return (
       <div className="min-h-screen pb-28 pt-12 px-4 sm:px-6 max-w-lg mx-auto text-center">
-        <div className="bg-white dark:bg-[#1A1A24] rounded-3xl border border-slate-200/90 dark:border-slate-800 p-8 sm:p-10 shadow-sm">
+        <div className="bg-white dark:bg-[#1A1A24] rounded-3xl border border-slate-200/90 dark:border-slate-800 p-6 sm:p-10 shadow-sm">
           <div className="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-900 flex items-center justify-center mx-auto text-indigo-600 dark:text-indigo-400 mb-4">
             <UserIcon className="w-8 h-8" />
           </div>
           <h2 className="font-heading font-extrabold text-2xl text-slate-900 dark:text-white mb-2">
             Profilga kirish talab etiladi
           </h2>
-          <p className="text-sm text-slate-600 dark:text-[#D0D0D8] font-body mb-6 leading-relaxed">
+          <p className="text-[15px] sm:text-sm text-slate-600 dark:text-[#D0D0D8] font-body mb-6 leading-relaxed">
             Profil maʼlumotlarini tahrirlash uchun avval tizimga kiring yoki yangi hisob oching.
           </p>
           <button
             type="button"
             onClick={onOpenRegister}
-            className="w-full py-3.5 px-6 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-500 text-white font-heading font-bold text-sm shadow-md transition-all cursor-pointer"
+            className="w-full min-h-[48px] py-3.5 px-6 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-500 text-white font-heading font-bold text-sm shadow-md transition-all cursor-pointer"
           >
             Roʻyxatdan oʻtish / Kirish
           </button>
@@ -611,13 +611,13 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
   }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFD] dark:bg-[#0B0F19] text-slate-900 dark:text-slate-100 pb-36 pt-6 sm:pt-10 px-4 sm:px-6 max-w-4xl mx-auto">
+    <div className="min-h-screen bg-[#F8FAFD] dark:bg-[#0B0F19] text-slate-900 dark:text-slate-100 pb-[calc(124px+env(safe-area-inset-bottom,0px))] pt-4 sm:pt-10 px-4 sm:px-6 max-w-4xl mx-auto">
       {/* Top Header / Breadcrumb */}
-      <div className="flex items-center justify-between gap-4 mb-6">
+      <div className="flex items-center justify-between gap-4 mb-5 sm:mb-6">
         <button
           type="button"
           onClick={onBack}
-          className="inline-flex items-center gap-2 text-xs sm:text-sm font-heading font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer group"
+          className="inline-flex items-center gap-2 min-h-[44px] py-2 text-xs sm:text-sm font-heading font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer group"
         >
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
           <span>Profilga qaytish</span>
@@ -633,7 +633,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
         <h1 className="font-heading font-extrabold text-2xl sm:text-3xl text-slate-900 dark:text-white tracking-tight">
           Profilni tahrirlash
         </h1>
-        <p className="text-xs sm:text-sm text-slate-600 dark:text-[#D0D0D8] font-body mt-1">
+        <p className="text-[15px] sm:text-sm text-slate-600 dark:text-[#D0D0D8] font-body mt-1 leading-relaxed">
           Brendlar va hamkorlar siz bilan bogʻlanishi uchun shaxsiy maʼlumotlaringiz, narxlar va yoʻnalishingizni yangilang.
         </p>
       </div>
@@ -760,7 +760,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
                     key={step.key}
                     type="button"
                     onClick={step.onClick}
-                    className={`px-3 py-2.5 rounded-xl border text-left text-xs font-heading font-semibold transition-all cursor-pointer flex items-center gap-2 ${
+                    className={`min-h-[44px] px-3 py-2.5 rounded-xl border text-left text-xs font-heading font-semibold transition-all cursor-pointer flex items-center gap-2 ${
                       step.done
                         ? 'bg-emerald-50/80 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/80 text-emerald-800 dark:text-emerald-300'
                         : step.key === 'pro'
@@ -781,12 +781,28 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
       })()}
 
       {/* Form container with white card sections */}
-      <form onSubmit={handleSave} className="space-y-6">
+      <form
+        onSubmit={handleSave}
+        onFocusCapture={(e) => {
+          const target = e.target as HTMLElement;
+          if (
+            target &&
+            (target.tagName === 'INPUT' ||
+              target.tagName === 'TEXTAREA' ||
+              target.tagName === 'SELECT')
+          ) {
+            setTimeout(() => {
+              target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+            }, 250);
+          }
+        }}
+        className="space-y-6"
+      >
 
         {/* 1. YUQORI QISM: AVATAR RASMI */}
         <section
           aria-labelledby="section-avatar-heading"
-          className="bg-white dark:bg-[#1A1A24] rounded-2xl sm:rounded-3xl border border-slate-200/90 dark:border-slate-800 p-6 sm:p-8 shadow-xs"
+          className="bg-white dark:bg-[#1A1A24] rounded-2xl sm:rounded-3xl border border-slate-200/90 dark:border-slate-800 p-5 sm:p-8 shadow-xs"
         >
           <h2 id="section-avatar-heading" className="text-base font-heading font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
             <Camera className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
@@ -829,9 +845,9 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 aria-label="Rasm yuklash"
-                className="absolute bottom-1 right-1 p-2 rounded-full bg-indigo-600 text-white shadow-md hover:bg-indigo-700 transition-colors cursor-pointer ring-2 ring-white dark:ring-slate-900"
+                className="absolute -bottom-1 -right-1 w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-indigo-600 text-white shadow-md hover:bg-indigo-700 transition-colors cursor-pointer ring-2 ring-white dark:ring-slate-900"
               >
-                <Camera className="w-3.5 h-3.5" />
+                <Camera className="w-4 h-4" />
               </button>
 
               <input
@@ -848,12 +864,12 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="text-xs sm:text-sm font-heading font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors cursor-pointer inline-flex items-center gap-1.5"
+                className="min-h-[44px] py-2 px-3 rounded-xl text-sm font-heading font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 hover:bg-indigo-50/70 dark:hover:bg-indigo-950/40 transition-colors cursor-pointer inline-flex items-center gap-1.5"
               >
                 <Upload className="w-4 h-4" />
                 <span>Rasmni oʻzgartirish</span>
               </button>
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-body mt-1">
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-body mt-0.5">
                 JPG, PNG yoki WEBP formatidagi tiniq rasm yuklang (maksimal 5MB).
               </p>
 
@@ -862,13 +878,13 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
                 <span className="block text-[11px] font-heading font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
                   Yoki tayyor avatarlardan tanlang:
                 </span>
-                <div className="flex items-center justify-center sm:justify-start gap-2">
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
                   {PRESET_AVATARS.map((url, i) => (
                     <button
                       key={i}
                       type="button"
                       onClick={() => setAvatar(url)}
-                      className={`w-9 h-9 rounded-full overflow-hidden border-2 transition-all cursor-pointer ${
+                      className={`w-11 h-11 min-w-[44px] min-h-[44px] rounded-full overflow-hidden border-2 transition-all cursor-pointer ${
                         avatar === url ? 'border-indigo-600 ring-2 ring-indigo-300 scale-105' : 'border-slate-200 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-500'
                       }`}
                     >
@@ -877,8 +893,8 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
                         alt={`Preset ${i}`}
                         loading="lazy"
                         decoding="async"
-                        width={36}
-                        height={36}
+                        width={44}
+                        height={44}
                         className="w-full h-full object-cover"
                       />
                     </button>
@@ -899,7 +915,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
         {/* 2. ASOSIY MA'LUMOTLAR */}
         <section
           aria-labelledby="section-basic-heading"
-          className="bg-white dark:bg-[#1A1A24] rounded-2xl sm:rounded-3xl border border-slate-200/90 dark:border-slate-800 p-6 sm:p-8 shadow-xs"
+          className="bg-white dark:bg-[#1A1A24] rounded-2xl sm:rounded-3xl border border-slate-200/90 dark:border-slate-800 p-5 sm:p-8 shadow-xs"
         >
           <h2 id="section-basic-heading" className="text-base font-heading font-bold text-slate-900 dark:text-white mb-5 flex items-center gap-2">
             <UserIcon className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
@@ -927,7 +943,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
                   }
                 }}
                 placeholder="Masalan: Madina Karimova"
-                className={`w-full px-4 py-3 rounded-xl border text-sm font-body text-slate-900 dark:text-white bg-slate-50/50 dark:bg-[#12121A] transition-colors focus:bg-white dark:focus:bg-[#12121A] focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-600 ${
+                className={`w-full min-h-[48px] px-4 py-3 rounded-xl border text-base sm:text-sm font-body text-slate-900 dark:text-white bg-slate-50/50 dark:bg-[#12121A] transition-colors focus:bg-white dark:focus:bg-[#12121A] focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-600 ${
                   errors.name ? 'border-red-400 bg-red-50/30' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
                 }`}
               />
@@ -954,7 +970,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
                   value={instagramHandle.replace(/^@/, '')}
                   onChange={(e) => setInstagramHandle(`@${e.target.value.replace(/^@/, '')}`)}
                   placeholder="madina_lifestyle"
-                  className="w-full pl-8 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-sm font-body text-slate-900 dark:text-white bg-slate-50/50 dark:bg-[#12121A] transition-colors focus:bg-white dark:focus:bg-[#12121A] focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-600"
+                  className="w-full min-h-[48px] pl-8 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-base sm:text-sm font-body text-slate-900 dark:text-white bg-slate-50/50 dark:bg-[#12121A] transition-colors focus:bg-white dark:focus:bg-[#12121A] focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-600"
                 />
               </div>
             </div>
@@ -970,7 +986,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
                   id="field-city"
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-sm font-body text-slate-900 dark:text-white bg-slate-50/50 dark:bg-[#12121A] transition-colors focus:bg-white dark:focus:bg-[#12121A] focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-600 cursor-pointer"
+                  className="w-full min-h-[48px] pl-10 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-base sm:text-sm font-body text-slate-900 dark:text-white bg-slate-50/50 dark:bg-[#12121A] transition-colors focus:bg-white dark:focus:bg-[#12121A] focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-600 cursor-pointer"
                 >
                   {CITIES.map((c) => (
                     <option key={c} value={c} className="bg-white dark:bg-[#1A1A24] text-slate-900 dark:text-white">
@@ -990,7 +1006,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
                 <button
                   type="button"
                   onClick={() => setGender('erkak')}
-                  className={`py-2.5 px-4 rounded-xl border text-xs sm:text-sm font-heading font-semibold transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                  className={`min-h-[48px] py-2.5 px-4 rounded-xl border text-sm font-heading font-semibold transition-all cursor-pointer flex items-center justify-center gap-2 ${
                     gender === 'erkak'
                       ? 'bg-indigo-50 dark:bg-indigo-950/60 border-indigo-600 dark:border-indigo-500 text-indigo-700 dark:text-indigo-300 shadow-xs'
                       : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/80'
@@ -1002,7 +1018,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
                 <button
                   type="button"
                   onClick={() => setGender('ayol')}
-                  className={`py-2.5 px-4 rounded-xl border text-xs sm:text-sm font-heading font-semibold transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                  className={`min-h-[48px] py-2.5 px-4 rounded-xl border text-sm font-heading font-semibold transition-all cursor-pointer flex items-center justify-center gap-2 ${
                     gender === 'ayol'
                       ? 'bg-indigo-50 dark:bg-indigo-950/60 border-indigo-600 dark:border-indigo-500 text-indigo-700 dark:text-indigo-300 shadow-xs'
                       : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/80'
@@ -1028,7 +1044,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
                     key={lang}
                     type="button"
                     onClick={() => toggleLanguage(lang)}
-                    className={`py-2 px-3.5 rounded-xl text-xs sm:text-sm font-heading font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    className={`min-h-[44px] py-2.5 px-3.5 rounded-xl text-xs sm:text-sm font-heading font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
                       isSelected
                         ? 'bg-slate-900 dark:bg-indigo-600 text-white shadow-xs'
                         : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
@@ -1046,7 +1062,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
         {/* 2.5 BOGʻLANISH MAʼLUMOTLARI (TELEFON & TELEGRAM) */}
         <section
           aria-labelledby="section-contact-heading"
-          className="bg-white dark:bg-[#1A1A24] rounded-2xl sm:rounded-3xl border border-slate-200/90 dark:border-slate-800 p-6 sm:p-8 shadow-xs"
+          className="bg-white dark:bg-[#1A1A24] rounded-2xl sm:rounded-3xl border border-slate-200/90 dark:border-slate-800 p-5 sm:p-8 shadow-xs"
         >
           <div className="flex items-center justify-between gap-2 mb-2">
             <h2 id="section-contact-heading" className="text-base font-heading font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -1076,7 +1092,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
                   placeholder="+998 90 123 45 67"
-                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-sm font-body text-slate-900 dark:text-white bg-slate-50/50 dark:bg-[#12121A] transition-colors focus:bg-white dark:focus:bg-[#12121A] focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-600"
+                  className="w-full min-h-[48px] pl-10 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-base sm:text-sm font-body text-slate-900 dark:text-white bg-slate-50/50 dark:bg-[#12121A] transition-colors focus:bg-white dark:focus:bg-[#12121A] focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-600"
                 />
               </div>
               <span className="text-[11px] text-slate-400 dark:text-slate-500 font-body mt-1 block">
@@ -1099,7 +1115,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
                   value={telegramUsername.replace(/^@/, '')}
                   onChange={(e) => setTelegramUsername(e.target.value.replace(/^@/, '').trim())}
                   placeholder="username"
-                  className="w-full pl-8 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-sm font-body text-slate-900 dark:text-white bg-slate-50/50 dark:bg-[#12121A] transition-colors focus:bg-white dark:focus:bg-[#12121A] focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-600"
+                  className="w-full min-h-[48px] pl-8 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-base sm:text-sm font-body text-slate-900 dark:text-white bg-slate-50/50 dark:bg-[#12121A] transition-colors focus:bg-white dark:focus:bg-[#12121A] focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-600"
                 />
               </div>
               <span className="text-[11px] text-slate-400 dark:text-slate-500 font-body mt-1 block">
@@ -1119,9 +1135,9 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
         {/* 3. O'ZI HAQIDA */}
         <section
           aria-labelledby="section-bio-heading"
-          className="bg-white dark:bg-[#1A1A24] rounded-2xl sm:rounded-3xl border border-slate-200/90 dark:border-slate-800 p-6 sm:p-8 shadow-xs"
+          className="bg-white dark:bg-[#1A1A24] rounded-2xl sm:rounded-3xl border border-slate-200/90 dark:border-slate-800 p-5 sm:p-8 shadow-xs"
         >
-          <div className="flex items-center justify-between gap-2 mb-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
             <h2 id="section-bio-heading" className="text-base font-heading font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
               <span>Oʻzi haqida</span>
@@ -1141,7 +1157,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
             </span>
           </div>
 
-          <p className="text-xs text-slate-500 dark:text-slate-400 font-body mb-3">
+          <p className="text-xs text-slate-500 dark:text-slate-400 font-body mb-3 leading-relaxed">
             Oʻzingiz, auditoriyangiz va qanday mavzularda kontent yaratishingiz haqida qisqacha maʼlumot bering (katalogda koʻrinish uchun kamida 20 ta belgi kiriting).
           </p>
 
@@ -1151,14 +1167,14 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
             value={bio}
             onChange={(e) => setBio(e.target.value)}
             placeholder="Oʻzingiz va kontentingiz haqida yozing..."
-            className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-sm font-body text-slate-900 dark:text-white bg-slate-50/50 dark:bg-[#12121A] transition-colors focus:bg-white dark:focus:bg-[#12121A] focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-600 leading-relaxed resize-none"
+            className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-base sm:text-sm font-body text-slate-900 dark:text-white bg-slate-50/50 dark:bg-[#12121A] transition-colors focus:bg-white dark:focus:bg-[#12121A] focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-600 leading-relaxed resize-none"
           />
         </section>
 
         {/* 4. YO'NALISH VA KONTENT TURLARI */}
         <section
           aria-labelledby="section-niche-heading"
-          className="bg-white dark:bg-[#1A1A24] rounded-2xl sm:rounded-3xl border border-slate-200/90 dark:border-slate-800 p-6 sm:p-8 shadow-xs"
+          className="bg-white dark:bg-[#1A1A24] rounded-2xl sm:rounded-3xl border border-slate-200/90 dark:border-slate-800 p-5 sm:p-8 shadow-xs"
         >
           <h2 id="section-niche-heading" className="text-base font-heading font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
             <Tag className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
@@ -1179,14 +1195,14 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
                     key={cat.id}
                     type="button"
                     onClick={() => toggleCategory(cat.id)}
-                    className={`py-3 px-3.5 rounded-xl border text-xs sm:text-sm font-heading font-bold transition-all cursor-pointer flex items-center justify-between ${
+                    className={`min-h-[48px] py-3 px-3 sm:px-3.5 rounded-xl border text-xs sm:text-sm font-heading font-bold transition-all cursor-pointer flex items-center justify-between gap-1.5 text-left ${
                       isSelected
                         ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm'
                         : 'border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/50 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                     }`}
                   >
-                    <span>{cat.label}</span>
-                    {isSelected && <Check className="w-4 h-4 text-white" />}
+                    <span className="truncate">{cat.label}</span>
+                    {isSelected && <Check className="w-4 h-4 text-white shrink-0" />}
                   </button>
                 );
               })}
@@ -1213,7 +1229,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
                     key={type}
                     type="button"
                     onClick={() => toggleContentType(type)}
-                    className={`py-2 px-3.5 rounded-xl text-xs sm:text-sm font-heading font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    className={`min-h-[44px] py-2.5 px-3.5 rounded-xl text-xs sm:text-sm font-heading font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
                       isSelected
                         ? 'bg-purple-600 text-white shadow-xs'
                         : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
@@ -1236,7 +1252,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
         {(categories.includes('Model') || categories.includes('Brand Face')) && (
           <section
             aria-labelledby="section-model-heading"
-            className="bg-white dark:bg-[#1A1A24] rounded-2xl sm:rounded-3xl border-2 border-indigo-200 dark:border-indigo-900/60 p-6 sm:p-8 shadow-xs space-y-6"
+            className="bg-white dark:bg-[#1A1A24] rounded-2xl sm:rounded-3xl border-2 border-indigo-200 dark:border-indigo-900/60 p-5 sm:p-8 shadow-xs space-y-6"
           >
             <div>
               <div className="flex items-center gap-2 mb-1">
@@ -1253,7 +1269,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
             </div>
 
             {/* Parametrlar: Bo'y (sm), Vazn (kg), Yosh, Tajriba */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 sm:gap-4">
               <div>
                 <label htmlFor="field-model-height" className="block text-xs font-heading font-bold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wider">
                   Boʻy (sm)
@@ -1265,7 +1281,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
                     value={height}
                     onChange={(e) => setHeight(e.target.value)}
                     placeholder="175"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-[#12121A] text-sm font-body font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                    className="w-full min-h-[48px] pl-3.5 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-[#12121A] text-base sm:text-sm font-body font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 pointer-events-none">
                     sm
@@ -1284,7 +1300,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
                     value={weight}
                     onChange={(e) => setWeight(e.target.value)}
                     placeholder="54"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-[#12121A] text-sm font-body font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                    className="w-full min-h-[48px] pl-3.5 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-[#12121A] text-base sm:text-sm font-body font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 pointer-events-none">
                     kg
@@ -1303,7 +1319,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
                     value={age}
                     onChange={(e) => setAge(e.target.value)}
                     placeholder="22"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-[#12121A] text-sm font-body font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                    className="w-full min-h-[48px] pl-3.5 pr-12 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-[#12121A] text-base sm:text-sm font-body font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 pointer-events-none">
                     yosh
@@ -1322,7 +1338,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
                     value={experienceYears}
                     onChange={(e) => setExperienceYears(e.target.value)}
                     placeholder="3"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-[#12121A] text-sm font-body font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                    className="w-full min-h-[48px] pl-3.5 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-[#12121A] text-base sm:text-sm font-body font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 pointer-events-none">
                     yil
@@ -1333,26 +1349,26 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
 
             {/* Surat va Video Galereyasi (Portfolio) */}
             <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                 <div>
                   <h3 className="text-sm font-heading font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-                    <Film className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                    <Film className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0" />
                     <span>Surat va video galereyasi (kamida 7-10 tagacha)</span>
                   </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 font-body">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-body mt-0.5">
                     Model profilingiz yuqori qismidagi slayd-shouda koʻrinadigan portfolio media fayllari.
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
                     onClick={handleLoadSampleModelGallery}
-                    className="py-1.5 px-3 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50/60 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 text-xs font-heading font-semibold hover:bg-indigo-100 transition-colors cursor-pointer"
+                    className="min-h-[44px] py-2 px-3.5 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50/60 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 text-xs font-heading font-semibold hover:bg-indigo-100 transition-colors cursor-pointer"
                   >
                     Namunaviy toʻplam
                   </button>
-                  <span className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800">
+                  <span className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800">
                     {gallery.length} / 12 ta
                   </span>
                 </div>
@@ -1373,19 +1389,19 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
                   />
                   <label
                     htmlFor="input-gallery-files"
-                    className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 border-dashed border-indigo-300 dark:border-indigo-800 hover:border-indigo-500 bg-indigo-50/30 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-300 text-xs font-heading font-bold cursor-pointer transition-colors w-full text-center"
+                    className="min-h-[48px] flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 border-dashed border-indigo-300 dark:border-indigo-800 hover:border-indigo-500 bg-indigo-50/30 dark:bg-indigo-950/20 text-indigo-700 dark:text-indigo-300 text-xs font-heading font-bold cursor-pointer transition-colors w-full text-center"
                   >
-                    <Upload className="w-4 h-4" />
+                    <Upload className="w-4 h-4 shrink-0" />
                     <span>Qurilmadan rasm / video yuklash</span>
                   </label>
                 </div>
 
                 {/* Direct URL Input */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 min-w-0">
                   <select
                     value={newMediaType}
                     onChange={(e) => setNewMediaType(e.target.value as 'image' | 'video')}
-                    className="py-2.5 px-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-heading font-semibold text-slate-700 dark:text-slate-300"
+                    className="min-h-[48px] shrink-0 py-2.5 px-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-base sm:text-xs font-heading font-semibold text-slate-700 dark:text-slate-300"
                   >
                     <option value="image">Rasm</option>
                     <option value="video">Video</option>
@@ -1395,14 +1411,15 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
                     value={newMediaUrl}
                     onChange={(e) => setNewMediaUrl(e.target.value)}
                     placeholder="URL havola (https://...)"
-                    className="flex-1 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-[#12121A] text-xs font-body text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                    className="flex-1 min-w-0 min-h-[48px] px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-[#12121A] text-base sm:text-xs font-body text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
                   />
                   <button
                     type="button"
                     onClick={handleAddMediaUrl}
-                    className="py-2.5 px-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-heading font-bold transition-colors cursor-pointer"
+                    aria-label="URL qoʻshish"
+                    className="min-w-[48px] min-h-[48px] shrink-0 flex items-center justify-center rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-heading font-bold transition-colors cursor-pointer"
                   >
-                    <Plus className="w-4 h-4" />
+                    <Plus className="w-5 h-5" />
                   </button>
                 </div>
               </div>
@@ -1416,7 +1433,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
 
               {/* Gallery Items Grid Preview */}
               {gallery.length > 0 ? (
-                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2.5 pt-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3 pt-2">
                   {gallery.map((item, idx) => (
                     <div
                       key={item.id}
@@ -1438,19 +1455,21 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
                         <img
                           src={item.url}
                           alt={item.title || `Portfolio ${idx + 1}`}
+                          loading="lazy"
+                          decoding="async"
                           className="w-full h-full object-cover"
                         />
                       )}
 
                       {/* Number badge */}
-                      <span className="absolute top-1 left-1 px-1.5 py-0.5 rounded-md bg-black/60 text-white font-mono text-[10px] font-bold">
+                      <span className="absolute top-1.5 left-1.5 px-2 py-0.5 rounded-md bg-black/60 text-white font-mono text-[11px] font-bold">
                         {idx + 1}
                       </span>
 
                       {/* Type badge */}
                       {item.type === 'video' && (
-                        <span className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded-md bg-purple-600/90 text-white font-mono text-[9px] font-bold flex items-center gap-0.5">
-                          <Film className="w-2.5 h-2.5" />
+                        <span className="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 rounded-md bg-purple-600/90 text-white font-mono text-[10px] font-bold flex items-center gap-0.5">
+                          <Film className="w-3 h-3" />
                           <span>Video</span>
                         </span>
                       )}
@@ -1459,10 +1478,11 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
                       <button
                         type="button"
                         onClick={() => handleRemoveGalleryItem(item.id)}
-                        className="absolute top-1 right-1 p-1 rounded-md bg-red-600/90 text-white hover:bg-red-700 transition-colors cursor-pointer shadow-xs"
+                        aria-label="Oʻchirish"
+                        className="absolute top-1 right-1 w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-red-600/90 text-white hover:bg-red-700 transition-colors cursor-pointer shadow-xs"
                         title="Oʻchirish"
                       >
-                        <Trash2 className="w-3 h-3" />
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   ))}
@@ -1482,13 +1502,13 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
         {/* 5. NARX (XIZMAT NARXI ORALIG'I) */}
         <section
           aria-labelledby="section-pricing-heading"
-          className="bg-white dark:bg-[#1A1A24] rounded-2xl sm:rounded-3xl border border-slate-200/90 dark:border-slate-800 p-6 sm:p-8 shadow-xs"
+          className="bg-white dark:bg-[#1A1A24] rounded-2xl sm:rounded-3xl border border-slate-200/90 dark:border-slate-800 p-5 sm:p-8 shadow-xs"
         >
           <h2 id="section-pricing-heading" className="text-base font-heading font-bold text-slate-900 dark:text-white mb-1 flex items-center gap-2">
             <DollarSign className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
             <span>Xizmat narxi oraligʻi</span>
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 font-body mb-5">
+          <p className="text-xs text-slate-500 dark:text-slate-400 font-body mb-5 leading-relaxed">
             Brendlar sizning taxminiy byudjet talablaringizni koʻrishi uchun minimal va maksimal xizmat narxini koʻrsating.
           </p>
 
@@ -1504,7 +1524,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
                   value={priceMin}
                   onChange={(e) => setPriceMin(e.target.value)}
                   placeholder="500 000"
-                  className="w-full pl-4 pr-16 py-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-sm font-mono font-bold text-slate-900 dark:text-white bg-slate-50/50 dark:bg-[#12121A] transition-colors focus:bg-white dark:focus:bg-[#12121A] focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-600"
+                  className="w-full min-h-[48px] pl-4 pr-16 py-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-base sm:text-sm font-mono font-bold text-slate-900 dark:text-white bg-slate-50/50 dark:bg-[#12121A] transition-colors focus:bg-white dark:focus:bg-[#12121A] focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-600"
                 />
                 <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-heading font-bold text-slate-500 dark:text-slate-400 pointer-events-none">
                   soʻm
@@ -1523,7 +1543,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
                   value={priceMax}
                   onChange={(e) => setPriceMax(e.target.value)}
                   placeholder="3 000 000"
-                  className="w-full pl-4 pr-16 py-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-sm font-mono font-bold text-slate-900 dark:text-white bg-slate-50/50 dark:bg-[#12121A] transition-colors focus:bg-white dark:focus:bg-[#12121A] focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-600"
+                  className="w-full min-h-[48px] pl-4 pr-16 py-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-base sm:text-sm font-mono font-bold text-slate-900 dark:text-white bg-slate-50/50 dark:bg-[#12121A] transition-colors focus:bg-white dark:focus:bg-[#12121A] focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-600"
                 />
                 <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-heading font-bold text-slate-500 dark:text-slate-400 pointer-events-none">
                   soʻm
@@ -1536,7 +1556,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
         {/* 6. IJTIMOIY TARMOQLAR */}
         <section
           aria-labelledby="section-socials-heading"
-          className="bg-white dark:bg-[#1A1A24] rounded-2xl sm:rounded-3xl border border-slate-200/90 dark:border-slate-800 p-6 sm:p-8 shadow-xs"
+          className="bg-white dark:bg-[#1A1A24] rounded-2xl sm:rounded-3xl border border-slate-200/90 dark:border-slate-800 p-5 sm:p-8 shadow-xs"
         >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-1">
             <h2 id="section-socials-heading" className="text-base font-heading font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -1548,7 +1568,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
             </span>
           </div>
 
-          <p className="text-xs text-slate-500 dark:text-slate-400 font-body mb-5">
+          <p className="text-xs text-slate-500 dark:text-slate-400 font-body mb-5 leading-relaxed">
             Oʻzingiz blog yuritadigan ijtimoiy tarmoqlarni yoqing. Har bir faol platforma uchun profil havolasi va obunachilar sonini kiriting.
           </p>
 
@@ -1571,12 +1591,12 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
               }`}
             >
               <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 min-w-0">
                   <div className="w-9 h-9 rounded-xl bg-pink-50 dark:bg-pink-950/60 border border-pink-100 dark:border-pink-900/80 flex items-center justify-center text-pink-600 dark:text-pink-400 shrink-0">
                     <Instagram className="w-4 h-4" />
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="text-sm font-heading font-bold text-slate-900 dark:text-white">Instagram</span>
                       <span
                         className={`text-[11px] font-heading font-semibold px-2 py-0.5 rounded-full transition-colors ${
@@ -1594,25 +1614,29 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center shrink-0">
                   <button
                     type="button"
                     role="switch"
                     aria-checked={enabledSocials.instagram}
                     id="toggle-social-instagram"
                     onClick={() => toggleSocialPlatform('instagram')}
-                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500/40 ${
-                      enabledSocials.instagram
-                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600'
-                        : 'bg-slate-300 dark:bg-slate-700'
-                    }`}
+                    className="min-w-[48px] min-h-[44px] inline-flex items-center justify-end cursor-pointer focus:outline-none"
                   >
                     <span className="sr-only">Instagramni yoqish yoki oʻchirish</span>
                     <span
-                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-                        enabledSocials.instagram ? 'translate-x-5' : 'translate-x-0'
+                      className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
+                        enabledSocials.instagram
+                          ? 'bg-gradient-to-r from-indigo-600 to-purple-600'
+                          : 'bg-slate-300 dark:bg-slate-700'
                       }`}
-                    />
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                          enabledSocials.instagram ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </span>
                   </button>
                 </div>
               </div>
@@ -1621,7 +1645,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
               <div
                 className={`transition-all duration-300 ease-in-out overflow-hidden ${
                   enabledSocials.instagram
-                    ? 'max-h-48 opacity-100 mt-3.5 pt-3.5 border-t border-slate-100 dark:border-slate-800'
+                    ? 'max-h-64 opacity-100 mt-3.5 pt-3.5 border-t border-slate-100 dark:border-slate-800'
                     : 'max-h-0 opacity-0 mt-0 pt-0 border-t-0 pointer-events-none'
                 }`}
               >
@@ -1636,7 +1660,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
                         setSocialLinks((prev) => ({ ...prev, instagram: e.target.value }))
                       }
                       placeholder="https://instagram.com/profil_nomi"
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-sm font-body text-slate-900 dark:text-white bg-slate-50/50 dark:bg-[#12121A] focus:bg-white dark:focus:bg-[#12121A] focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-600"
+                      className="w-full min-h-[48px] pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-base sm:text-sm font-body text-slate-900 dark:text-white bg-slate-50/50 dark:bg-[#12121A] focus:bg-white dark:focus:bg-[#12121A] focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-600"
                     />
                   </div>
                   <div>
@@ -1648,7 +1672,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
                         setSocialLinks((prev) => ({ ...prev, instagramFollowers: e.target.value }))
                       }
                       placeholder="Obunachilar: masalan 45K"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-xs sm:text-sm font-body text-slate-900 dark:text-white bg-slate-50/50 dark:bg-[#12121A] focus:bg-white dark:focus:bg-[#12121A] focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-600"
+                      className="w-full min-h-[48px] px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-base sm:text-sm font-body text-slate-900 dark:text-white bg-slate-50/50 dark:bg-[#12121A] focus:bg-white dark:focus:bg-[#12121A] focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-600"
                     />
                   </div>
                 </div>
@@ -1665,12 +1689,12 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
               }`}
             >
               <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 min-w-0">
                   <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-900 dark:text-white shrink-0">
                     <Video className="w-4 h-4" />
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="text-sm font-heading font-bold text-slate-900 dark:text-white">TikTok</span>
                       <span
                         className={`text-[11px] font-heading font-semibold px-2 py-0.5 rounded-full transition-colors ${
@@ -1688,25 +1712,29 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center shrink-0">
                   <button
                     type="button"
                     role="switch"
                     aria-checked={enabledSocials.tiktok}
                     id="toggle-social-tiktok"
                     onClick={() => toggleSocialPlatform('tiktok')}
-                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500/40 ${
-                      enabledSocials.tiktok
-                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600'
-                        : 'bg-slate-300 dark:bg-slate-700'
-                    }`}
+                    className="min-w-[48px] min-h-[44px] inline-flex items-center justify-end cursor-pointer focus:outline-none"
                   >
                     <span className="sr-only">TikTokni yoqish yoki oʻchirish</span>
                     <span
-                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-                        enabledSocials.tiktok ? 'translate-x-5' : 'translate-x-0'
+                      className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
+                        enabledSocials.tiktok
+                          ? 'bg-gradient-to-r from-indigo-600 to-purple-600'
+                          : 'bg-slate-300 dark:bg-slate-700'
                       }`}
-                    />
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                          enabledSocials.tiktok ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </span>
                   </button>
                 </div>
               </div>
@@ -1715,7 +1743,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
               <div
                 className={`transition-all duration-300 ease-in-out overflow-hidden ${
                   enabledSocials.tiktok
-                    ? 'max-h-48 opacity-100 mt-3.5 pt-3.5 border-t border-slate-100 dark:border-slate-800'
+                    ? 'max-h-64 opacity-100 mt-3.5 pt-3.5 border-t border-slate-100 dark:border-slate-800'
                     : 'max-h-0 opacity-0 mt-0 pt-0 border-t-0 pointer-events-none'
                 }`}
               >
@@ -1730,7 +1758,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
                         setSocialLinks((prev) => ({ ...prev, tiktok: e.target.value }))
                       }
                       placeholder="https://tiktok.com/@profil_nomi"
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-sm font-body text-slate-900 dark:text-white bg-slate-50/50 dark:bg-[#12121A] focus:bg-white dark:focus:bg-[#12121A] focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-600"
+                      className="w-full min-h-[48px] pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-base sm:text-sm font-body text-slate-900 dark:text-white bg-slate-50/50 dark:bg-[#12121A] focus:bg-white dark:focus:bg-[#12121A] focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-600"
                     />
                   </div>
                   <div>
@@ -1742,7 +1770,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
                         setSocialLinks((prev) => ({ ...prev, tiktokFollowers: e.target.value }))
                       }
                       placeholder="Obunachilar: masalan 25K"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-xs sm:text-sm font-body text-slate-900 dark:text-white bg-slate-50/50 dark:bg-[#12121A] focus:bg-white dark:focus:bg-[#12121A] focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-600"
+                      className="w-full min-h-[48px] px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-base sm:text-sm font-body text-slate-900 dark:text-white bg-slate-50/50 dark:bg-[#12121A] focus:bg-white dark:focus:bg-[#12121A] focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-600"
                     />
                   </div>
                 </div>
@@ -1759,12 +1787,12 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
               }`}
             >
               <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 min-w-0">
                   <div className="w-9 h-9 rounded-xl bg-red-50 dark:bg-red-950/60 border border-red-100 dark:border-red-900/80 flex items-center justify-center text-red-600 dark:text-red-400 shrink-0">
                     <Youtube className="w-4 h-4" />
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="text-sm font-heading font-bold text-slate-900 dark:text-white">YouTube</span>
                       <span
                         className={`text-[11px] font-heading font-semibold px-2 py-0.5 rounded-full transition-colors ${
@@ -1782,25 +1810,29 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center shrink-0">
                   <button
                     type="button"
                     role="switch"
                     aria-checked={enabledSocials.youtube}
                     id="toggle-social-youtube"
                     onClick={() => toggleSocialPlatform('youtube')}
-                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500/40 ${
-                      enabledSocials.youtube
-                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600'
-                        : 'bg-slate-300 dark:bg-slate-700'
-                    }`}
+                    className="min-w-[48px] min-h-[44px] inline-flex items-center justify-end cursor-pointer focus:outline-none"
                   >
                     <span className="sr-only">YouTubeni yoqish yoki oʻchirish</span>
                     <span
-                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-                        enabledSocials.youtube ? 'translate-x-5' : 'translate-x-0'
+                      className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
+                        enabledSocials.youtube
+                          ? 'bg-gradient-to-r from-indigo-600 to-purple-600'
+                          : 'bg-slate-300 dark:bg-slate-700'
                       }`}
-                    />
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                          enabledSocials.youtube ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </span>
                   </button>
                 </div>
               </div>
@@ -1809,7 +1841,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
               <div
                 className={`transition-all duration-300 ease-in-out overflow-hidden ${
                   enabledSocials.youtube
-                    ? 'max-h-48 opacity-100 mt-3.5 pt-3.5 border-t border-slate-100 dark:border-slate-800'
+                    ? 'max-h-64 opacity-100 mt-3.5 pt-3.5 border-t border-slate-100 dark:border-slate-800'
                     : 'max-h-0 opacity-0 mt-0 pt-0 border-t-0 pointer-events-none'
                 }`}
               >
@@ -1824,7 +1856,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
                         setSocialLinks((prev) => ({ ...prev, youtube: e.target.value }))
                       }
                       placeholder="https://youtube.com/@kanal_nomi"
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-sm font-body text-slate-900 dark:text-white bg-slate-50/50 dark:bg-[#12121A] focus:bg-white dark:focus:bg-[#12121A] focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-600"
+                      className="w-full min-h-[48px] pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-base sm:text-sm font-body text-slate-900 dark:text-white bg-slate-50/50 dark:bg-[#12121A] focus:bg-white dark:focus:bg-[#12121A] focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-600"
                     />
                   </div>
                   <div>
@@ -1836,7 +1868,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
                         setSocialLinks((prev) => ({ ...prev, youtubeFollowers: e.target.value }))
                       }
                       placeholder="Obunachilar: masalan 10K"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-xs sm:text-sm font-body text-slate-900 dark:text-white bg-slate-50/50 dark:bg-[#12121A] focus:bg-white dark:focus:bg-[#12121A] focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-600"
+                      className="w-full min-h-[48px] px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-base sm:text-sm font-body text-slate-900 dark:text-white bg-slate-50/50 dark:bg-[#12121A] focus:bg-white dark:focus:bg-[#12121A] focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-600"
                     />
                   </div>
                 </div>
@@ -1853,12 +1885,12 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
               }`}
             >
               <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 min-w-0">
                   <div className="w-9 h-9 rounded-xl bg-sky-50 dark:bg-sky-950/60 border border-sky-100 dark:border-sky-900/80 flex items-center justify-center text-sky-500 shrink-0">
                     <Send className="w-4 h-4" />
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="text-sm font-heading font-bold text-slate-900 dark:text-white">Telegram</span>
                       <span
                         className={`text-[11px] font-heading font-semibold px-2 py-0.5 rounded-full transition-colors ${
@@ -1876,25 +1908,29 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center shrink-0">
                   <button
                     type="button"
                     role="switch"
                     aria-checked={enabledSocials.telegram}
                     id="toggle-social-telegram"
                     onClick={() => toggleSocialPlatform('telegram')}
-                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500/40 ${
-                      enabledSocials.telegram
-                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600'
-                        : 'bg-slate-300 dark:bg-slate-700'
-                    }`}
+                    className="min-w-[48px] min-h-[44px] inline-flex items-center justify-end cursor-pointer focus:outline-none"
                   >
                     <span className="sr-only">Telegramni yoqish yoki oʻchirish</span>
                     <span
-                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-                        enabledSocials.telegram ? 'translate-x-5' : 'translate-x-0'
+                      className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
+                        enabledSocials.telegram
+                          ? 'bg-gradient-to-r from-indigo-600 to-purple-600'
+                          : 'bg-slate-300 dark:bg-slate-700'
                       }`}
-                    />
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                          enabledSocials.telegram ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </span>
                   </button>
                 </div>
               </div>
@@ -1903,7 +1939,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
               <div
                 className={`transition-all duration-300 ease-in-out overflow-hidden ${
                   enabledSocials.telegram
-                    ? 'max-h-48 opacity-100 mt-3.5 pt-3.5 border-t border-slate-100 dark:border-slate-800'
+                    ? 'max-h-64 opacity-100 mt-3.5 pt-3.5 border-t border-slate-100 dark:border-slate-800'
                     : 'max-h-0 opacity-0 mt-0 pt-0 border-t-0 pointer-events-none'
                 }`}
               >
@@ -1918,7 +1954,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
                         setSocialLinks((prev) => ({ ...prev, telegram: e.target.value }))
                       }
                       placeholder="https://t.me/kanal_nomi"
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-sm font-body text-slate-900 dark:text-white bg-slate-50/50 dark:bg-[#12121A] focus:bg-white dark:focus:bg-[#12121A] focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-600"
+                      className="w-full min-h-[48px] pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-base sm:text-sm font-body text-slate-900 dark:text-white bg-slate-50/50 dark:bg-[#12121A] focus:bg-white dark:focus:bg-[#12121A] focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-600"
                     />
                   </div>
                   <div>
@@ -1930,7 +1966,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
                         setSocialLinks((prev) => ({ ...prev, telegramFollowers: e.target.value }))
                       }
                       placeholder="Aʼzolar: masalan 15K"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-xs sm:text-sm font-body text-slate-900 dark:text-white bg-slate-50/50 dark:bg-[#12121A] focus:bg-white dark:focus:bg-[#12121A] focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-600"
+                      className="w-full min-h-[48px] px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-base sm:text-sm font-body text-slate-900 dark:text-white bg-slate-50/50 dark:bg-[#12121A] focus:bg-white dark:focus:bg-[#12121A] focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-600"
                     />
                   </div>
                 </div>
@@ -1944,50 +1980,59 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
       {/* 7. PASTKI QISM: STICKY SAVE BAR */}
       <div
         id="sticky-save-profile-bar"
-        className="fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-[#1A1A24]/95 backdrop-blur-xl border-t border-slate-200/90 dark:border-slate-800 shadow-[0_-8px_25px_rgba(0,0,0,0.08)] py-3.5 px-4 sm:px-6 transition-all"
+        className="fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-[#1A1A24]/95 backdrop-blur-xl border-t border-slate-200/90 dark:border-slate-800 shadow-[0_-8px_25px_rgba(0,0,0,0.08)] pt-3 pb-[max(12px,calc(env(safe-area-inset-bottom,0px)+8px))] px-4 sm:px-6 transition-all"
       >
-        <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={onBack}
-              className="py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-slate-700 dark:text-slate-300 font-heading font-semibold text-xs sm:text-sm transition-colors cursor-pointer"
-            >
-              Bekor qilish
-            </button>
-            <span className="hidden sm:inline text-xs text-slate-400 dark:text-slate-500 font-body">
-              Oʻzgarishlar darhol hisobingizga kiritiladi
-            </span>
-          </div>
+        <div className="max-w-4xl mx-auto">
+          {saveToast && (
+            <div className="sm:hidden mb-2.5 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-heading font-bold animate-in fade-in">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <span>Profil saqlandi ✓</span>
+            </div>
+          )}
 
-          <div className="flex items-center gap-3">
-            {/* Quick success message badge inside sticky bar */}
-            {saveToast && (
-              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-heading font-bold animate-in fade-in">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                <span>Profil saqlandi ✓</span>
-              </div>
-            )}
+          <div className="flex items-center justify-between gap-3 sm:gap-4">
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={onBack}
+                className="min-h-[48px] py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-slate-700 dark:text-slate-300 font-heading font-semibold text-xs sm:text-sm transition-colors cursor-pointer"
+              >
+                Bekor qilish
+              </button>
+              <span className="hidden sm:inline text-xs text-slate-400 dark:text-slate-500 font-body">
+                Oʻzgarishlar darhol hisobingizga kiritiladi
+              </span>
+            </div>
 
-            <button
-              type="button"
-              id="btn-save-creator-profile"
-              onClick={() => handleSave()}
-              disabled={isSaving}
-              className="py-3 px-7 rounded-xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white font-heading font-bold text-sm shadow-md shadow-indigo-600/30 active:scale-98 transition-all cursor-pointer flex items-center gap-2 disabled:opacity-75"
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Saqlanmoqda...</span>
-                </>
-              ) : (
-                <>
-                  <Check className="w-4 h-4 stroke-[2.5]" />
-                  <span>Saqlash</span>
-                </>
+            <div className="flex items-center gap-3 flex-1 sm:flex-initial justify-end">
+              {/* Quick success message badge inside sticky bar (desktop) */}
+              {saveToast && (
+                <div className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-heading font-bold animate-in fade-in">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <span>Profil saqlandi ✓</span>
+                </div>
               )}
-            </button>
+
+              <button
+                type="button"
+                id="btn-save-creator-profile"
+                onClick={() => handleSave()}
+                disabled={isSaving}
+                className="w-full sm:w-auto min-h-[48px] py-3 px-6 sm:px-7 rounded-xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white font-heading font-bold text-sm shadow-md shadow-indigo-600/30 active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-75"
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Saqlanmoqda...</span>
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4 stroke-[2.5]" />
+                    <span>Saqlash</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>

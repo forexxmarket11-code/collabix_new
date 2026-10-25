@@ -36,14 +36,14 @@ export const ReferralBanner: React.FC<ReferralBannerProps> = ({ onLearnMore }) =
             </h2>
 
             {/* Explanation paragraph */}
-            <p className="mt-3 text-sm sm:text-base text-slate-300 font-body leading-relaxed">
+            <p className="mt-3 text-[15px] sm:text-base text-slate-200 sm:text-slate-300 font-body leading-relaxed">
               Platformamizda bloger ham, brend ham oʻz doʻstlarini taklif qilib qoʻshimcha daromad topishi mumkin.
               Taklifingiz orqali roʻyxatdan oʻtib, <strong>59 000 soʻm</strong>lik obunani faollashtirgan har bir
               foydalanuvchi uchun sizga darhol mukofot hisoblanadi.
             </p>
 
             {/* Micro badges for credibility */}
-            <div className="flex flex-wrap items-center gap-4 sm:gap-6 mt-4 pt-3 border-t border-white/10 text-xs sm:text-sm text-slate-300 font-body">
+            <div className="flex flex-wrap items-center gap-4 sm:gap-6 mt-4 pt-3 border-t border-white/10 text-sm text-slate-300 font-body">
               <div className="flex items-center gap-1.5">
                 <Users className="w-4 h-4 text-indigo-400 shrink-0" />
                 <span>Cheklovlarsiz takliflar</span>
@@ -75,7 +75,7 @@ export const ReferralBanner: React.FC<ReferralBannerProps> = ({ onLearnMore }) =
               id="btn-referral-banner-details"
               type="button"
               onClick={onLearnMore}
-              className="group inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-400 hover:to-pink-400 text-white font-heading font-bold text-sm shadow-lg shadow-indigo-500/25 active:scale-98 transition-all cursor-pointer"
+              className="group inline-flex items-center justify-center gap-2.5 min-h-[48px] px-6 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-400 hover:to-pink-400 text-white font-heading font-bold text-[15px] sm:text-sm shadow-lg shadow-indigo-500/25 active:scale-98 transition-all cursor-pointer"
             >
               <span>Dastur haqida batafsil</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />

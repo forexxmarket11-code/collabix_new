@@ -310,41 +310,41 @@ export const CreateBriefPage: React.FC<CreateBriefPageProps> = ({
           </p>
 
           {/* Quick Summary Card */}
-          <div className="bg-slate-50 dark:bg-[#12121A] rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 mb-8 text-left space-y-2.5 text-xs sm:text-sm">
-            <div className="flex items-center justify-between text-slate-600 dark:text-[#D0D0D8]">
-              <span className="font-medium">Tanlangan formatlar:</span>
-              <span className="font-heading font-bold text-slate-900 dark:text-white">
+          <div className="bg-slate-50 dark:bg-[#12121A] rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 mb-8 text-left space-y-2.5 text-sm">
+            <div className="flex items-start justify-between gap-2 text-slate-600 dark:text-[#D0D0D8]">
+              <span className="font-medium shrink-0">Tanlangan formatlar:</span>
+              <span className="font-heading font-bold text-slate-900 dark:text-white text-right break-words">
                 {createdBriefData.formats.join(', ')}
               </span>
             </div>
             {createdBriefData.categories.length > 0 && (
-              <div className="flex items-center justify-between text-slate-600 dark:text-[#D0D0D8]">
-                <span className="font-medium">Kategoriya:</span>
-                <span className="font-heading font-bold text-slate-900 dark:text-white">
+              <div className="flex items-start justify-between gap-2 text-slate-600 dark:text-[#D0D0D8]">
+                <span className="font-medium shrink-0">Kategoriya:</span>
+                <span className="font-heading font-bold text-slate-900 dark:text-white text-right break-words">
                   {createdBriefData.categories.join(', ')}
                 </span>
               </div>
             )}
             {createdBriefData.paymentType === 'barter' ? (
-              <div className="flex items-start justify-between text-slate-600 dark:text-[#D0D0D8]">
-                <span className="font-medium">Toʻlov turi:</span>
-                <span className="font-heading font-bold text-amber-600 dark:text-amber-400 text-right">
+              <div className="flex items-start justify-between gap-2 text-slate-600 dark:text-[#D0D0D8]">
+                <span className="font-medium shrink-0">Toʻlov turi:</span>
+                <span className="font-heading font-bold text-amber-600 dark:text-amber-400 text-right break-words">
                   🔄 Barter{createdBriefData.barterDescription ? `: ${createdBriefData.barterDescription}` : ''}
                   {createdBriefData.barterEstimatedValue ? ` (taxm. ${createdBriefData.barterEstimatedValue} soʻm)` : ''}
                 </span>
               </div>
             ) : (createdBriefData.budgetMin || createdBriefData.budgetMax) ? (
-              <div className="flex items-center justify-between text-slate-600 dark:text-[#D0D0D8]">
-                <span className="font-medium">Toʻlov byudjeti:</span>
-                <span className="font-heading font-bold text-emerald-700 dark:text-emerald-400">
+              <div className="flex items-start justify-between gap-2 text-slate-600 dark:text-[#D0D0D8]">
+                <span className="font-medium shrink-0">Toʻlov byudjeti:</span>
+                <span className="font-heading font-bold text-emerald-700 dark:text-emerald-400 text-right break-words">
                   {createdBriefData.budgetMin ? `${createdBriefData.budgetMin} soʻmdan` : ''}{' '}
                   {createdBriefData.budgetMax ? `${createdBriefData.budgetMax} soʻmgacha` : ''}
                 </span>
               </div>
             ) : null}
-            <div className="flex items-center justify-between text-slate-600 dark:text-[#D0D0D8]">
-              <span className="font-medium">Yuborilish turi:</span>
-              <span className="font-heading font-bold text-slate-900 dark:text-white">
+            <div className="flex items-start justify-between gap-2 text-slate-600 dark:text-[#D0D0D8]">
+              <span className="font-medium shrink-0">Yuborilish turi:</span>
+              <span className="font-heading font-bold text-slate-900 dark:text-white text-right break-words">
                 {createdBriefData.recipientType === 'open'
                   ? 'Ochiq eʼlon (Barcha kreatorlarga)'
                   : `Shaxsiy taklif: ${createdBriefData.selectedCreatorName}`}
@@ -357,7 +357,7 @@ export const CreateBriefPage: React.FC<CreateBriefPageProps> = ({
               type="button"
               id="btn-brief-view-orders"
               onClick={onViewOrders}
-              className="w-full sm:w-auto px-6 py-3 rounded-xl bg-slate-900 dark:bg-indigo-600 hover:bg-slate-800 dark:hover:bg-indigo-500 text-white font-heading font-bold text-sm shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full sm:w-auto min-h-[48px] px-6 py-3 rounded-xl bg-slate-900 dark:bg-indigo-600 hover:bg-slate-800 dark:hover:bg-indigo-500 text-white font-heading font-bold text-sm shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
             >
               <Package className="w-4 h-4" />
               <span>Briflarni koʻrish</span>
@@ -383,7 +383,7 @@ export const CreateBriefPage: React.FC<CreateBriefPageProps> = ({
                 setIsSuccess(false);
                 setCreatedBriefData(null);
               }}
-              className="w-full sm:w-auto px-6 py-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 font-heading font-semibold text-sm transition-colors flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full sm:w-auto min-h-[48px] px-6 py-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 font-heading font-semibold text-sm transition-colors flex items-center justify-center gap-2 cursor-pointer"
             >
               <span>Yana yangi brif yaratish</span>
             </button>
@@ -395,14 +395,14 @@ export const CreateBriefPage: React.FC<CreateBriefPageProps> = ({
 
   return (
     <div className="min-h-screen bg-[#F8FAFD] dark:bg-[#0E0E15] pb-[calc(140px+env(safe-area-inset-bottom,0px))] pt-6 sm:pt-10">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6">
+      <div className="max-w-3xl mx-auto px-3.5 sm:px-6">
         {/* Back Navigation Bar */}
-        <div className="mb-6">
+        <div className="mb-5">
           <button
             type="button"
             id="btn-brief-back"
             onClick={onBack}
-            className="inline-flex items-center gap-2 text-xs sm:text-sm font-heading font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors group cursor-pointer"
+            className="inline-flex items-center gap-2 min-h-[44px] px-2.5 -ml-2.5 rounded-xl text-sm font-heading font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-800/60 transition-colors group cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
             <span>Orqaga qaytish</span>
@@ -410,7 +410,7 @@ export const CreateBriefPage: React.FC<CreateBriefPageProps> = ({
         </div>
 
         {/* Page Header */}
-        <div className="mb-8">
+        <div className="mb-6 sm:mb-8">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100/90 dark:border-indigo-900/60 text-xs font-heading font-bold text-indigo-700 dark:text-indigo-300 mb-2">
             <Sparkles className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
             <span>Brendlar uchun hamkorlik brifi</span>
@@ -418,7 +418,7 @@ export const CreateBriefPage: React.FC<CreateBriefPageProps> = ({
           <h1 className="text-2xl sm:text-3xl font-heading font-extrabold text-slate-900 dark:text-white tracking-tight">
             Brif yaratish
           </h1>
-          <p className="text-sm sm:text-base font-body text-slate-600 dark:text-[#D0D0D8] mt-1">
+          <p className="text-[15px] sm:text-base font-body text-slate-600 dark:text-[#D0D0D8] mt-1">
             Vazifa talablari, format va tafsilotlarni bir sahifada toʻldiring va eʼlonni joylashtiring.
           </p>
         </div>
@@ -427,20 +427,28 @@ export const CreateBriefPage: React.FC<CreateBriefPageProps> = ({
         <form
           id="create-brief-form"
           onSubmit={handleSubmit}
-          className="bg-white dark:bg-[#1A1A24] rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-xs p-6 sm:p-8 space-y-8"
+          onFocusCapture={(e) => {
+            const target = e.target as HTMLElement;
+            if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+              setTimeout(() => {
+                target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+              }, 250);
+            }
+          }}
+          className="bg-white dark:bg-[#1A1A24] rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-xs p-4 sm:p-8 space-y-7 sm:space-y-8"
         >
           {/* SECTION 1: BRIF TURI (KIMLARGA YUBORILSIN) */}
           <div id="section-task-recipients" className="space-y-4">
             <div>
-              <div className="flex items-center justify-between">
-                <label className="block text-sm font-heading font-bold text-slate-900 dark:text-white">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <label className="block text-[15px] sm:text-sm font-heading font-bold text-slate-900 dark:text-white">
                   1. Brif turi (kimlarga yuborilsin) <span className="text-rose-500 font-bold">*</span>
                 </label>
                 <span className="text-xs font-body text-slate-400 dark:text-slate-500">
                   Ochiq yoki shaxsiy
                 </span>
               </div>
-              <p className="text-xs text-slate-500 dark:text-[#D0D0D8] font-body mt-1">
+              <p className="text-sm sm:text-xs text-slate-500 dark:text-[#D0D0D8] font-body mt-1 leading-relaxed">
                 Eʼlonni umumiy platformadagi barcha mos kreatorlarga joylaysizmi yoki bitta aniq kreatorga shaxsiy murojaat qilasizmi?
               </p>
             </div>
@@ -546,7 +554,7 @@ export const CreateBriefPage: React.FC<CreateBriefPageProps> = ({
                     value={creatorSearchQuery}
                     onChange={(e) => setCreatorSearchQuery(e.target.value)}
                     placeholder="Ism, sahifa (@) yoki yoʻnalish boʻyicha qidirish..."
-                    className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-body text-slate-900 dark:text-white bg-white dark:bg-[#1A1A24] focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 transition-colors"
+                    className="w-full min-h-[48px] pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-base sm:text-sm font-body text-slate-900 dark:text-white bg-white dark:bg-[#1A1A24] focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 transition-colors"
                   />
                 </div>
 
@@ -561,7 +569,7 @@ export const CreateBriefPage: React.FC<CreateBriefPageProps> = ({
                           setSelectedCreator(creator);
                           if (errors.creator) setErrors((prev) => ({ ...prev, creator: undefined }));
                         }}
-                        className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                        className={`p-3 min-h-[56px] rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
                           isPicked
                             ? 'bg-indigo-50/80 dark:bg-indigo-950/50 border-indigo-400 dark:border-indigo-600 ring-1 ring-indigo-500/20'
                             : 'bg-white dark:bg-[#1A1A24] border-slate-200/80 dark:border-slate-750 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/70'
@@ -585,10 +593,10 @@ export const CreateBriefPage: React.FC<CreateBriefPageProps> = ({
                             </div>
                           )}
                           <div className="min-w-0">
-                            <span className="block text-xs font-heading font-bold text-slate-900 dark:text-white truncate">
+                            <span className="block text-sm sm:text-xs font-heading font-bold text-slate-900 dark:text-white truncate">
                               {creator.name}
                             </span>
-                            <span className="block text-[11px] text-slate-500 dark:text-[#D0D0D8] font-body truncate">
+                            <span className="block text-xs text-slate-500 dark:text-[#D0D0D8] font-body truncate">
                               {creator.handle} • {creator.followers} obunachi
                             </span>
                           </div>
@@ -596,7 +604,7 @@ export const CreateBriefPage: React.FC<CreateBriefPageProps> = ({
 
                         <div className="shrink-0">
                           <span
-                            className={`px-2.5 py-1 rounded-lg text-xs font-heading font-semibold transition-colors ${
+                            className={`px-3 py-1.5 rounded-lg text-xs font-heading font-semibold transition-colors inline-block ${
                               isPicked
                                 ? 'bg-indigo-600 text-white'
                                 : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700'
@@ -624,16 +632,16 @@ export const CreateBriefPage: React.FC<CreateBriefPageProps> = ({
 
           {/* SECTION 2: VAZIFA NOMI */}
           <div id="section-task-title" className="space-y-2">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <label
                 htmlFor="input-brief-title"
-                className="block text-sm font-heading font-bold text-slate-900 dark:text-white"
+                className="block text-[15px] sm:text-sm font-heading font-bold text-slate-900 dark:text-white"
               >
                 2. Vazifa nomi <span className="text-rose-500 font-bold">*</span>
               </label>
               <span className="text-xs font-body text-slate-400 dark:text-slate-500">Qisqa va aniq</span>
             </div>
-            <p className="text-xs text-slate-500 dark:text-[#D0D0D8] font-body">
+            <p className="text-sm sm:text-xs text-slate-500 dark:text-[#D0D0D8] font-body">
               Loyiha mazmunini bir qarashda ifodalovchi qisqa sarlavha.
             </p>
             <input
@@ -645,7 +653,7 @@ export const CreateBriefPage: React.FC<CreateBriefPageProps> = ({
                 if (errors.taskTitle) setErrors((prev) => ({ ...prev, taskTitle: undefined }));
               }}
               placeholder="Masalan: Yangi mahsulotni Reels'da tanishtirish"
-              className={`w-full px-4 py-3 rounded-xl border text-sm font-body text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none transition-colors ${
+              className={`w-full min-h-[48px] px-4 py-3 rounded-xl border text-base sm:text-sm font-body text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none transition-colors ${
                 errors.taskTitle
                   ? 'border-rose-300 dark:border-rose-700 bg-rose-50/30 dark:bg-rose-950/20 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20'
                   : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-[#12121A] focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20'
@@ -663,22 +671,22 @@ export const CreateBriefPage: React.FC<CreateBriefPageProps> = ({
 
           {/* SECTION 3: TAVSIF */}
           <div id="section-task-description" className="space-y-2">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <label
                 htmlFor="input-brief-description"
-                className="block text-sm font-heading font-bold text-slate-900 dark:text-white"
+                className="block text-[15px] sm:text-sm font-heading font-bold text-slate-900 dark:text-white"
               >
                 3. Tavsif: Kreator nima qilishi kerak? <span className="text-rose-500 font-bold">*</span>
               </label>
               <span
-                className={`text-xs font-mono font-medium ${
+                className={`text-xs font-mono font-medium shrink-0 ${
                   description.length > 950 ? 'text-amber-600 dark:text-amber-400 font-bold' : 'text-slate-400 dark:text-slate-500'
                 }`}
               >
                 {description.length}/1000
               </span>
             </div>
-            <p className="text-xs text-slate-500 dark:text-[#D0D0D8] font-body">
+            <p className="text-sm sm:text-xs text-slate-500 dark:text-[#D0D0D8] font-body leading-relaxed">
               Mahsulot xususiyatlari, asosiy urgʻu berilishi kerak boʻlgan jihatlar va kreatorga yoʻriqnomani yozing.
             </p>
             <textarea
@@ -691,7 +699,7 @@ export const CreateBriefPage: React.FC<CreateBriefPageProps> = ({
                 if (errors.description) setErrors((prev) => ({ ...prev, description: undefined }));
               }}
               placeholder="Kreator video davomida mahsulotning asosiy foydali tomonlarini koʻrsatishi, oʻzining shaxsiy tajribasi bilan boʻlishishi va tomoshabinlarni havola orqali buyurtma berishga chaqirishi kerak..."
-              className={`w-full px-4 py-3 rounded-xl border text-sm font-body text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none transition-colors resize-y min-h-[120px] ${
+              className={`w-full px-4 py-3 rounded-xl border text-base sm:text-sm font-body text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none transition-colors resize-y min-h-[130px] ${
                 errors.description
                   ? 'border-rose-300 dark:border-rose-700 bg-rose-50/30 dark:bg-rose-950/20 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20'
                   : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-[#12121A] focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20'
@@ -709,18 +717,18 @@ export const CreateBriefPage: React.FC<CreateBriefPageProps> = ({
 
           {/* SECTION 4: FORMAT (Multi-select) */}
           <div id="section-task-format" className="space-y-3">
-            <div className="flex items-center justify-between">
-              <label className="block text-sm font-heading font-bold text-slate-900 dark:text-white">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <label className="block text-[15px] sm:text-sm font-heading font-bold text-slate-900 dark:text-white">
                 4. Format <span className="text-rose-500 font-bold">*</span>
               </label>
               <span className="text-xs font-body text-slate-400 dark:text-slate-500">
                 Bir nechtasini tanlash mumkin
               </span>
             </div>
-            <p className="text-xs text-slate-500 dark:text-[#D0D0D8] font-body">
+            <p className="text-sm sm:text-xs text-slate-500 dark:text-[#D0D0D8] font-body">
               Kreator qaysi formatlarda kontent tayyorlashi lozim?
             </p>
-            <div className="flex flex-wrap gap-2.5">
+            <div className="flex flex-wrap gap-2">
               {FORMAT_OPTIONS.map((format) => {
                 const isSelected = selectedFormats.includes(format);
                 return (
@@ -729,7 +737,7 @@ export const CreateBriefPage: React.FC<CreateBriefPageProps> = ({
                     type="button"
                     id={`btn-format-${format.toLowerCase()}`}
                     onClick={() => handleToggleFormat(format)}
-                    className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-heading font-semibold transition-all cursor-pointer ${
+                    className={`inline-flex items-center gap-2 min-h-[44px] px-4 py-2.5 rounded-xl text-sm font-heading font-semibold transition-all cursor-pointer ${
                       isSelected
                         ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-xs border border-transparent'
                         : 'bg-slate-50 dark:bg-[#12121A] hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200/90 dark:border-slate-700'
@@ -762,8 +770,8 @@ export const CreateBriefPage: React.FC<CreateBriefPageProps> = ({
           {/* SECTION 5: KATEGORIYA */}
           <div id="section-task-category" className="space-y-3">
             <div className="flex items-center justify-between flex-wrap gap-2">
-              <div className="flex items-center gap-2">
-                <label className="block text-sm font-heading font-bold text-slate-900 dark:text-white">
+              <div className="flex items-center gap-2 flex-wrap">
+                <label className="block text-[15px] sm:text-sm font-heading font-bold text-slate-900 dark:text-white">
                   5. Kategoriya
                 </label>
                 {recipientType === 'open' ? (
@@ -780,7 +788,7 @@ export const CreateBriefPage: React.FC<CreateBriefPageProps> = ({
                 Mos yoʻnalishlarni belgilang
               </span>
             </div>
-            <p className="text-xs text-slate-500 dark:text-[#D0D0D8] font-body">
+            <p className="text-sm sm:text-xs text-slate-500 dark:text-[#D0D0D8] font-body leading-relaxed">
               {recipientType === 'open'
                 ? 'Ochiq eʼlon barcha mos kreatorlarga koʻrinishi va ularning lentasida birinchi chiqishi uchun sohani belgilang.'
                 : 'Brendingiz yoki mahsulotingiz tegishli boʻlgan sohalar.'}
@@ -794,7 +802,7 @@ export const CreateBriefPage: React.FC<CreateBriefPageProps> = ({
                     type="button"
                     id={`btn-category-${cat.toLowerCase().replace(/['\s\/]/g, '-')}`}
                     onClick={() => handleToggleCategory(cat)}
-                    className={`px-3.5 py-2 rounded-xl text-xs font-heading font-semibold transition-all cursor-pointer ${
+                    className={`min-h-[44px] px-3.5 py-2 rounded-xl text-xs sm:text-sm font-heading font-semibold transition-all cursor-pointer ${
                       isSelected
                         ? 'bg-slate-900 dark:bg-indigo-600 text-white shadow-xs border border-slate-900 dark:border-indigo-600'
                         : 'bg-white dark:bg-[#12121A] text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800'
@@ -817,48 +825,15 @@ export const CreateBriefPage: React.FC<CreateBriefPageProps> = ({
 
           {/* SECTION 6: TO'LOV TAKLIFI VA MUDDAT (Ixtiyoriy) */}
           <div id="section-task-budget" className="space-y-4">
-            <div className="flex items-center justify-between">
-              <label className="block text-sm font-heading font-bold text-slate-900 dark:text-white">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <label className="block text-[15px] sm:text-sm font-heading font-bold text-slate-900 dark:text-white">
                 6. Toʻlov taklifi va Muddat <span className="text-xs font-normal text-slate-500 dark:text-[#D0D0D8] font-body">(ixtiyoriy)</span>
               </label>
               <span className="text-xs font-body text-slate-400 dark:text-slate-500">Kelishuv asosida</span>
             </div>
-            <p className="text-xs text-slate-500 dark:text-[#D0D0D8] font-body">
+            <p className="text-sm sm:text-xs text-slate-500 dark:text-[#D0D0D8] font-body leading-relaxed">
               Kreatorga toʻlovni pul shaklida yoki mahsulot/xizmat barteri evaziga taklif qilishingiz mumkin.
             </p>
-
-            {/* 1. TO'LOV TURI: Faqat "Pul evaziga" to'lov turi (Barter tanlovi vaqtincha UI'dan yashirildi) */}
-            {/*
-            <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 max-w-md">
-              <button
-                type="button"
-                id="btn-payment-type-money"
-                onClick={() => setPaymentType('money')}
-                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-heading font-bold transition-all cursor-pointer ${
-                  paymentType === 'money'
-                    ? 'bg-white dark:bg-[#1E1E2D] text-indigo-600 dark:text-indigo-400 shadow-xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                }`}
-              >
-                <DollarSign className="w-4 h-4 text-emerald-600" />
-                <span>Pul evaziga</span>
-              </button>
-
-              <button
-                type="button"
-                id="btn-payment-type-barter"
-                onClick={() => setPaymentType('barter')}
-                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-heading font-bold transition-all cursor-pointer ${
-                  paymentType === 'barter'
-                    ? 'bg-white dark:bg-[#1E1E2D] text-amber-600 dark:text-amber-400 shadow-xs'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                }`}
-              >
-                <Repeat className="w-4 h-4 text-amber-500" />
-                <span>Barter (mahsulot/xizmat)</span>
-              </button>
-            </div>
-            */}
 
             {/* 2. "PUL EVAZIGA" TO'LOV - Ikkita oddiy raqam maydoni */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -873,10 +848,11 @@ export const CreateBriefPage: React.FC<CreateBriefPageProps> = ({
                   <input
                     id="input-budget-min"
                     type="text"
+                    inputMode="numeric"
                     value={budgetMin}
                     onChange={(e) => setBudgetMin(e.target.value)}
                     placeholder="Masalan: 2 500 000"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-body text-slate-900 dark:text-white placeholder:text-slate-400 bg-white dark:bg-[#12121A] focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20"
+                    className="w-full min-h-[48px] pl-3.5 pr-14 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-base sm:text-sm font-body text-slate-900 dark:text-white placeholder:text-slate-400 bg-white dark:bg-[#12121A] focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20"
                   />
                   <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-body text-slate-400 dark:text-slate-500 pointer-events-none">
                     soʻm
@@ -895,10 +871,11 @@ export const CreateBriefPage: React.FC<CreateBriefPageProps> = ({
                   <input
                     id="input-budget-max"
                     type="text"
+                    inputMode="numeric"
                     value={budgetMax}
                     onChange={(e) => setBudgetMax(e.target.value)}
                     placeholder="Masalan: 5 000 000"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-body text-slate-900 dark:text-white placeholder:text-slate-400 bg-white dark:bg-[#12121A] focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20"
+                    className="w-full min-h-[48px] pl-3.5 pr-14 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-base sm:text-sm font-body text-slate-900 dark:text-white placeholder:text-slate-400 bg-white dark:bg-[#12121A] focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20"
                   />
                   <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-body text-slate-400 dark:text-slate-500 pointer-events-none">
                     soʻm
@@ -906,58 +883,6 @@ export const CreateBriefPage: React.FC<CreateBriefPageProps> = ({
                 </div>
               </div>
             </div>
-
-            {/* 3. "BARTER" - Vaqtincha yashirilgan */}
-            {/*
-            {paymentType === 'barter' && (
-              <div className="space-y-3.5 p-4 rounded-2xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-900/50 animate-in fade-in duration-150">
-                <div>
-                  <label
-                    htmlFor="input-barter-description"
-                    className="block text-xs font-heading font-bold text-slate-900 dark:text-white mb-1"
-                  >
-                    Nima taklif qilyapsiz? <span className="text-amber-700 dark:text-amber-400 font-normal">(mahsulot yoki xizmat tavsifi)</span>
-                  </label>
-                  <input
-                    id="input-barter-description"
-                    type="text"
-                    value={barterDescription}
-                    onChange={(e) => setBarterDescription(e.target.value)}
-                    placeholder="Masalan: 500,000 soʻmlik mahsulot toʻplami yoki Bepul restoran taomi + xizmat"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-amber-300/80 dark:border-amber-800/80 text-sm font-body text-slate-900 dark:text-white placeholder:text-slate-400 bg-white dark:bg-[#12121A] focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
-                  />
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 font-body mt-1">
-                    Kreatorga mahsulot yoki xizmat haqida aniq maʼlumot bering (turi, toʻplami, miqdori).
-                  </p>
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="input-barter-estimated-value"
-                    className="block text-xs font-heading font-semibold text-slate-700 dark:text-slate-300 mb-1"
-                  >
-                    Taxminiy qiymati <span className="text-xs font-normal text-slate-400 dark:text-slate-500 font-body">(ixtiyoriy, soʻmda)</span>
-                  </label>
-                  <div className="relative max-w-sm">
-                    <input
-                      id="input-barter-estimated-value"
-                      type="text"
-                      value={barterEstimatedValue}
-                      onChange={(e) => setBarterEstimatedValue(e.target.value)}
-                      placeholder="Masalan: 800 000"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-body text-slate-900 dark:text-white placeholder:text-slate-400 bg-white dark:bg-[#12121A] focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
-                    />
-                    <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-body text-slate-400 dark:text-slate-500 pointer-events-none">
-                      soʻm
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 font-body mt-1">
-                    Bu kreatorga taklifning taxminiy qiymatini tushunishga yordam beradi.
-                  </p>
-                </div>
-              </div>
-            )}
-            */}
 
             <div>
               <label
@@ -974,7 +899,7 @@ export const CreateBriefPage: React.FC<CreateBriefPageProps> = ({
                   value={deadline}
                   onChange={(e) => setDeadline(e.target.value)}
                   placeholder="Masalan: 28-Sentabr, 2026 yoki 7 kun ichida"
-                  className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-body text-slate-900 dark:text-white placeholder:text-slate-400 bg-white dark:bg-[#12121A] focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20"
+                  className="w-full min-h-[48px] pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-base sm:text-sm font-body text-slate-900 dark:text-white placeholder:text-slate-400 bg-white dark:bg-[#12121A] focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20"
                 />
               </div>
             </div>
@@ -1054,7 +979,7 @@ export const CreateBriefPage: React.FC<CreateBriefPageProps> = ({
                     <button
                       type="button"
                       onClick={() => handleRemoveFile(file.id)}
-                      className="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-white dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                      className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-slate-400 hover:text-rose-600 hover:bg-white dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
                       title="Oʻchirish"
                     >
                       <X className="w-4 h-4" />
@@ -1070,7 +995,7 @@ export const CreateBriefPage: React.FC<CreateBriefPageProps> = ({
       {/* STICKY BOTTOM ACTION BAR */}
       <div
         id="sticky-brief-footer"
-        className="fixed bottom-0 inset-x-0 z-50 bg-white/95 dark:bg-[#1A1A24]/95 backdrop-blur-md border-t border-slate-200/90 dark:border-slate-800 py-3.5 px-4 pb-[calc(14px+env(safe-area-inset-bottom,0px))] shadow-[0_-8px_24px_rgba(0,0,0,0.06)] dark:shadow-[0_-8px_24px_rgba(0,0,0,0.4)]"
+        className="fixed bottom-0 inset-x-0 z-50 bg-white/95 dark:bg-[#1A1A24]/95 backdrop-blur-md border-t border-slate-200/90 dark:border-slate-800 pt-3 px-4 pb-[max(14px,calc(env(safe-area-inset-bottom,0px)+8px))] shadow-[0_-8px_24px_rgba(0,0,0,0.06)] dark:shadow-[0_-8px_24px_rgba(0,0,0,0.4)]"
       >
         <div className="max-w-3xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="hidden sm:block text-xs text-slate-500 dark:text-[#D0D0D8] font-body">
@@ -1092,7 +1017,7 @@ export const CreateBriefPage: React.FC<CreateBriefPageProps> = ({
             id="btn-submit-brief"
             onClick={() => handleSubmit()}
             disabled={isSubmitting}
-            className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-heading font-bold text-sm sm:text-base tracking-tight shadow-lg shadow-indigo-600/25 hover:shadow-indigo-600/35 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2.5 disabled:opacity-60"
+            className="w-full sm:w-auto min-h-[48px] px-8 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-heading font-bold text-sm sm:text-base tracking-tight shadow-lg shadow-indigo-600/25 hover:shadow-indigo-600/35 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2.5 disabled:opacity-60"
           >
             {isSubmitting ? (
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

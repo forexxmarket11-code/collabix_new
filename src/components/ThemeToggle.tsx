@@ -24,7 +24,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
         onClick={toggleTheme}
         aria-label={isDark ? 'Kunduzgi rejimga oʻtish' : 'Tungi rejimga oʻtish'}
         title={isDark ? 'Kunduzgi rejimga oʻtish' : 'Tungi rejimga oʻtish'}
-        className={`relative p-2 rounded-xl border transition-all duration-300 cursor-pointer flex items-center justify-center outline-none ${
+        className={`relative min-w-[44px] min-h-[44px] p-2.5 rounded-xl border transition-all duration-300 cursor-pointer flex items-center justify-center outline-none shrink-0 ${
           isDark
             ? 'bg-slate-800/90 border-slate-700 text-amber-300 hover:bg-slate-700 hover:text-amber-200 shadow-xs'
             : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100 hover:text-indigo-600 shadow-2xs'
@@ -39,9 +39,9 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
           className="flex items-center justify-center"
         >
           {isDark ? (
-            <Sun className="w-4 h-4 sm:w-4.5 sm:h-4.5 stroke-[2.2]" />
+            <Sun className="w-4.5 h-4.5 stroke-[2.2]" />
           ) : (
-            <Moon className="w-4 h-4 sm:w-4.5 sm:h-4.5 stroke-[2.2]" />
+            <Moon className="w-4.5 h-4.5 stroke-[2.2]" />
           )}
         </motion.div>
       </button>
@@ -56,14 +56,14 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
         onClick={toggleTheme}
         aria-label={isDark ? 'Kunduzgi rejimga oʻtish' : 'Tungi rejimga oʻtish'}
         title={isDark ? 'Kunduzgi rejimga oʻtish' : 'Tungi rejimga oʻtish'}
-        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-heading font-semibold transition-all duration-300 cursor-pointer outline-none ${
+        className={`inline-flex items-center gap-2 min-h-[44px] px-4 py-2 rounded-full border text-xs font-heading font-semibold transition-all duration-300 cursor-pointer outline-none ${
           isDark
             ? 'bg-slate-800/90 border-slate-700 text-slate-200 hover:border-slate-600'
             : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'
         } ${className}`}
       >
         <span className="flex items-center justify-center text-amber-400 dark:text-amber-300">
-          {isDark ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5 text-slate-600" />}
+          {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4 text-slate-600" />}
         </span>
         <span>{isDark ? 'Kunduzgi rejim' : 'Tungi rejim'}</span>
       </button>
@@ -77,7 +77,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
       onClick={toggleTheme}
       aria-label={isDark ? 'Kunduzgi rejimga oʻtish' : 'Tungi rejimga oʻtish'}
       title={isDark ? 'Kunduzgi rejimga oʻtish' : 'Tungi rejimga oʻtish'}
-      className={`relative p-2 sm:p-2.5 rounded-xl border transition-all duration-300 cursor-pointer flex items-center justify-center outline-none ${
+      className={`relative min-w-[44px] min-h-[44px] p-2.5 rounded-xl border transition-all duration-300 cursor-pointer flex items-center justify-center outline-none shrink-0 ${
         isDark
           ? 'bg-slate-800/80 border-slate-700/80 text-amber-300 hover:bg-slate-700/90 hover:text-amber-200 hover:border-amber-500/40 shadow-xs'
           : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-indigo-600 hover:border-indigo-200 shadow-2xs'
@@ -92,9 +92,9 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
         className="flex items-center justify-center"
       >
         {isDark ? (
-          <Sun className="w-4 h-4 sm:w-4.5 sm:h-4.5 stroke-[2.2]" />
+          <Sun className="w-4.5 h-4.5 stroke-[2.2]" />
         ) : (
-          <Moon className="w-4 h-4 sm:w-4.5 sm:h-4.5 stroke-[2.2]" />
+          <Moon className="w-4.5 h-4.5 stroke-[2.2]" />
         )}
       </motion.div>
     </button>

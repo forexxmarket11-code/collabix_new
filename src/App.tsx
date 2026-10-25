@@ -19,7 +19,7 @@ import { AgencyPage } from './components/AgencyPage';
 import { AdminLoginPage } from './components/AdminLoginPage';
 import { AdminDashboardPage } from './components/AdminDashboardPage';
 import { CreateBriefPage } from './components/CreateBriefPage';
-import { TrialReminderBanner } from './components/TrialReminderBanner';
+import { TrialReminderBanner, shouldShowTrialReminderBanner } from './components/TrialReminderBanner';
 import { CancelSubscriptionModal } from './components/CancelSubscriptionModal';
 import { ProUpgradeModal } from './components/ProUpgradeModal';
 import { CreatorPublicProfilePage } from './components/CreatorPublicProfilePage';
@@ -216,6 +216,8 @@ export default function App() {
 
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isTrialBannerDismissedLocally, setIsTrialBannerDismissedLocally] = useState(false);
+  const [isBloggerBannerActive, setIsBloggerBannerActive] = useState(false);
+  const [isPwaBannerVisibleOnMobile, setIsPwaBannerVisibleOnMobile] = useState(false);
 
   const handleConfirmCancelSubscription = async (reason: string, reasonDetails?: string) => {
     if (!currentUser?.uid) return;
@@ -586,8 +588,36 @@ export default function App() {
     );
   }
 
+  const isTrialBannerActive = Boolean(
+    !isUserRestricted &&
+      currentPage === 'profile' &&
+      shouldShowTrialReminderBanner(currentUser, isTrialBannerDismissedLocally)
+  );
+
+  const isBottomNavVisible = Boolean(
+    !isUserRestricted &&
+      currentPage !== 'edit-profile' &&
+      currentPage !== 'create-brief' &&
+      currentPage !== 'creator-profile'
+  );
+
+  const shouldSuppressPwaOnMobile = Boolean(
+    !isBottomNavVisible ||
+      currentPage === 'messages' ||
+      isTrialBannerActive ||
+      (!isUserRestricted && currentPage !== 'messages' && isBloggerBannerActive)
+  );
+
   return (
-    <div className="min-h-screen bg-[#F8FAFD] dark:bg-[#0B0F19] text-slate-900 dark:text-slate-100 flex flex-col antialiased selection:bg-indigo-600 selection:text-white transition-colors duration-300">
+    <div
+      className={`min-h-screen w-full max-w-full overflow-x-clip bg-[#F8FAFD] dark:bg-[#0B0F19] text-slate-900 dark:text-slate-100 flex flex-col antialiased selection:bg-indigo-600 selection:text-white transition-colors duration-300 ${
+        isBottomNavVisible && currentPage !== 'messages'
+          ? isPwaBannerVisibleOnMobile
+            ? 'pb-[calc(168px+env(safe-area-inset-bottom,0px))] sm:pb-28'
+            : 'pb-[calc(92px+env(safe-area-inset-bottom,0px))] sm:pb-28'
+          : ''
+      }`}
+    >
       {/* Top Navigation */}
       <Navbar
         onStartClick={handleStart}
@@ -604,8 +634,8 @@ export default function App() {
         onSelectBrief={handleSelectBriefFromNotification}
       />
 
-      {/* Main Content Areas with bottom spacing so floating pill dock never overlaps */}
-      <main className={`flex-1 ${currentPage === 'messages' ? 'pb-20 sm:pb-22 flex flex-col' : isUserRestricted ? 'pb-12' : 'pb-28 sm:pb-32'}`}>
+      {/* Main Content Areas */}
+      <main className={`flex-1 min-w-0 ${currentPage === 'messages' ? 'pb-[calc(88px+env(safe-area-inset-bottom,0px))] sm:pb-24 flex flex-col' : isUserRestricted ? 'pb-12' : 'pb-12 sm:pb-16'}`}>
         {/* If user is restricted (pending approval or rejected), strictly show PendingApprovalPage or EditProfilePage */}
         {isUserRestricted && currentPage !== 'edit-profile' && currentUser && (
           <PendingApprovalPage
@@ -616,7 +646,7 @@ export default function App() {
           />
         )}
 
-        {/* Dismissible Catalog & Pro Reminder Banner for Bloggers */}
+        {/* Dismissible Catalog & Pro Reminder Banner for Bloggers (suppressed on mobile if TrialReminderBanner is already showing) */}
         {!isUserRestricted && currentPage !== 'messages' && (
           <BloggerCatalogBanner
             user={currentUser}
@@ -624,6 +654,8 @@ export default function App() {
             currentPage={currentPage}
             onFillProfile={handleOpenEditProfile}
             onOpenProModal={() => setIsProModalOpen(true)}
+            suppressOnMobile={isTrialBannerActive}
+            onVisibilityChange={setIsBloggerBannerActive}
           />
         )}
 
@@ -858,7 +890,10 @@ export default function App() {
       />
 
       {/* PWA In-App Install Prompt Banner & Guide */}
-      <PWAInstallPrompt />
+      <PWAInstallPrompt
+        suppressOnMobile={shouldSuppressPwaOnMobile}
+        onVisibilityChange={setIsPwaBannerVisibleOnMobile}
+      />
     </div>
   );
 }

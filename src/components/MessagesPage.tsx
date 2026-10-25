@@ -331,14 +331,14 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser }) => {
       </div>
 
       {/* Main Telegram-style Container: 2 columns on desktop, full-screen swap on mobile */}
-      <div className="bg-white dark:bg-[#1A1A24] rounded-2xl sm:rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm overflow-hidden h-[calc(100dvh-130px)] sm:h-[calc(100vh-140px)] min-h-[520px] max-h-[820px] flex flex-col md:flex-row flex-1">
+      <div className="bg-white dark:bg-[#1A1A24] rounded-2xl sm:rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm overflow-hidden h-[calc(100dvh-152px-env(safe-area-inset-bottom,0px))] md:h-[calc(100vh-140px)] md:min-h-[520px] max-h-[820px] flex flex-col md:flex-row flex-1">
         
         {/* ================================================================= */}
         {/* 1-USTUN — SUHBATLAR RO'YXATI (Chat List)                          */}
         {/* ================================================================= */}
         <div
           id="chat-conversations-list-column"
-          className={`w-full md:w-80 lg:w-96 flex flex-col border-r border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#1A1A24] shrink-0 ${
+          className={`w-full md:w-80 lg:w-96 flex flex-col border-r border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#1A1A24] shrink-0 h-full ${
             mobileView === 'chat' ? 'hidden md:flex' : 'flex'
           }`}
         >
@@ -362,16 +362,16 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser }) => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Qidiruv (ism yoki xabar)..."
-                className="w-full pl-10 pr-9 py-2.5 rounded-xl bg-slate-50/80 dark:bg-[#12121A] border border-slate-200/80 dark:border-slate-700 text-xs sm:text-sm font-body text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-hidden focus:border-indigo-500 focus:bg-white dark:focus:bg-[#12121A] transition-all"
+                className="w-full min-h-[46px] pl-10 pr-11 py-2.5 rounded-xl bg-slate-50/80 dark:bg-[#12121A] border border-slate-200/80 dark:border-slate-700 text-base sm:text-sm font-body text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-hidden focus:border-indigo-500 focus:bg-white dark:focus:bg-[#12121A] transition-all"
               />
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                  className="absolute right-0.5 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
                   aria-label="Tozalash"
                 >
-                  <X className="w-3.5 h-3.5" />
+                  <X className="w-4 h-4" />
                 </button>
               )}
             </div>
@@ -425,17 +425,17 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser }) => {
                     <div className="min-w-0 flex-1">
                       {/* Name & Timestamp */}
                       <div className="flex items-center justify-between gap-1 mb-1">
-                        <span className="font-heading font-bold text-sm text-slate-900 dark:text-white truncate">
+                        <span className="font-heading font-bold text-[15px] sm:text-sm text-slate-900 dark:text-white truncate">
                           {chat.name}
                         </span>
-                        <span className="text-[11px] font-mono text-slate-400 dark:text-slate-500 shrink-0">
+                        <span className="text-xs font-mono text-slate-400 dark:text-slate-500 shrink-0">
                           {chat.lastMessageTime}
                         </span>
                       </div>
 
                       {/* Message Snippet & Unread Badge */}
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-xs text-slate-500 dark:text-[#D0D0D8] font-body truncate leading-snug">
+                        <p className="text-sm sm:text-xs text-slate-500 dark:text-[#D0D0D8] font-body truncate leading-snug">
                           {lastMsgObj?.sender === 'me' && (
                             <span className="text-indigo-600 dark:text-indigo-400 font-medium mr-1">Siz:</span>
                           )}
@@ -443,7 +443,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser }) => {
                         </p>
 
                         {chat.unreadCount > 0 && (
-                          <span className="px-2 py-0.5 min-w-[20px] h-5 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-[10.5px] font-bold font-mono flex items-center justify-center shrink-0 shadow-xs">
+                          <span className="px-2 py-0.5 min-w-[20px] h-5 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-[11px] font-bold font-mono flex items-center justify-center shrink-0 shadow-xs">
                             {chat.unreadCount}
                           </span>
                         )}
@@ -467,32 +467,42 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser }) => {
         <div
           id="chat-active-window-column"
           className={`w-full flex-1 flex flex-col bg-[#F9FAFC] dark:bg-[#12121A] ${
-            mobileView === 'list' ? 'hidden md:flex' : 'flex'
+            mobileView === 'list'
+              ? 'hidden md:flex'
+              : 'fixed inset-0 z-50 h-dvh md:static md:inset-auto md:z-auto md:h-auto flex'
           }`}
         >
           {!activeConversation ? (
             <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-[#F9FAFC] dark:bg-[#12121A]">
+              <button
+                type="button"
+                onClick={() => setMobileView('list')}
+                className="md:hidden mb-4 min-h-[44px] px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-heading font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2 cursor-pointer"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Roʻyxatga qaytish</span>
+              </button>
               <div className="w-16 h-16 rounded-3xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mb-3">
                 <MessageSquare className="w-8 h-8" />
               </div>
               <h3 className="font-heading font-bold text-base sm:text-lg text-slate-900 dark:text-white mb-1">
                 Hozircha xabarlar yoʻq
               </h3>
-              <p className="text-xs sm:text-sm text-slate-500 dark:text-[#D0D0D8] font-body max-w-sm">
+              <p className="text-[15px] sm:text-sm text-slate-500 dark:text-[#D0D0D8] font-body max-w-sm">
                 Kreatorlar yoki brendlar bilan boshlangan suhbatlar va takliflar shu yerda paydo boʻladi.
               </p>
             </div>
           ) : (
             <>
               {/* Active Chat Top Header */}
-              <div className="p-3 sm:p-4 bg-white dark:bg-[#1A1A24] border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-3 shadow-2xs z-10">
-            <div className="flex items-center gap-3 min-w-0">
+              <div className="px-2.5 py-2.5 sm:p-4 pt-[max(10px,env(safe-area-inset-top,0px))] sm:pt-4 bg-white dark:bg-[#1A1A24] border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-2 shadow-2xs z-10 shrink-0">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               {/* Back button for mobile */}
               <button
                 type="button"
                 id="btn-chat-back-to-list"
                 onClick={() => setMobileView('list')}
-                className="md:hidden p-2 -ml-1 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
+                className="md:hidden min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer shrink-0"
                 aria-label="Suhbatlar roʻyxatiga qaytish"
               >
                 <ArrowLeft className="w-5 h-5" />
@@ -517,20 +527,20 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser }) => {
 
               {/* Partner Name & Last Seen Status */}
               <div className="min-w-0">
-                <h3 className="font-heading font-bold text-sm sm:text-base text-slate-900 dark:text-white truncate flex items-center gap-2">
-                  <span>{activeConversation.name}</span>
+                <h3 className="font-heading font-bold text-[15px] sm:text-base text-slate-900 dark:text-white truncate flex items-center gap-2">
+                  <span className="truncate">{activeConversation.name}</span>
                   <span className="hidden sm:inline-block text-xs font-mono font-normal text-slate-400 dark:text-slate-500">
                     {activeConversation.handle}
                   </span>
                 </h3>
-                <p className="text-[11px] sm:text-xs font-body flex items-center gap-1.5 truncate">
+                <p className="text-xs font-body flex items-center gap-1.5 truncate">
                   {activeConversation.status === 'online' ? (
                     <span className="text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
                       onlayn
                     </span>
                   ) : (
-                    <span className="text-slate-400 dark:text-slate-500">
+                    <span className="text-slate-400 dark:text-slate-500 truncate">
                       {activeConversation.status}
                     </span>
                   )}
@@ -539,12 +549,12 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser }) => {
             </div>
 
             {/* Top Action Icons (Call, Video, More) */}
-            <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
+            <div className="flex items-center gap-0.5 sm:gap-1 text-slate-500 dark:text-slate-400 shrink-0">
               <button
                 type="button"
                 id="btn-chat-audio-call"
                 title="Qoʻngʻiroq qilish"
-                className="p-2 sm:p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer active:scale-95"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer active:scale-95"
               >
                 <Phone className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
@@ -552,7 +562,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser }) => {
                 type="button"
                 id="btn-chat-video-call"
                 title="Video aloqa"
-                className="p-2 sm:p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer active:scale-95"
+                className="hidden sm:flex min-w-[44px] min-h-[44px] items-center justify-center rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer active:scale-95"
               >
                 <Video className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
@@ -560,7 +570,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser }) => {
                 type="button"
                 id="btn-chat-more-options"
                 title="Qoʻshimcha sozlamalar"
-                className="p-2 sm:p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-white transition-colors cursor-pointer"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-white transition-colors cursor-pointer"
               >
                 <MoreVertical className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
@@ -571,7 +581,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser }) => {
           <div
             id="chat-messages-stream"
             ref={messagesContainerRef}
-            className="flex-1 p-3 sm:p-5 overflow-y-auto space-y-4 bg-gradient-to-b from-slate-50/60 to-white"
+            className="flex-1 min-h-0 p-3 sm:p-5 overflow-y-auto overscroll-contain space-y-4 bg-gradient-to-b from-slate-50/60 to-white dark:from-[#12121A] dark:to-[#12121A]"
           >
             {activeMessages.map((msg, index) => {
               const isMe = msg.sender === 'me';
@@ -583,7 +593,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser }) => {
                   {/* Date Divider (e.g. "16-Sentyabr") */}
                   {showDateDivider && msg.date && (
                     <div className="flex justify-center my-3">
-                      <span className="px-3.5 py-1 rounded-full bg-slate-200/80 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-heading font-semibold shadow-2xs backdrop-blur-xs">
+                      <span className="px-3.5 py-1 rounded-full bg-slate-200/80 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-heading font-semibold shadow-2xs backdrop-blur-xs">
                         {msg.date}
                       </span>
                     </div>
@@ -592,7 +602,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser }) => {
                   {/* Message Bubble Row */}
                   <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
                     <div
-                      className={`max-w-[88%] sm:max-w-[75%] md:max-w-[70%] rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm font-body leading-relaxed transition-all shadow-xs ${
+                      className={`max-w-[88%] sm:max-w-[75%] md:max-w-[70%] rounded-2xl px-3.5 py-2.5 text-[15px] sm:text-sm font-body leading-relaxed transition-all shadow-xs ${
                         isMe
                           ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-br-xs'
                           : 'bg-white dark:bg-[#1A1A24] text-slate-800 dark:text-slate-100 border border-slate-200/80 dark:border-slate-800 rounded-bl-xs'
@@ -638,7 +648,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser }) => {
                           <button
                             type="button"
                             onClick={() => toggleVoicePlay(msg.id)}
-                            className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 shadow-xs cursor-pointer transition-transform active:scale-90 ${
+                            className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 shadow-xs cursor-pointer transition-transform active:scale-90 ${
                               isMe
                                 ? 'bg-white text-indigo-600 hover:bg-slate-100'
                                 : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:opacity-95'
@@ -724,16 +734,16 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser }) => {
 
           {/* Attached File Preview Bar (before sending) */}
           {attachedFile && (
-            <div className="px-4 py-2 bg-indigo-50 border-t border-indigo-100 flex items-center justify-between text-xs text-indigo-900 font-heading">
-              <div className="flex items-center gap-2 truncate">
-                <Paperclip className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+            <div className="px-4 py-1.5 bg-indigo-50 dark:bg-indigo-950/60 border-t border-indigo-100 dark:border-indigo-900 flex items-center justify-between text-xs text-indigo-900 dark:text-indigo-200 font-heading shrink-0">
+              <div className="flex items-center gap-2 truncate min-w-0">
+                <Paperclip className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
                 <span className="truncate font-semibold">{attachedFile.name}</span>
-                <span className="text-indigo-500 font-mono text-[11px]">({attachedFile.size})</span>
+                <span className="text-indigo-500 dark:text-indigo-300 font-mono text-[11px] shrink-0">({attachedFile.size})</span>
               </div>
               <button
                 type="button"
                 onClick={() => setAttachedFile(null)}
-                className="p-1 hover:text-red-600 cursor-pointer"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center hover:text-red-600 cursor-pointer shrink-0"
                 title="Faylni olib tashlash"
               >
                 <X className="w-4 h-4" />
@@ -743,14 +753,14 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser }) => {
 
           {/* Quick Emoji Picker Popover */}
           {showEmojiPicker && (
-            <div className="p-2.5 bg-white dark:bg-[#1A1A24] border-t border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-2 overflow-x-auto no-scrollbar">
+            <div className="px-2.5 py-1.5 bg-white dark:bg-[#1A1A24] border-t border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-1 overflow-x-auto no-scrollbar shrink-0">
               <span className="text-xs text-slate-400 dark:text-slate-500 font-heading shrink-0 mr-1">Emojilar:</span>
               {popularEmojis.map((emoji) => (
                 <button
                   key={emoji}
                   type="button"
                   onClick={() => setInputText((prev) => prev + emoji)}
-                  className="text-lg p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-transform active:scale-125 cursor-pointer"
+                  className="text-lg min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-transform active:scale-125 cursor-pointer shrink-0"
                 >
                   {emoji}
                 </button>
@@ -759,14 +769,14 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser }) => {
           )}
 
           {/* Bottom Chat Input Bar */}
-          <div className="p-2.5 sm:p-3.5 bg-white dark:bg-[#1A1A24] border-t border-slate-200/80 dark:border-slate-800">
-            <form onSubmit={handleSendMessage} className="flex items-end gap-2">
+          <div className="px-2 sm:p-3.5 pt-2 pb-[max(10px,env(safe-area-inset-bottom,0px))] sm:pb-3.5 bg-white dark:bg-[#1A1A24] border-t border-slate-200/80 dark:border-slate-800 shrink-0">
+            <form onSubmit={handleSendMessage} className="flex items-end gap-1.5 sm:gap-2">
               {/* Emoji Button */}
               <button
                 type="button"
                 id="btn-chat-toggle-emoji"
                 onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                className={`p-2.5 rounded-xl transition-colors cursor-pointer shrink-0 ${
+                className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl transition-colors cursor-pointer shrink-0 ${
                   showEmojiPicker
                     ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400'
                     : 'text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -789,14 +799,14 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser }) => {
                 type="button"
                 id="btn-chat-attach-file"
                 onClick={() => fileInputRef.current?.click()}
-                className="p-2.5 rounded-xl text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
                 title="Fayl biriktirish"
               >
                 <Paperclip className="w-5 h-5" />
               </button>
 
               {/* Auto-expanding Input Field */}
-              <div className="flex-1 bg-slate-50/80 dark:bg-[#12121A] rounded-2xl border border-slate-200/80 dark:border-slate-700 px-3.5 py-1.5 focus-within:bg-white dark:focus-within:bg-[#12121A] focus-within:border-indigo-500 transition-all flex items-center">
+              <div className="flex-1 min-w-0 bg-slate-50/80 dark:bg-[#12121A] rounded-2xl border border-slate-200/80 dark:border-slate-700 px-3.5 py-1.5 min-h-[44px] focus-within:bg-white dark:focus-within:bg-[#12121A] focus-within:border-indigo-500 transition-all flex items-center">
                 <textarea
                   ref={textareaRef}
                   id="chat-textarea-input"
@@ -804,8 +814,15 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser }) => {
                   value={inputText}
                   onChange={handleTextChange}
                   onKeyDown={handleKeyDown}
+                  onFocus={() => {
+                    setTimeout(() => {
+                      if (messagesContainerRef.current) {
+                        messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+                      }
+                    }, 250);
+                  }}
                   placeholder="Xabar yozing..."
-                  className="w-full bg-transparent border-0 resize-none text-xs sm:text-sm font-body text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-hidden py-1 max-h-28 overflow-y-auto leading-relaxed"
+                  className="w-full bg-transparent border-0 resize-none text-base sm:text-sm font-body text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-hidden py-1 max-h-28 overflow-y-auto leading-relaxed"
                 />
               </div>
 
@@ -814,7 +831,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser }) => {
                 <button
                   type="submit"
                   id="btn-chat-send-message"
-                  className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-indigo-600/25 active:scale-95 transition-all cursor-pointer"
+                  className="w-11 h-11 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-indigo-600/25 active:scale-95 transition-all cursor-pointer"
                   title="Yuborish"
                   aria-label="Xabarni yuborish"
                 >
@@ -825,7 +842,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ currentUser }) => {
                   type="button"
                   id="btn-chat-send-voice"
                   onClick={handleSendVoiceNote}
-                  className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center justify-center shrink-0 transition-all cursor-pointer active:scale-95"
+                  className="w-11 h-11 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center justify-center shrink-0 transition-all cursor-pointer active:scale-95"
                   title="Ovozli xabar yuborish"
                   aria-label="Ovozli xabar yuborish"
                 >

@@ -66,13 +66,13 @@ export const ReferralPage: React.FC<ReferralPageProps> = ({
   ];
 
   return (
-    <div className="min-h-screen pb-32 pt-6 sm:pt-10 px-4 sm:px-6 max-w-5xl mx-auto animate-in fade-in duration-300">
+    <div className="min-h-screen pb-28 sm:pb-32 pt-4 sm:pt-10 px-4 sm:px-6 max-w-5xl mx-auto animate-in fade-in duration-300">
       {/* Back to Home Breadcrumb */}
-      <div className="mb-6">
+      <div className="mb-5 sm:mb-6">
         <button
           type="button"
           onClick={onBackToHome}
-          className="inline-flex items-center gap-2 text-xs sm:text-sm font-heading font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer group"
+          className="inline-flex items-center gap-2 min-h-[44px] py-2 text-xs sm:text-sm font-heading font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer group"
         >
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
           <span>Bosh sahifaga qaytish</span>
@@ -80,7 +80,7 @@ export const ReferralPage: React.FC<ReferralPageProps> = ({
       </div>
 
       {/* Hero Header Card */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 text-white p-7 sm:p-10 md:p-12 border border-indigo-500/20 shadow-xl mb-10">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 text-white p-6 sm:p-10 md:p-12 border border-indigo-500/20 shadow-xl mb-10">
         <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-br from-pink-500/20 via-purple-500/20 to-transparent rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-10 w-60 h-60 bg-indigo-500/15 rounded-full blur-2xl pointer-events-none" />
 
@@ -99,17 +99,17 @@ export const ReferralPage: React.FC<ReferralPageProps> = ({
             mukofot oling
           </h1>
 
-          <p className="mt-4 text-sm sm:text-base text-slate-300 font-body leading-relaxed">
+          <p className="mt-4 text-[15px] sm:text-base text-slate-300 font-body leading-relaxed">
             Collabix platformasini kengaytirishga hissa qoʻshing va har bir yangi faol obunachidan daromad oling.
             Dastur blogerlar, brendlar va barcha ijodkorlar uchun birdek ochiq!
           </p>
 
-          <div className="mt-6 flex flex-wrap items-center gap-3">
+          <div className="mt-6 flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3">
             <button
               type="button"
               id="btn-referral-hero-start"
               onClick={onOpenRegister}
-              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-400 hover:to-pink-400 text-white font-heading font-bold text-sm shadow-lg shadow-indigo-500/25 active:scale-98 transition-all cursor-pointer"
+              className="w-full sm:w-auto min-h-[48px] inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-400 hover:to-pink-400 text-white font-heading font-bold text-sm shadow-lg shadow-indigo-500/25 active:scale-98 transition-all cursor-pointer"
             >
               <span>Dasturda ishtirok etish</span>
               <ArrowRight className="w-4 h-4" />
@@ -117,7 +117,7 @@ export const ReferralPage: React.FC<ReferralPageProps> = ({
             <button
               type="button"
               onClick={onBackToHome}
-              className="inline-flex items-center gap-2 px-5 py-3.5 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-heading font-semibold text-sm border border-white/15 backdrop-blur-xs transition-colors cursor-pointer"
+              className="w-full sm:w-auto min-h-[48px] inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-heading font-semibold text-sm border border-white/15 backdrop-blur-xs transition-colors cursor-pointer"
             >
               <span>Katalogni koʻrish</span>
             </button>
@@ -134,7 +134,7 @@ export const ReferralPage: React.FC<ReferralPageProps> = ({
           <h2 className="font-heading font-extrabold text-2xl sm:text-3xl text-slate-900 dark:text-white mt-1">
             Dastur qanday ishlaydi?
           </h2>
-          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-body mt-2">
+          <p className="text-[15px] sm:text-sm text-slate-600 dark:text-slate-400 font-body mt-2">
             Murakkab shartlar yoʻq — 3 ta qadam orqali daromad olishni boshlang:
           </p>
         </div>
@@ -167,7 +167,7 @@ export const ReferralPage: React.FC<ReferralPageProps> = ({
                     {s.title}
                   </h3>
 
-                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-body leading-relaxed">
+                  <p className="text-[15px] sm:text-sm text-slate-600 dark:text-slate-400 font-body leading-relaxed">
                     {s.desc}
                   </p>
                 </div>
@@ -178,7 +178,7 @@ export const ReferralPage: React.FC<ReferralPageProps> = ({
       </div>
 
       {/* Comparison & Revenue Highlight Card */}
-      <div className="bg-gradient-to-br from-indigo-50 via-white to-pink-50 dark:from-[#1A1A28] dark:via-[#161622] dark:to-[#1A1A28] rounded-3xl border border-indigo-100 dark:border-slate-800 p-6 sm:p-8 md:p-10 mb-12 shadow-sm">
+      <div className="bg-gradient-to-br from-indigo-50 via-white to-pink-50 dark:from-[#1A1A28] dark:via-[#161622] dark:to-[#1A1A28] rounded-3xl border border-indigo-100 dark:border-slate-800 p-5 sm:p-8 md:p-10 mb-12 shadow-sm">
         <div className="max-w-3xl mx-auto text-center">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-100/80 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 text-xs font-heading font-bold mb-3">
             <Coins className="w-3.5 h-3.5" />
@@ -189,7 +189,7 @@ export const ReferralPage: React.FC<ReferralPageProps> = ({
             Har bir obuna summasining qariyb 50% qismi — sizniki!
           </h3>
 
-          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-body mt-2 mb-8">
+          <p className="text-[15px] sm:text-sm text-slate-600 dark:text-slate-400 font-body mt-2 mb-8">
             Collabix oylik obunasi doʻstingiz uchun hamyonbop va qulay, siz uchun esa sezilarli naqd ragʻbat.
           </p>
 
@@ -219,20 +219,20 @@ export const ReferralPage: React.FC<ReferralPageProps> = ({
           </div>
 
           {/* Calculator preview text */}
-          <div className="mt-8 p-4 rounded-2xl bg-white/80 dark:bg-[#12121A]/80 border border-indigo-100/80 dark:border-slate-800 max-w-xl mx-auto text-xs sm:text-sm text-slate-700 dark:text-slate-300 font-body flex items-center justify-around gap-2 text-center">
-            <div>
-              <span className="block font-mono font-bold text-base text-slate-900 dark:text-white">5 kishi</span>
-              <span className="text-xs text-slate-500 dark:text-slate-400">145 000 soʻm</span>
+          <div className="mt-8 px-2.5 py-3.5 sm:p-4 rounded-2xl bg-white/80 dark:bg-[#12121A]/80 border border-indigo-100/80 dark:border-slate-800 max-w-xl mx-auto text-xs sm:text-sm text-slate-700 dark:text-slate-300 font-body flex items-center justify-around gap-1.5 sm:gap-2 text-center">
+            <div className="min-w-0">
+              <span className="block font-mono font-bold text-sm sm:text-base text-slate-900 dark:text-white">5 kishi</span>
+              <span className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">145 000 soʻm</span>
             </div>
-            <div className="h-6 w-px bg-slate-200 dark:bg-slate-700" />
-            <div>
-              <span className="block font-mono font-bold text-base text-slate-900 dark:text-white">10 kishi</span>
-              <span className="text-xs text-emerald-600 dark:text-emerald-400 font-bold">290 000 soʻm</span>
+            <div className="h-6 w-px bg-slate-200 dark:bg-slate-700 shrink-0" />
+            <div className="min-w-0">
+              <span className="block font-mono font-bold text-sm sm:text-base text-slate-900 dark:text-white">10 kishi</span>
+              <span className="text-[11px] sm:text-xs text-emerald-600 dark:text-emerald-400 font-bold">290 000 soʻm</span>
             </div>
-            <div className="h-6 w-px bg-slate-200 dark:bg-slate-700" />
-            <div>
-              <span className="block font-mono font-bold text-base text-slate-900 dark:text-white">30 kishi</span>
-              <span className="text-xs text-indigo-600 dark:text-indigo-400 font-bold">870 000 soʻm</span>
+            <div className="h-6 w-px bg-slate-200 dark:bg-slate-700 shrink-0" />
+            <div className="min-w-0">
+              <span className="block font-mono font-bold text-sm sm:text-base text-slate-900 dark:text-white">30 kishi</span>
+              <span className="text-[11px] sm:text-xs text-indigo-600 dark:text-indigo-400 font-bold">870 000 soʻm</span>
             </div>
           </div>
         </div>
@@ -248,11 +248,11 @@ export const ReferralPage: React.FC<ReferralPageProps> = ({
             key={idx}
             className="bg-white dark:bg-[#1A1A24] rounded-2xl border border-slate-200/90 dark:border-slate-800 p-5 shadow-2xs"
           >
-            <h4 className="font-heading font-bold text-sm sm:text-base text-slate-900 dark:text-white mb-1.5 flex items-center gap-2">
+            <h4 className="font-heading font-bold text-base text-slate-900 dark:text-white mb-1.5 flex items-center gap-2">
               <HelpCircle className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
               <span>{b.title}</span>
             </h4>
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-body leading-relaxed pl-6">
+            <p className="text-[15px] sm:text-sm text-slate-600 dark:text-slate-400 font-body leading-relaxed pl-6">
               {b.desc}
             </p>
           </div>
@@ -260,17 +260,17 @@ export const ReferralPage: React.FC<ReferralPageProps> = ({
       </div>
 
       {/* Bottom Final CTA */}
-      <div className="mt-12 text-center bg-slate-900 text-white rounded-3xl p-8 sm:p-10 max-w-3xl mx-auto shadow-md">
+      <div className="mt-12 text-center bg-slate-900 text-white rounded-3xl p-6 sm:p-10 max-w-3xl mx-auto shadow-md">
         <h3 className="font-heading font-extrabold text-xl sm:text-2xl mb-2">
           Hozirdan boshlab doʻstlaringizga Collabix haqida soʻzlab bering!
         </h3>
-        <p className="text-xs sm:text-sm text-slate-300 mb-6 max-w-lg mx-auto">
+        <p className="text-[15px] sm:text-sm text-slate-300 mb-6 max-w-lg mx-auto">
           Hisobingizni roʻyxatdan oʻtkazing yoki mavjud profilingiz orqali platformaga kiring.
         </p>
         <button
           type="button"
           onClick={onOpenRegister}
-          className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white font-heading font-bold text-sm shadow-md cursor-pointer hover:opacity-95 transition-opacity"
+          className="w-full sm:w-auto min-h-[48px] inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white font-heading font-bold text-sm shadow-md cursor-pointer hover:opacity-95 transition-opacity"
         >
           <span>Roʻyxatdan oʻtish / Kirish</span>
           <ArrowRight className="w-4 h-4" />

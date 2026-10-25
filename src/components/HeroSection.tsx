@@ -48,6 +48,14 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   // Zero React re-renders (direct DOM ref update), stops calculating once scrolled past hero.
   // Never affects GeometricVisualShowcase, cards, or subsequent sections.
   useEffect(() => {
+    if (
+      typeof window === 'undefined' ||
+      window.innerWidth < 640 ||
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    ) {
+      return;
+    }
+
     let ticking = false;
     let isPastHero = false;
     let rafId: number | null = null;
@@ -167,7 +175,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           {/* Main Headline: Bold, Grammatically Natural Uzbek */}
           <h1
             id="hero-headline"
-            className="text-4xl sm:text-5xl lg:text-[54px] font-extrabold tracking-tight text-slate-900 dark:text-white leading-[1.18] sm:leading-[1.16] lg:leading-[1.15] mb-5 pb-1 font-heading h-auto"
+            className="text-[32px] sm:text-5xl lg:text-[54px] font-extrabold tracking-tight text-slate-900 dark:text-white leading-[1.18] sm:leading-[1.16] lg:leading-[1.15] mb-4 sm:mb-5 pb-1 font-heading h-auto"
           >
             <span className="block">
               <span
@@ -209,7 +217,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           {/* Description (1 concise line, natural Uzbek grammar) */}
           <p
             id="hero-description"
-            className={`text-base sm:text-lg text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl mb-7 font-body transition-all duration-500 ease-out ${
+            className={`text-[15.5px] sm:text-lg text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl mb-6 sm:mb-7 font-body transition-all duration-500 ease-out ${
               !jsMounted || animStep >= 2
                 ? 'opacity-100 translate-y-0'
                 : 'opacity-0 translate-y-4'
@@ -221,13 +229,13 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           {/* Three Colorful Trust Badges (Color backgrounds, checkmarks, clear borders) */}
           <div
             id="hero-trust-pills"
-            className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 mb-8"
+            className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mb-7 sm:mb-8"
           >
             {trustBadges.map((badge, idx) => (
               <div
                 key={badge.label}
                 id={`trust-pill-${idx}`}
-                className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border shadow-xs text-xs sm:text-sm font-heading font-semibold transition-all duration-400 ease-out ${
+                className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border shadow-xs text-[13px] sm:text-sm font-heading font-semibold transition-all duration-400 ease-out ${
                   badge.badgeClass
                 } ${
                   !jsMounted || animStep >= 3
@@ -251,7 +259,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           {/* CTA Button: Vivid, colorful primary action button */}
           <div
             id="hero-cta-group"
-            className={`flex items-center justify-center transition-all duration-500 ease-out ${
+            className={`w-full sm:w-auto flex items-center justify-center transition-all duration-500 ease-out ${
               !jsMounted || animStep >= 4
                 ? 'opacity-100 translate-y-0'
                 : 'opacity-0 translate-y-4'
@@ -260,30 +268,30 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             <button
               id="btn-hero-start"
               onClick={onStartClick}
-              className="group relative inline-flex items-center justify-center gap-3 w-full sm:w-auto px-8 sm:px-10 py-3.5 sm:py-4 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-heading font-bold text-base sm:text-lg tracking-tight shadow-xl shadow-indigo-600/25 hover:shadow-indigo-600/35 active:scale-[0.98] transition-all duration-150 cursor-pointer"
+              className="group relative inline-flex items-center justify-center gap-3 w-full sm:w-auto min-h-[50px] px-8 sm:px-10 py-3.5 sm:py-4 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-heading font-bold text-base sm:text-lg tracking-tight shadow-xl shadow-indigo-600/25 hover:shadow-indigo-600/35 active:scale-[0.98] transition-all duration-150 cursor-pointer"
             >
               <span>Boshlash</span>
-              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5] group-hover:translate-x-1.5 transition-transform" />
+              <ArrowRight className="w-4.5 h-4.5 sm:w-5 sm:h-5 stroke-[2.5] group-hover:translate-x-1.5 transition-transform" />
             </button>
           </div>
 
           {/* Fast Quality Reassurance Indicators (Zero price words) */}
           <div
             id="hero-quality-strip"
-            className={`mt-8 pt-5 border-t border-slate-200/80 dark:border-slate-800 flex flex-wrap items-center justify-center gap-6 text-xs text-slate-500 dark:text-slate-400 font-mono transition-all duration-500 ease-out ${
+            className={`mt-7 sm:mt-8 pt-5 border-t border-slate-200/80 dark:border-slate-800 flex flex-wrap items-center justify-center gap-x-5 gap-y-2.5 sm:gap-6 text-xs sm:text-xs text-slate-600 dark:text-slate-300 font-mono transition-all duration-500 ease-out ${
               !jsMounted || animStep >= 4 ? 'opacity-100' : 'opacity-0'
             }`}
           >
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
               <span className="font-medium text-slate-700 dark:text-slate-300">500+ faol kreatorlar</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-indigo-500" />
+              <span className="w-2 h-2 rounded-full bg-indigo-500 shrink-0" />
               <span className="font-medium text-slate-700 dark:text-slate-300">O'rtacha 24 soatda kelishuv</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-orange-500" />
+              <span className="w-2 h-2 rounded-full bg-orange-500 shrink-0" />
               <span className="font-medium text-slate-700 dark:text-slate-300">98% rejalashtirilgan qamrov</span>
             </div>
           </div>

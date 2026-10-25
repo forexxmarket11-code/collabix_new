@@ -36,12 +36,12 @@ export const AgencyBanner: React.FC<AgencyBannerProps> = ({ onLearnMore }) => {
             </h2>
 
             {/* Description paragraph as requested */}
-            <p className="mt-3 text-sm sm:text-base text-slate-300 font-body leading-relaxed">
+            <p className="mt-3 text-[15px] sm:text-base text-slate-300 font-body leading-relaxed">
               Mijozlaringizga kreator topib berish endi osonroq. Collabix orqali mijoz yuboring — oʻzingiz bepul Pro hisob va har oylik komissiya olasiz.
             </p>
 
             {/* Micro badges for credibility */}
-            <div className="flex flex-wrap items-center gap-4 sm:gap-6 mt-4 pt-3 border-t border-white/10 text-xs sm:text-sm text-slate-300 font-body">
+            <div className="flex flex-wrap items-center gap-3.5 sm:gap-6 mt-4 pt-3 border-t border-white/10 text-[13px] sm:text-sm text-slate-300 font-body">
               <div className="flex items-center gap-1.5">
                 <Zap className="w-4 h-4 text-amber-400 shrink-0" />
                 <span>Cheksiz bepul Pro hisob</span>
@@ -60,7 +60,7 @@ export const AgencyBanner: React.FC<AgencyBannerProps> = ({ onLearnMore }) => {
           {/* Right CTA Box */}
           <div className="flex flex-col sm:flex-row lg:flex-col items-stretch sm:items-center lg:items-end justify-between gap-4 shrink-0">
             {/* Quick Benefits Highlight Card */}
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 sm:p-5 border border-white/15 text-center sm:text-right min-w-[240px]">
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 sm:p-5 border border-white/15 text-center sm:text-right sm:min-w-[240px]">
               <span className="block text-[11px] font-heading font-semibold uppercase tracking-wider text-indigo-300">
                 Agentliklar uchun bonus
               </span>
@@ -78,7 +78,7 @@ export const AgencyBanner: React.FC<AgencyBannerProps> = ({ onLearnMore }) => {
               type="button"
               id="btn-agency-banner-learn-more"
               onClick={onLearnMore}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-400 hover:via-purple-400 hover:to-pink-400 text-white font-heading font-bold text-sm sm:text-base shadow-lg shadow-purple-600/30 transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98] group"
+              className="w-full sm:w-auto min-h-[48px] inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-400 hover:via-purple-400 hover:to-pink-400 text-white font-heading font-bold text-[15px] sm:text-base shadow-lg shadow-purple-600/30 transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98] group"
             >
               <span>Batafsil maʼlumot</span>
               <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />

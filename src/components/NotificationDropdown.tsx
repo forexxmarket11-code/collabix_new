@@ -110,13 +110,13 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
         aria-label="Bildirishnomalar"
         aria-expanded={isOpen}
         title="Bildirishnomalar"
-        className={`relative p-2 rounded-xl border transition-all cursor-pointer ${
+        className={`relative min-w-[44px] min-h-[44px] p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-center ${
           isOpen
             ? 'border-indigo-500 bg-indigo-50/80 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 ring-2 ring-indigo-500/20'
             : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/70 hover:text-indigo-600 dark:hover:text-indigo-400'
         }`}
       >
-        <Bell className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+        <Bell className="w-4.5 h-4.5" />
 
         {/* Unread Red Badge */}
         {unreadCount > 0 && (
@@ -133,56 +133,57 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
       {isOpen && (
         <div
           id="notifications-dropdown-menu"
-          className="absolute right-0 mt-2 w-[340px] sm:w-[390px] max-w-[92vw] rounded-2xl bg-white dark:bg-[#181822] border border-slate-200 dark:border-slate-800 shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+          className="fixed left-3 right-3 top-[70px] sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-[390px] max-h-[calc(100dvh-96px)] flex flex-col rounded-2xl bg-white dark:bg-[#181822] border border-slate-200 dark:border-slate-800 shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150"
         >
           {/* Header */}
-          <div className="p-3.5 sm:p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 bg-slate-50/70 dark:bg-[#13131C]">
-            <div className="flex items-center gap-2">
-              <span className="font-heading font-extrabold text-sm sm:text-base text-slate-900 dark:text-white">
+          <div className="px-4 py-2.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 bg-slate-50/70 dark:bg-[#13131C] shrink-0">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="font-heading font-extrabold text-[15px] sm:text-base text-slate-900 dark:text-white truncate">
                 Bildirishnomalar
               </span>
               {unreadCount > 0 && (
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-heading font-bold bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/60">
+                <span className="px-2 py-0.5 rounded-full text-[11px] font-heading font-bold bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/60 shrink-0">
                   {unreadCount} ta yangi
                 </span>
               )}
             </div>
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 shrink-0">
               {unreadCount > 0 && (
                 <button
                   type="button"
                   id="btn-mark-all-read"
                   onClick={handleMarkAllAsRead}
-                  className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-heading font-semibold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1 min-h-[44px] px-2.5 rounded-xl text-xs font-heading font-semibold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 transition-colors cursor-pointer"
                   title="Barchasini o'qilgan deb belgilash"
                 >
-                  <CheckCheck className="w-3.5 h-3.5" />
-                  <span>O'qilgan qilish</span>
+                  <CheckCheck className="w-4 h-4 shrink-0" />
+                  <span className="hidden xs:inline sm:inline">O'qilgan</span>
                 </button>
               )}
               <button
                 type="button"
                 id="btn-close-notifications"
                 onClick={() => setIsOpen(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors"
+                aria-label="Yopish"
+                className="min-w-[44px] min-h-[44px] p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors flex items-center justify-center"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
           </div>
 
           {/* Notifications List */}
-          <div className="max-h-[380px] overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/80">
+          <div className="max-h-[380px] overflow-y-auto overscroll-contain divide-y divide-slate-100 dark:divide-slate-800/80">
             {notifications.length === 0 ? (
               <div className="py-12 px-6 text-center">
                 <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-500 dark:text-indigo-400 flex items-center justify-center mx-auto mb-3">
                   <Bell className="w-6 h-6 stroke-[1.8]" />
                 </div>
-                <h4 className="font-heading font-bold text-sm text-slate-800 dark:text-slate-200 mb-1">
+                <h4 className="font-heading font-bold text-[15px] text-slate-800 dark:text-slate-200 mb-1">
                   Hozircha yangi bildirishnomalar yo'q
                 </h4>
-                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-[260px] mx-auto leading-relaxed">
+                <p className="text-sm text-slate-500 dark:text-slate-400 max-w-[260px] mx-auto leading-relaxed">
                   Brendlardan yangi briflar va takliflar yuborilganda bu yerda ko'rinadi.
                 </p>
               </div>
@@ -196,7 +197,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                     key={notif.id}
                     type="button"
                     onClick={() => handleItemClick(notif)}
-                    className={`w-full text-left p-3.5 sm:p-4 flex items-start gap-3 transition-colors cursor-pointer group ${
+                    className={`w-full text-left p-3.5 sm:p-4 flex items-start gap-3 transition-colors cursor-pointer group min-h-[64px] ${
                       !notif.read
                         ? 'bg-indigo-50/40 dark:bg-indigo-950/20 hover:bg-indigo-50/70 dark:hover:bg-indigo-950/40'
                         : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'
@@ -208,6 +209,8 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                         <img
                           src={notif.senderAvatar}
                           alt={notif.senderName || 'Brend'}
+                          loading="lazy"
+                          decoding="async"
                           className="w-10 h-10 rounded-xl object-cover border border-slate-200 dark:border-slate-700"
                         />
                       ) : (
@@ -247,16 +250,16 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                     {/* Content */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-1 mb-1">
-                        <span className="text-[10px] font-heading font-extrabold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                        <span className="text-[11px] font-heading font-extrabold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
                           {isBrief ? 'Yangi Brif' : isApplication ? 'Ariza keldi' : 'Bildirishnoma'}
                         </span>
-                        <span className="text-[10px] font-mono text-slate-400 shrink-0">
+                        <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 shrink-0">
                           {formatUzbekRelativeTime(notif.createdAt)}
                         </span>
                       </div>
 
                       <p
-                        className={`text-xs sm:text-[13px] leading-snug line-clamp-2 ${
+                        className={`text-sm sm:text-[13px] leading-snug line-clamp-2 break-words ${
                           !notif.read
                             ? 'font-bold text-slate-900 dark:text-white'
                             : 'font-medium text-slate-700 dark:text-slate-300'
@@ -266,9 +269,9 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                       </p>
 
                       {notif.briefTitle && (
-                        <div className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-medium max-w-full truncate">
+                        <div className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-medium max-w-full truncate">
                           <span className="truncate">Vazifa: "{notif.briefTitle}"</span>
-                          <ExternalLink className="w-2.5 h-2.5 shrink-0 opacity-60 group-hover:opacity-100" />
+                          <ExternalLink className="w-3 h-3 shrink-0 opacity-60 group-hover:opacity-100" />
                         </div>
                       )}
                     </div>
@@ -285,14 +288,14 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
 
           {/* Footer - Optional Browser Push permission prompt */}
           {!hasPermission && typeof window !== 'undefined' && 'Notification' in window && (
-            <div className="p-3 bg-slate-50 dark:bg-[#12121A] border-t border-slate-100 dark:border-slate-800 text-center">
+            <div className="p-2.5 bg-slate-50 dark:bg-[#12121A] border-t border-slate-100 dark:border-slate-800 text-center shrink-0">
               <button
                 type="button"
                 id="btn-enable-browser-notifications"
                 onClick={handleEnableBrowserNotifications}
-                className="inline-flex items-center gap-1.5 text-[11px] font-heading font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
+                className="inline-flex items-center justify-center gap-1.5 min-h-[44px] px-3 text-xs font-heading font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
               >
-                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                <Sparkles className="w-4 h-4 text-amber-500" />
                 <span>Brauzer bildirishnomalarini yoqish</span>
               </button>
             </div>

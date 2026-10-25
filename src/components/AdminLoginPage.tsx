@@ -147,16 +147,16 @@ export function AdminLoginPage({ onLoginSuccess, onGoHome }: AdminLoginPageProps
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFD] flex flex-col justify-center items-center px-4 py-12">
+    <div className="min-h-screen w-full max-w-full overflow-x-clip bg-[#F8FAFD] dark:bg-[#0E0E15] flex flex-col justify-center items-center px-4 py-8 sm:py-12">
       {/* Back to Home Button */}
-      <div className="w-full max-w-sm mb-4">
+      <div className="w-full max-w-sm mb-3 sm:mb-4">
         <button
           type="button"
           onClick={onGoHome}
           id="btn-admin-back-home"
-          className="inline-flex items-center gap-2 text-xs font-heading font-medium text-slate-500 hover:text-slate-900 transition-colors"
+          className="inline-flex items-center gap-2 min-h-[44px] py-2 text-xs sm:text-sm font-heading font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
         >
-          <ArrowLeft className="w-3.5 h-3.5" />
+          <ArrowLeft className="w-4 h-4" />
           <span>Saytga qaytish</span>
         </button>
       </div>
@@ -190,7 +190,18 @@ export function AdminLoginPage({ onLoginSuccess, onGoHome }: AdminLoginPageProps
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form
+          onSubmit={handleSubmit}
+          onFocusCapture={(e) => {
+            const target = e.target as HTMLElement;
+            if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
+              setTimeout(() => {
+                target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+              }, 250);
+            }
+          }}
+          className="space-y-4"
+        >
           <div>
             <label
               htmlFor="admin-username"
@@ -208,7 +219,7 @@ export function AdminLoginPage({ onLoginSuccess, onGoHome }: AdminLoginPageProps
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Login kiriting"
-                className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-body text-slate-900 dark:text-white bg-slate-50/50 dark:bg-[#12121A] focus:bg-white dark:focus:bg-[#161622] focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-600 transition-colors disabled:opacity-60"
+                className="w-full min-h-[48px] pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-base sm:text-sm font-body text-slate-900 dark:text-white bg-slate-50/50 dark:bg-[#12121A] focus:bg-white dark:focus:bg-[#161622] focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-600 transition-colors disabled:opacity-60"
               />
             </div>
           </div>
@@ -230,7 +241,7 @@ export function AdminLoginPage({ onLoginSuccess, onGoHome }: AdminLoginPageProps
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-body text-slate-900 dark:text-white bg-slate-50/50 dark:bg-[#12121A] focus:bg-white dark:focus:bg-[#161622] focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-600 transition-colors disabled:opacity-60"
+                className="w-full min-h-[48px] pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-base sm:text-sm font-body text-slate-900 dark:text-white bg-slate-50/50 dark:bg-[#12121A] focus:bg-white dark:focus:bg-[#161622] focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-600 transition-colors disabled:opacity-60"
               />
             </div>
           </div>
@@ -240,7 +251,7 @@ export function AdminLoginPage({ onLoginSuccess, onGoHome }: AdminLoginPageProps
               type="submit"
               disabled={isLoading || isLocked}
               id="btn-admin-submit-login"
-              className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-sm font-heading font-semibold shadow-xs hover:shadow transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+              className="w-full min-h-[48px] py-3 px-4 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-sm font-heading font-semibold shadow-xs hover:shadow transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
             >
               {isLoading ? (
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />

@@ -77,7 +77,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
     <aside
       id="bottom-navigation-container"
       aria-label="Pastki suzuvchi navigatsiya paneli"
-      className="fixed bottom-4 sm:bottom-6 inset-x-0 z-40 flex justify-center pointer-events-none px-3.5 pb-[env(safe-area-inset-bottom,0px)]"
+      className="fixed bottom-0 inset-x-0 z-40 flex justify-center pointer-events-none px-2.5 sm:px-4 pt-2 pb-[max(12px,calc(env(safe-area-inset-bottom,0px)+8px))] sm:pb-[max(20px,calc(env(safe-area-inset-bottom,0px)+12px))]"
     >
       {/* Floating Pill Capsule Dock */}
       <nav
@@ -98,7 +98,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
               type="button"
               onClick={() => handleItemClick(item)}
               aria-current={isActive ? 'page' : undefined}
-              className={`relative flex-1 flex flex-col items-center justify-center py-2 px-1.5 rounded-full transition-all duration-200 cursor-pointer min-w-0 group outline-none ${
+              className={`relative flex-1 flex flex-col items-center justify-center min-h-[48px] min-w-[44px] py-1.5 px-1 sm:px-2 rounded-full transition-all duration-200 cursor-pointer group outline-none ${
                 isActive ? 'text-white' : 'text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -150,7 +150,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
 
               {/* Label */}
               <span
-                className={`relative z-10 text-[10px] sm:text-[11px] font-heading tracking-tight mt-1 transition-all duration-200 truncate max-w-full leading-none ${
+                className={`relative z-10 text-[10.5px] sm:text-[11px] font-heading tracking-tight mt-1 transition-all duration-200 truncate max-w-full leading-none ${
                   isActive
                     ? 'font-extrabold text-white scale-100'
                     : 'font-medium text-slate-400 group-hover:text-slate-200'

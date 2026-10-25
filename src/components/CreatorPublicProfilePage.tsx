@@ -221,7 +221,7 @@ const ContactUnlockSection: React.FC<ContactUnlockSectionProps> = ({
       {/* 2. Ikkita qator: "TELEFON" va "TELEGRAM" — qiymatlari xiralashtirilgan (blur) holatda */}
       <div className="space-y-3">
         {/* TELEFON */}
-        <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[#12121A] border border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-3">
+        <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-50 dark:bg-[#12121A] border border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-2.5 sm:gap-3">
           <div className="min-w-0 flex-1">
             <span className="block text-[11px] font-heading font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
               TELEFON
@@ -235,7 +235,7 @@ const ContactUnlockSection: React.FC<ContactUnlockSectionProps> = ({
             ) : (
               <a
                 href={`tel:${rawPhone}`}
-                className="font-mono font-bold text-sm sm:text-base text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center gap-2"
+                className="font-mono font-bold text-sm sm:text-base text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center gap-2 break-all"
               >
                 <span>{rawPhone}</span>
               </a>
@@ -243,7 +243,7 @@ const ContactUnlockSection: React.FC<ContactUnlockSectionProps> = ({
           </div>
 
           {!isContactUnlocked ? (
-            <div className="p-2 rounded-xl bg-slate-200/60 dark:bg-slate-800 text-slate-400 shrink-0">
+            <div className="p-2.5 rounded-xl bg-slate-200/60 dark:bg-slate-800 text-slate-400 shrink-0">
               <Lock className="w-4 h-4" />
             </div>
           ) : (
@@ -251,16 +251,16 @@ const ContactUnlockSection: React.FC<ContactUnlockSectionProps> = ({
               <button
                 type="button"
                 onClick={() => onCopy(rawPhone, 'phone')}
-                className="p-2 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
                 title="Nusxa olish"
               >
                 {copiedField === 'phone' ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
               </button>
               <a
                 href={`tel:${rawPhone}`}
-                className="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-heading font-bold text-xs flex items-center gap-1.5 transition-colors"
+                className="min-w-[44px] min-h-[44px] px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-heading font-bold text-xs flex items-center justify-center gap-1.5 transition-colors"
               >
-                <PhoneCall className="w-3.5 h-3.5" />
+                <PhoneCall className="w-4 h-4" />
                 <span className="hidden sm:inline">Qo'ng'iroq</span>
               </a>
             </div>
@@ -268,7 +268,7 @@ const ContactUnlockSection: React.FC<ContactUnlockSectionProps> = ({
         </div>
 
         {/* TELEGRAM */}
-        <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[#12121A] border border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-3">
+        <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-50 dark:bg-[#12121A] border border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-2.5 sm:gap-3">
           <div className="min-w-0 flex-1">
             <span className="block text-[11px] font-heading font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
               TELEGRAM
@@ -284,16 +284,16 @@ const ContactUnlockSection: React.FC<ContactUnlockSectionProps> = ({
                 href={telegramUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-heading font-bold text-sm sm:text-base text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1.5"
+                className="font-heading font-bold text-sm sm:text-base text-sky-600 dark:text-sky-400 hover:underline flex items-center gap-1.5 break-all"
               >
                 <span>{telegramHandle}</span>
-                <ExternalLink className="w-3.5 h-3.5 opacity-70" />
+                <ExternalLink className="w-3.5 h-3.5 opacity-70 shrink-0" />
               </a>
             )}
           </div>
 
           {!isContactUnlocked ? (
-            <div className="p-2 rounded-xl bg-slate-200/60 dark:bg-slate-800 text-slate-400 shrink-0">
+            <div className="p-2.5 rounded-xl bg-slate-200/60 dark:bg-slate-800 text-slate-400 shrink-0">
               <Lock className="w-4 h-4" />
             </div>
           ) : (
@@ -301,7 +301,7 @@ const ContactUnlockSection: React.FC<ContactUnlockSectionProps> = ({
               <button
                 type="button"
                 onClick={() => onCopy(telegramHandle, 'telegram')}
-                className="p-2 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
                 title="Nusxa olish"
               >
                 {copiedField === 'telegram' ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
@@ -310,9 +310,9 @@ const ContactUnlockSection: React.FC<ContactUnlockSectionProps> = ({
                 href={telegramUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-3 py-2 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-heading font-bold text-xs flex items-center gap-1.5 transition-colors"
+                className="min-w-[44px] min-h-[44px] px-3.5 py-2 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-heading font-bold text-xs flex items-center justify-center gap-1.5 transition-colors"
               >
-                <Send className="w-3.5 h-3.5" />
+                <Send className="w-4 h-4" />
                 <span className="hidden sm:inline">Ochish</span>
               </a>
             </div>
@@ -328,16 +328,16 @@ const ContactUnlockSection: React.FC<ContactUnlockSectionProps> = ({
             id="btn-unlock-contact-main"
             onClick={onUnlock}
             disabled={isUnlocking}
-            className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 active:scale-98 text-white font-heading font-black text-sm sm:text-base tracking-tight shadow-xl shadow-orange-500/25 flex items-center justify-center gap-2.5 transition-all cursor-pointer"
+            className="w-full min-h-[52px] py-3.5 px-4 sm:px-6 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 active:scale-98 text-white font-heading font-black text-sm sm:text-base tracking-tight shadow-xl shadow-orange-500/25 flex items-center justify-center gap-2 transition-all cursor-pointer text-center"
           >
             {isUnlocking ? (
               <>
-                <Loader2 className="w-5 h-5 animate-spin" />
+                <Loader2 className="w-5 h-5 animate-spin shrink-0" />
                 <span>Ochilmoqda...</span>
               </>
             ) : (
               <>
-                <Lock className="w-5 h-5 text-amber-100" />
+                <Lock className="w-5 h-5 text-amber-100 shrink-0" />
                 <span>
                   {availableBalance > 0
                     ? `Kontaktni ochish (${availableBalance} ta balansingiz bor)`
@@ -353,7 +353,7 @@ const ContactUnlockSection: React.FC<ContactUnlockSectionProps> = ({
           </div>
 
           {/* 5. Pastroqda: "Har bir profil tekshirilgan. Xavfsiz to'lov: Payme, Click." degan ishonch matni */}
-          <div className="pt-2 flex items-center justify-center gap-2 text-xs text-slate-600 dark:text-slate-300 font-body">
+          <div className="pt-2 flex items-center justify-center gap-2 text-xs text-slate-600 dark:text-slate-300 font-body text-center">
             <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
             <span>Har bir profil tekshirilgan. Xavfsiz to'lov: Payme, Click.</span>
           </div>
@@ -363,9 +363,9 @@ const ContactUnlockSection: React.FC<ContactUnlockSectionProps> = ({
             <button
               type="button"
               onClick={onOpenProModal || onOpenPackages}
-              className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-heading font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors cursor-pointer group"
+              className="inline-flex items-center justify-center gap-1.5 min-h-[44px] px-2 text-xs sm:text-sm font-heading font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors cursor-pointer group"
             >
-              <Sparkles className="w-3.5 h-3.5 text-amber-500 group-hover:scale-110 transition-transform" />
+              <Sparkles className="w-3.5 h-3.5 text-amber-500 group-hover:scale-110 transition-transform shrink-0" />
               <span>30 kontakt = 11,633 so'mdan · Pro paket olish →</span>
             </button>
           </div>
@@ -373,7 +373,7 @@ const ContactUnlockSection: React.FC<ContactUnlockSectionProps> = ({
       ) : (
         <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/60 flex items-center gap-3">
           <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-          <div className="text-xs sm:text-sm text-emerald-900 dark:text-emerald-200 font-body">
+          <div className="text-sm text-emerald-900 dark:text-emerald-200 font-body">
             <strong>Kontakt ochilgan.</strong> Siz kreator bilan bevosita qo'ng'iroq yoki Telegram orqali bog'lanishingiz mumkin.
           </div>
         </div>
@@ -593,12 +593,12 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
   if (isNotFound || !creatorProfile) {
     return (
       <div id="creator-profile-not-found" className="min-h-screen bg-slate-50/50 dark:bg-[#0E0E15] pb-32 flex flex-col">
-        <div className="border-b border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 px-4 sm:px-6 py-3">
+        <div className="border-b border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 px-4 sm:px-6 py-2">
           <div className="max-w-4xl mx-auto flex items-center justify-between">
             <button
               type="button"
               onClick={onBack}
-              className="inline-flex items-center gap-2 text-xs sm:text-sm font-heading font-semibold text-slate-700 dark:text-slate-300 hover:text-indigo-600 transition-colors cursor-pointer"
+              className="inline-flex items-center gap-2 min-h-[44px] text-sm font-heading font-semibold text-slate-700 dark:text-slate-300 hover:text-indigo-600 transition-colors cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4" />
               <span>Katalogga qaytish</span>
@@ -607,20 +607,20 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
         </div>
 
         <div className="flex-1 flex items-center justify-center px-4 py-16">
-          <div className="max-w-md w-full text-center p-8 rounded-3xl bg-white dark:bg-[#1A1A24] border border-slate-200/90 dark:border-slate-800/90 shadow-xl">
+          <div className="max-w-md w-full text-center p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#1A1A24] border border-slate-200/90 dark:border-slate-800/90 shadow-xl">
             <div className="w-16 h-16 rounded-2xl bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 mx-auto flex items-center justify-center mb-4">
               <AlertCircle className="w-8 h-8" />
             </div>
             <h2 className="font-heading font-extrabold text-xl sm:text-2xl text-slate-900 dark:text-white mb-2">
               Bu profil topilmadi
             </h2>
-            <p className="text-sm text-slate-600 dark:text-slate-400 font-body mb-6">
+            <p className="text-[15px] sm:text-sm text-slate-600 dark:text-slate-400 font-body mb-6">
               Kechirasiz, siz qidirayotgan kreator profili tizimda mavjud emas yoki oʻchirilgan boʻlishi mumkin.
             </p>
             <button
               type="button"
               onClick={onBack}
-              className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-heading font-bold text-sm shadow-md shadow-indigo-600/25 transition-all cursor-pointer"
+              className="w-full min-h-[48px] py-3.5 px-6 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-heading font-bold text-sm shadow-md shadow-indigo-600/25 transition-all cursor-pointer"
             >
               Boshqa kreatorlarni koʻrish
             </button>
@@ -785,35 +785,35 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
     return (
       <div
         id="model-public-profile-page"
-        className="min-h-screen bg-slate-50/50 dark:bg-[#0E0E15] pb-32 sm:pb-36 transition-colors duration-200"
+        className="min-h-screen bg-slate-50/50 dark:bg-[#0E0E15] pb-[calc(140px+env(safe-area-inset-bottom,0px))] sm:pb-36 transition-colors duration-200"
       >
         {/* Top Header / Breadcrumb Bar */}
-        <div className="border-b border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-16 z-30 px-4 sm:px-6 lg:px-8 py-3">
-          <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
+        <div className="border-b border-slate-200/80 dark:border-slate-800 bg-white/85 dark:bg-slate-900/85 backdrop-blur-md sticky top-14 sm:top-16 z-30 px-3.5 sm:px-6 lg:px-8 py-2">
+          <div className="max-w-4xl mx-auto flex items-center justify-between gap-2">
             <button
               type="button"
               id="btn-model-back-to-catalog"
               onClick={onBack}
-              className="inline-flex items-center gap-2 text-xs sm:text-sm font-heading font-semibold text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer group"
+              className="inline-flex items-center gap-2 min-h-[44px] pr-2 text-xs sm:text-sm font-heading font-semibold text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer group"
             >
-              <span className="p-1 rounded-lg bg-slate-100 dark:bg-slate-800 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/60 transition-colors">
+              <span className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/60 transition-colors">
                 <ArrowLeft className="w-4 h-4" />
               </span>
               <span>Katalogga qaytish</span>
             </button>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <button
                 type="button"
                 onClick={handleShare}
                 id="btn-model-share-profile"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-heading font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/60 transition-colors cursor-pointer shadow-2xs"
+                className="inline-flex items-center gap-1.5 min-h-[44px] px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-heading font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/60 transition-colors cursor-pointer shadow-2xs"
               >
                 <Share2 className="w-3.5 h-3.5" />
                 <span>{copiedLink ? 'Nusxalandi!' : 'Ulashish'}</span>
               </button>
 
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-50 dark:bg-purple-950/60 border border-purple-200/70 dark:border-purple-800 text-[11px] font-mono font-bold text-purple-700 dark:text-purple-300">
+              <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-50 dark:bg-purple-950/60 border border-purple-200/70 dark:border-purple-800 text-[11px] font-mono font-bold text-purple-700 dark:text-purple-300">
                 <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />
                 {category === 'Brand Face' ? 'Brand Face portfoliosi' : 'Model portfoliosi'}
               </span>
@@ -822,7 +822,7 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
         </div>
 
         {/* Main Canvas */}
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 space-y-6">
+        <div className="max-w-4xl mx-auto px-3.5 sm:px-6 lg:px-8 pt-5 sm:pt-8 space-y-5 sm:space-y-6">
           {/* 1. SURAT/VIDEO GALEREYASI (yuqori qism) */}
           <div id="model-gallery-section" className="space-y-3">
             {/* Katta, asosiy rasm ko'rinishi (portret format) */}
@@ -841,6 +841,8 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
                     key={activeMedia.url}
                     src={activeMedia.url}
                     alt={activeMedia.title || name}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover select-none transition-all duration-300"
                   />
                 )}
@@ -856,7 +858,7 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
                       id="btn-model-gallery-prev"
                       onClick={handlePrevSlide}
                       aria-label="Oldingi slayd"
-                      className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-black/45 hover:bg-black/75 text-white backdrop-blur-md flex items-center justify-center transition-all cursor-pointer shadow-lg border border-white/20 active:scale-95 z-20"
+                      className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-black/45 hover:bg-black/75 text-white backdrop-blur-md flex items-center justify-center transition-all cursor-pointer shadow-lg border border-white/20 active:scale-95 z-20"
                     >
                       <ChevronLeft className="w-6 h-6 stroke-[2.5]" />
                     </button>
@@ -866,7 +868,7 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
                       id="btn-model-gallery-next"
                       onClick={handleNextSlide}
                       aria-label="Keyingi slayd"
-                      className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-black/45 hover:bg-black/75 text-white backdrop-blur-md flex items-center justify-center transition-all cursor-pointer shadow-lg border border-white/20 active:scale-95 z-20"
+                      className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-black/45 hover:bg-black/75 text-white backdrop-blur-md flex items-center justify-center transition-all cursor-pointer shadow-lg border border-white/20 active:scale-95 z-20"
                     >
                       <ChevronRight className="w-6 h-6 stroke-[2.5]" />
                     </button>
@@ -911,7 +913,7 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
                         </div>
                       </div>
                     ) : (
-                      <img src={item.url} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
+                      <img src={item.url} alt={`Thumbnail ${idx + 1}`} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                     )}
 
                     {/* Small number badge */}
@@ -1030,7 +1032,7 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
                 type="button"
                 onClick={onEditProfile}
                 id="btn-model-edit-profile"
-                className="shrink-0 py-2.5 px-4 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 text-xs font-heading font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                className="shrink-0 min-h-[44px] py-2.5 px-4 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 text-xs font-heading font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <Edit3 className="w-3.5 h-3.5" />
                 <span>Profilni tahrirlash</span>
@@ -1051,7 +1053,7 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
                 Oʻzi haqida
               </h2>
             </div>
-            <p className="text-sm sm:text-base text-slate-700 dark:text-slate-300 font-body leading-relaxed whitespace-pre-line">
+            <p className="text-[15px] sm:text-base text-slate-700 dark:text-slate-300 font-body leading-relaxed whitespace-pre-line break-words">
               {bio}
             </p>
           </div>
@@ -1106,10 +1108,10 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
                   </h3>
                 </div>
                 <div className="p-4 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200/70 dark:border-emerald-800/60">
-                  <div className="font-mono font-extrabold text-lg sm:text-xl text-emerald-900 dark:text-emerald-200">
+                  <div className="font-mono font-extrabold text-lg sm:text-xl text-emerald-900 dark:text-emerald-200 break-words">
                     {priceMin} — {priceMax} soʻm
                   </div>
-                  <p className="text-[11px] text-emerald-700 dark:text-emerald-400 font-body mt-1">
+                  <p className="text-xs text-emerald-700 dark:text-emerald-400 font-body mt-1">
                     Fotosessiya yoki brend shartnomasiga qarab kelishiladi
                   </p>
                 </div>
@@ -1121,7 +1123,7 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
         {/* PASTKI QISM (sticky panel) */}
         <div
           id="model-profile-sticky-footer"
-          className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#12121A]/95 backdrop-blur-md border-t border-slate-200/90 dark:border-slate-800 px-4 sm:px-6 py-3.5 shadow-2xl transition-all"
+          className="fixed bottom-0 left-0 right-0 z-[45] bg-white/95 dark:bg-[#12121A]/95 backdrop-blur-md border-t border-slate-200/90 dark:border-slate-800 px-3.5 sm:px-6 pt-3 pb-[max(14px,calc(env(safe-area-inset-bottom,0px)+8px))] sm:py-3.5 shadow-2xl transition-all"
         >
           <div className="max-w-4xl mx-auto flex items-center justify-between gap-3 sm:gap-4">
             <div className="hidden sm:flex items-center gap-3">
@@ -1130,6 +1132,8 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
                   src={rawAvatarUrl}
                   alt={name}
                   referrerPolicy="no-referrer"
+                  loading="lazy"
+                  decoding="async"
                   onError={() => setImageError(true)}
                   className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-slate-700"
                 />
@@ -1151,13 +1155,13 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
               </div>
             </div>
 
-            <div className="flex items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
+            <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
               {isOwnProfile ? (
                 <button
                   type="button"
                   id="btn-model-footer-edit-profile"
                   onClick={onEditProfile}
-                  className="w-full sm:w-auto py-3.5 px-6 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-heading font-extrabold text-sm shadow-md shadow-indigo-600/25 transition-all cursor-pointer flex items-center justify-center gap-2"
+                  className="w-full sm:w-auto min-h-[48px] py-3 px-6 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-heading font-extrabold text-sm shadow-md shadow-indigo-600/25 transition-all cursor-pointer flex items-center justify-center gap-2"
                 >
                   <Edit3 className="w-4 h-4" />
                   <span>Profilni tahrirlash</span>
@@ -1175,9 +1179,9 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
                         handle: creatorProfile.instagramHandle || creatorProfile.contact,
                       })
                     }
-                    className="py-3.5 px-4 sm:px-5 rounded-2xl border-2 border-slate-200 dark:border-slate-700 hover:border-indigo-500 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-heading font-bold text-xs sm:text-sm transition-colors cursor-pointer flex items-center justify-center gap-2 shrink-0"
+                    className="min-h-[48px] py-3 px-3.5 sm:px-5 rounded-2xl border-2 border-slate-200 dark:border-slate-700 hover:border-indigo-500 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-heading font-bold text-xs sm:text-sm transition-colors cursor-pointer flex items-center justify-center gap-1.5 shrink-0"
                   >
-                    <MessageSquare className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                    <MessageSquare className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
                     <span className="hidden sm:inline">Xabar yozish</span>
                     <span className="sm:hidden">Xabar</span>
                   </button>
@@ -1186,9 +1190,9 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
                     <a
                       href={`tel:${rawPhone}`}
                       id="btn-model-call-contact"
-                      className="flex-1 sm:flex-initial py-3.5 px-6 sm:px-8 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-heading font-black text-sm sm:text-base tracking-tight shadow-lg shadow-emerald-600/30 active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-2"
+                      className="flex-1 sm:flex-initial min-h-[48px] py-3 px-4 sm:px-8 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-heading font-black text-sm sm:text-base tracking-tight shadow-lg shadow-emerald-600/30 active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-2 text-center"
                     >
-                      <PhoneCall className="w-4 h-4 text-white" />
+                      <PhoneCall className="w-4 h-4 text-white shrink-0" />
                       <span>Qo'ng'iroq qilish</span>
                     </a>
                   ) : (
@@ -1197,16 +1201,16 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
                       id="btn-model-unlock-contact-sticky"
                       onClick={handleUnlockContactAction}
                       disabled={isUnlocking}
-                      className="flex-1 sm:flex-initial py-3.5 px-6 sm:px-8 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 text-white font-heading font-black text-sm sm:text-base tracking-tight shadow-lg shadow-orange-500/30 active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-2"
+                      className="flex-1 sm:flex-initial min-h-[48px] py-2.5 px-3.5 sm:px-8 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 text-white font-heading font-black text-[13px] sm:text-base leading-tight tracking-tight shadow-lg shadow-orange-500/30 active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-2 text-center"
                     >
                       {isUnlocking ? (
                         <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <Loader2 className="w-4 h-4 animate-spin shrink-0" />
                           <span>Ochilmoqda...</span>
                         </>
                       ) : (
                         <>
-                          <Lock className="w-4 h-4 text-amber-100" />
+                          <Lock className="w-4 h-4 text-amber-100 shrink-0" />
                           <span>
                             {availableBalance > 0
                               ? `Kontaktni ochish (${availableBalance} ta bor)`
@@ -1251,35 +1255,35 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
   return (
     <div
       id="creator-public-profile-page"
-      className="min-h-screen bg-slate-50/50 dark:bg-[#0E0E15] pb-32 sm:pb-36 transition-colors duration-200"
+      className="min-h-screen bg-slate-50/50 dark:bg-[#0E0E15] pb-[calc(140px+env(safe-area-inset-bottom,0px))] sm:pb-36 transition-colors duration-200"
     >
       {/* Top Header / Breadcrumb Bar */}
-      <div className="border-b border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-16 z-30 px-4 sm:px-6 lg:px-8 py-3">
-        <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
+      <div className="border-b border-slate-200/80 dark:border-slate-800 bg-white/85 dark:bg-slate-900/85 backdrop-blur-md sticky top-14 sm:top-16 z-30 px-3.5 sm:px-6 lg:px-8 py-2">
+        <div className="max-w-4xl mx-auto flex items-center justify-between gap-2">
           <button
             type="button"
             id="btn-back-to-catalog"
             onClick={onBack}
-            className="inline-flex items-center gap-2 text-xs sm:text-sm font-heading font-semibold text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer group"
+            className="inline-flex items-center gap-2 min-h-[44px] pr-2 text-xs sm:text-sm font-heading font-semibold text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer group"
           >
-            <span className="p-1 rounded-lg bg-slate-100 dark:bg-slate-800 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/60 transition-colors">
+            <span className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/60 transition-colors">
               <ArrowLeft className="w-4 h-4" />
             </span>
             <span>Katalogga qaytish</span>
           </button>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
               onClick={handleShare}
               id="btn-share-creator-profile"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-heading font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/60 transition-colors cursor-pointer shadow-2xs"
+              className="inline-flex items-center gap-1.5 min-h-[44px] px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-heading font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/60 transition-colors cursor-pointer shadow-2xs"
             >
               <Share2 className="w-3.5 h-3.5" />
               <span>{copiedLink ? 'Nusxalandi!' : 'Ulashish'}</span>
             </button>
 
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/70 dark:border-emerald-800 text-[11px] font-mono font-bold text-emerald-700 dark:text-emerald-300">
+            <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/70 dark:border-emerald-800 text-[11px] font-mono font-bold text-emerald-700 dark:text-emerald-300">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               Ochiq profil
             </span>
@@ -1288,11 +1292,11 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
       </div>
 
       {/* Main Profile Canvas */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 space-y-6">
+      <div className="max-w-4xl mx-auto px-3.5 sm:px-6 lg:px-8 pt-5 sm:pt-8 space-y-5 sm:space-y-6">
         {/* 1. YUQORI QISM (Hero Header Card) */}
         <div
           id="creator-hero-card"
-          className="relative bg-white dark:bg-[#1A1A24] rounded-3xl border border-slate-200/90 dark:border-slate-800/90 p-6 sm:p-8 shadow-xs overflow-hidden"
+          className="relative bg-white dark:bg-[#1A1A24] rounded-3xl border border-slate-200/90 dark:border-slate-800/90 p-5 sm:p-8 shadow-xs overflow-hidden"
         >
           {/* Subtle brand gradient background banner */}
           <div className="absolute top-0 left-0 right-0 h-28 sm:h-32 bg-gradient-to-r from-indigo-600/15 via-purple-600/15 to-pink-500/15 dark:from-indigo-950/40 dark:via-purple-950/40 dark:to-pink-950/40 border-b border-slate-100 dark:border-slate-800/60" />
@@ -1305,6 +1309,8 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
                   src={rawAvatarUrl}
                   alt={name}
                   referrerPolicy="no-referrer"
+                  loading="lazy"
+                  decoding="async"
                   onError={() => setImageError(true)}
                   className="w-28 h-28 sm:w-32 sm:h-32 rounded-full object-cover border-4 border-white dark:border-slate-900 shadow-xl"
                 />
@@ -1368,7 +1374,7 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
                 type="button"
                 onClick={onEditProfile}
                 id="btn-creator-hero-edit"
-                className="shrink-0 py-2.5 px-4 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 text-xs font-heading font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                className="shrink-0 min-h-[44px] py-2.5 px-4 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 text-xs font-heading font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <Edit3 className="w-3.5 h-3.5" />
                 <span>Profilni tahrirlash</span>
@@ -1444,7 +1450,7 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
               Oʻzi haqida
             </h2>
           </div>
-          <p className="text-sm sm:text-base text-slate-700 dark:text-slate-300 font-body leading-relaxed whitespace-pre-line">
+          <p className="text-[15px] sm:text-base text-slate-700 dark:text-slate-300 font-body leading-relaxed whitespace-pre-line break-words">
             {bio}
           </p>
         </div>
@@ -1473,7 +1479,7 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
                     type="button"
                     id="btn-blogger-unlock-pro"
                     onClick={onOpenProModal}
-                    className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-indigo-600 hover:from-amber-600 hover:to-indigo-700 text-white text-xs font-heading font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                    className="min-h-[44px] px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-indigo-600 hover:from-amber-600 hover:to-indigo-700 text-white text-xs font-heading font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
                   >
                     <Sparkles className="w-3.5 h-3.5 text-amber-200" />
                     <span>Pro rejimga o'ting</span>
@@ -1483,14 +1489,14 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
                   type="button"
                   id="btn-blogger-unlock-contact-pay"
                   onClick={() => setIsContactModalOpen(true)}
-                  className="px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 text-xs font-heading font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                  className="min-h-[44px] px-3.5 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 text-xs font-heading font-bold transition-all flex items-center gap-1.5 cursor-pointer"
                 >
                   <Key className="w-3.5 h-3.5" />
                   <span>Shu kontaktni ochish (72 soat)</span>
                 </button>
               </div>
             ) : (
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200/80 dark:border-emerald-800/70 text-emerald-800 dark:text-emerald-300 text-xs font-body font-medium">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200/80 dark:border-emerald-800/70 text-emerald-800 dark:text-emerald-300 text-xs font-body font-medium">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                 <span>
                   {contactUnlockStatus.remainingHours
@@ -1504,8 +1510,8 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
           {/* Locked notice banner with direct unlock buttons */}
           {!isContactUnlocked && (
             <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#12121A] border border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs font-body">
-              <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
-                <Lock className="w-4 h-4 text-amber-500 shrink-0" />
+              <div className="flex items-start sm:items-center gap-2 text-slate-600 dark:text-slate-300">
+                <Lock className="w-4 h-4 text-amber-500 shrink-0 mt-0.5 sm:mt-0" />
                 <span>
                   Kreatorning rasmiy profillari qulflangan. <strong>19,000 so'm</strong> evaziga 72 soatlik kirish oling yoki Pro obuna bilan cheksiz foydalaning.
                 </span>
@@ -1513,7 +1519,7 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
               <button
                 type="button"
                 onClick={() => setIsContactModalOpen(true)}
-                className="px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-heading font-bold shrink-0 cursor-pointer"
+                className="w-full sm:w-auto min-h-[44px] px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-heading font-bold shrink-0 cursor-pointer flex items-center justify-center"
               >
                 Ochish variantlari
               </button>
@@ -1550,7 +1556,7 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
                     href={socialLinks.instagram}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="p-2.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors shadow-2xs shrink-0"
+                    className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors shadow-2xs shrink-0"
                     title="Profilni ochish"
                   >
                     <ExternalLink className="w-4 h-4" />
@@ -1559,7 +1565,7 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
                   <button
                     type="button"
                     onClick={() => setIsContactModalOpen(true)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/70 hover:bg-indigo-100 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-heading font-bold shrink-0 cursor-pointer"
+                    className="flex items-center justify-center gap-1.5 min-h-[44px] px-3.5 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/70 hover:bg-indigo-100 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-heading font-bold shrink-0 cursor-pointer"
                   >
                     <Lock className="w-3.5 h-3.5 text-amber-500" />
                     <span>Ochish</span>
@@ -1595,7 +1601,7 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
                     href={socialLinks.tiktok}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="p-2.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors shadow-2xs shrink-0"
+                    className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors shadow-2xs shrink-0"
                     title="TikTok profilini ochish"
                   >
                     <ExternalLink className="w-4 h-4" />
@@ -1604,7 +1610,7 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
                   <button
                     type="button"
                     onClick={() => setIsContactModalOpen(true)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/70 hover:bg-indigo-100 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-heading font-bold shrink-0 cursor-pointer"
+                    className="flex items-center justify-center gap-1.5 min-h-[44px] px-3.5 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/70 hover:bg-indigo-100 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-heading font-bold shrink-0 cursor-pointer"
                   >
                     <Lock className="w-3.5 h-3.5 text-amber-500" />
                     <span>Ochish</span>
@@ -1640,7 +1646,7 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
                     href={socialLinks.telegram}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="p-2.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors shadow-2xs shrink-0"
+                    className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors shadow-2xs shrink-0"
                     title="Telegram kanalini ochish"
                   >
                     <ExternalLink className="w-4 h-4" />
@@ -1649,7 +1655,7 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
                   <button
                     type="button"
                     onClick={() => setIsContactModalOpen(true)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/70 hover:bg-indigo-100 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-heading font-bold shrink-0 cursor-pointer"
+                    className="flex items-center justify-center gap-1.5 min-h-[44px] px-3.5 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/70 hover:bg-indigo-100 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-heading font-bold shrink-0 cursor-pointer"
                   >
                     <Lock className="w-3.5 h-3.5 text-amber-500" />
                     <span>Ochish</span>
@@ -1683,7 +1689,7 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
                     href={socialLinks.youtube}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="p-2.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors shadow-2xs shrink-0"
+                    className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors shadow-2xs shrink-0"
                     title="YouTube kanalini ochish"
                   >
                     <ExternalLink className="w-4 h-4" />
@@ -1692,7 +1698,7 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
                   <button
                     type="button"
                     onClick={() => setIsContactModalOpen(true)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/70 hover:bg-indigo-100 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-heading font-bold shrink-0 cursor-pointer"
+                    className="flex items-center justify-center gap-1.5 min-h-[44px] px-3.5 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/70 hover:bg-indigo-100 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-heading font-bold shrink-0 cursor-pointer"
                   >
                     <Lock className="w-3.5 h-3.5 text-amber-500" />
                     <span>Ochish</span>
@@ -1767,10 +1773,10 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
                 Bir integratsiya yoki kampaniya uchun taxminiy byudjet
               </p>
               <div className="p-4 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200/70 dark:border-emerald-800/60">
-                <div className="font-mono font-extrabold text-lg sm:text-xl text-emerald-900 dark:text-emerald-200">
+                <div className="font-mono font-extrabold text-lg sm:text-xl text-emerald-900 dark:text-emerald-200 break-words">
                   {priceMin} — {priceMax} soʻm
                 </div>
-                <p className="text-[11px] text-emerald-700 dark:text-emerald-400 font-body mt-1">
+                <p className="text-xs text-emerald-700 dark:text-emerald-400 font-body mt-1">
                   Loyiha murakkabligi va formatlar soniga qarab kelishiladi
                 </p>
               </div>
@@ -1782,7 +1788,7 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
       {/* 7. PASTKI QISM (sticky, doim ko'rinadigan harakatlar paneli) */}
       <div
         id="creator-profile-sticky-footer"
-        className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#12121A]/95 backdrop-blur-md border-t border-slate-200/90 dark:border-slate-800 px-4 sm:px-6 py-3.5 shadow-2xl transition-all"
+        className="fixed bottom-0 left-0 right-0 z-[45] bg-white/95 dark:bg-[#12121A]/95 backdrop-blur-md border-t border-slate-200/90 dark:border-slate-800 px-3.5 sm:px-6 pt-3 pb-[max(14px,calc(env(safe-area-inset-bottom,0px)+8px))] sm:py-3.5 shadow-2xl transition-all"
       >
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-3 sm:gap-4">
           {/* Left info summary */}
@@ -1792,6 +1798,8 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
                 src={rawAvatarUrl}
                 alt={name}
                 referrerPolicy="no-referrer"
+                loading="lazy"
+                decoding="async"
                 onError={() => setImageError(true)}
                 className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-slate-700"
               />
@@ -1814,13 +1822,13 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
           </div>
 
           {/* Action buttons on the right */}
-          <div className="flex items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
+          <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
             {isOwnProfile ? (
               <button
                 type="button"
                 id="btn-creator-footer-edit-profile"
                 onClick={onEditProfile}
-                className="w-full sm:w-auto py-3.5 px-6 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-heading font-extrabold text-sm shadow-md shadow-indigo-600/25 transition-all cursor-pointer flex items-center justify-center gap-2"
+                className="w-full sm:w-auto min-h-[48px] py-3 px-6 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-heading font-extrabold text-sm shadow-md shadow-indigo-600/25 transition-all cursor-pointer flex items-center justify-center gap-2"
               >
                 <Edit3 className="w-4 h-4" />
                 <span>Profilni tahrirlash</span>
@@ -1839,9 +1847,9 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
                       handle: creatorProfile.instagramHandle || creatorProfile.contact,
                     })
                   }
-                  className="py-3.5 px-4 sm:px-5 rounded-2xl border-2 border-slate-200 dark:border-slate-700 hover:border-indigo-500 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-heading font-bold text-xs sm:text-sm transition-colors cursor-pointer flex items-center justify-center gap-2 shrink-0"
+                  className="min-h-[48px] py-3 px-3.5 sm:px-5 rounded-2xl border-2 border-slate-200 dark:border-slate-700 hover:border-indigo-500 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-heading font-bold text-xs sm:text-sm transition-colors cursor-pointer flex items-center justify-center gap-1.5 shrink-0"
                 >
-                  <MessageSquare className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                  <MessageSquare className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
                   <span className="hidden sm:inline">Xabar yozish</span>
                   <span className="sm:hidden">Xabar</span>
                 </button>
@@ -1868,18 +1876,18 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
                         },
                       })
                     }
-                    className="flex-1 sm:flex-initial py-3.5 px-6 sm:px-8 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-heading font-black text-sm sm:text-base tracking-tight shadow-lg shadow-indigo-600/30 active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-2"
+                    className="flex-1 sm:flex-initial min-h-[48px] py-3 px-4 sm:px-8 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-heading font-black text-sm sm:text-base tracking-tight shadow-lg shadow-indigo-600/30 active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-2 text-center"
                   >
-                    <Send className="w-4 h-4 text-amber-300" />
+                    <Send className="w-4 h-4 text-amber-300 shrink-0" />
                     <span>Brif yuborish</span>
                   </button>
                 ) : isContactUnlocked ? (
                   <a
                     href={`tel:${rawPhone}`}
                     id="btn-creator-call-contact"
-                    className="flex-1 sm:flex-initial py-3.5 px-6 sm:px-8 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-heading font-black text-sm sm:text-base tracking-tight shadow-lg shadow-emerald-600/30 active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-2"
+                    className="flex-1 sm:flex-initial min-h-[48px] py-3 px-4 sm:px-8 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-heading font-black text-sm sm:text-base tracking-tight shadow-lg shadow-emerald-600/30 active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-2 text-center"
                   >
-                    <PhoneCall className="w-4 h-4 text-white" />
+                    <PhoneCall className="w-4 h-4 text-white shrink-0" />
                     <span>Qo'ng'iroq qilish</span>
                   </a>
                 ) : (
@@ -1888,16 +1896,16 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
                     id="btn-creator-unlock-contact-sticky"
                     onClick={handleUnlockContactAction}
                     disabled={isUnlocking}
-                    className="flex-1 sm:flex-initial py-3.5 px-6 sm:px-8 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 text-white font-heading font-black text-sm sm:text-base tracking-tight shadow-lg shadow-orange-500/30 active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-2"
+                    className="flex-1 sm:flex-initial min-h-[48px] py-2.5 px-3.5 sm:px-8 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 text-white font-heading font-black text-[13px] sm:text-base leading-tight tracking-tight shadow-lg shadow-orange-500/30 active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-2 text-center"
                   >
                     {isUnlocking ? (
                       <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <Loader2 className="w-4 h-4 animate-spin shrink-0" />
                         <span>Ochilmoqda...</span>
                       </>
                     ) : (
                       <>
-                        <Lock className="w-4 h-4 text-amber-100" />
+                        <Lock className="w-4 h-4 text-amber-100 shrink-0" />
                         <span>
                           {availableBalance > 0
                             ? `Kontaktni ochish (${availableBalance} ta bor)`

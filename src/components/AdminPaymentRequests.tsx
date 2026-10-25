@@ -159,15 +159,16 @@ export const AdminPaymentRequests: React.FC<AdminPaymentRequestsProps> = ({
     <div className="space-y-6">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-xs sm:text-sm font-heading font-bold shadow-md flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-200">
-          <div className="flex items-center gap-2">
+        <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-xs sm:text-sm font-heading font-bold shadow-md flex items-center justify-between gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="flex items-center gap-2 min-w-0">
             <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-            <span>{toastMessage}</span>
+            <span className="break-words">{toastMessage}</span>
           </div>
           <button
             type="button"
             onClick={() => setToastMessage(null)}
-            className="text-emerald-600 hover:text-emerald-800 text-xs font-bold"
+            aria-label="Yopish"
+            className="min-w-[44px] min-h-[44px] -my-2 -mr-2 flex items-center justify-center rounded-xl text-emerald-600 hover:text-emerald-800 text-xs font-bold shrink-0 cursor-pointer"
           >
             ✕
           </button>
@@ -177,11 +178,11 @@ export const AdminPaymentRequests: React.FC<AdminPaymentRequestsProps> = ({
       {/* Top Filter and Search Bar */}
       <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#12121A] border border-slate-200/80 dark:border-slate-800 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 shadow-xs">
         {/* Status Tab Pills */}
-        <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl overflow-x-auto no-scrollbar">
+        <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl overflow-x-auto no-scrollbar touch-pan-x">
           <button
             type="button"
             onClick={() => setStatusFilter('pending')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-heading font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+            className={`min-h-[44px] px-3.5 py-2 rounded-lg text-xs font-heading font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
               statusFilter === 'pending'
                 ? 'bg-amber-500 text-white shadow-xs'
                 : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
@@ -201,7 +202,7 @@ export const AdminPaymentRequests: React.FC<AdminPaymentRequestsProps> = ({
           <button
             type="button"
             onClick={() => setStatusFilter('approved')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-heading font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+            className={`min-h-[44px] px-3.5 py-2 rounded-lg text-xs font-heading font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
               statusFilter === 'approved'
                 ? 'bg-emerald-600 text-white shadow-xs'
                 : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
@@ -221,7 +222,7 @@ export const AdminPaymentRequests: React.FC<AdminPaymentRequestsProps> = ({
           <button
             type="button"
             onClick={() => setStatusFilter('rejected')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-heading font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+            className={`min-h-[44px] px-3.5 py-2 rounded-lg text-xs font-heading font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
               statusFilter === 'rejected'
                 ? 'bg-rose-600 text-white shadow-xs'
                 : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
@@ -241,7 +242,7 @@ export const AdminPaymentRequests: React.FC<AdminPaymentRequestsProps> = ({
           <button
             type="button"
             onClick={() => setStatusFilter('all')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-heading font-bold transition-all cursor-pointer shrink-0 ${
+            className={`min-h-[44px] px-3.5 py-2 rounded-lg text-xs font-heading font-bold transition-all cursor-pointer shrink-0 ${
               statusFilter === 'all'
                 ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xs'
                 : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
@@ -252,14 +253,14 @@ export const AdminPaymentRequests: React.FC<AdminPaymentRequestsProps> = ({
         </div>
 
         {/* Search Input */}
-        <div className="relative min-w-[220px]">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+        <div className="relative w-full md:w-64 shrink-0">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Ism yoki telefon boʻyicha qidirish..."
-            className="w-full pl-9 pr-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-body text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+            className="w-full min-h-[48px] pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-base sm:text-xs font-body text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
           />
         </div>
       </div>
@@ -330,6 +331,8 @@ export const AdminPaymentRequests: React.FC<AdminPaymentRequestsProps> = ({
                           <img
                             src={req.screenshotUrl}
                             alt="Chek rasmi"
+                            loading="lazy"
+                            decoding="async"
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                           />
                         )}
@@ -386,8 +389,8 @@ export const AdminPaymentRequests: React.FC<AdminPaymentRequestsProps> = ({
                       {req.userPhone && (
                         <>
                           <span>•</span>
-                          <span className="flex items-center gap-1">
-                            <Phone className="w-3 h-3 text-slate-400" />
+                          <span className="flex items-center gap-1 break-all">
+                            <Phone className="w-3 h-3 text-slate-400 shrink-0" />
                             <span>{req.userPhone}</span>
                           </span>
                         </>
@@ -396,7 +399,7 @@ export const AdminPaymentRequests: React.FC<AdminPaymentRequestsProps> = ({
 
                     {/* Rejection reason if any */}
                     {isRejected && req.rejectionReason && (
-                      <p className="mt-1.5 text-xs text-rose-600 dark:text-rose-400 font-body">
+                      <p className="mt-1.5 text-xs text-rose-600 dark:text-rose-400 font-body break-words">
                         <strong>Rad etish sababi:</strong> {req.rejectionReason}
                       </p>
                     )}
@@ -411,7 +414,7 @@ export const AdminPaymentRequests: React.FC<AdminPaymentRequestsProps> = ({
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex items-center gap-2 self-end md:self-center shrink-0 w-full sm:w-auto justify-end">
+                <div className="flex flex-wrap items-center gap-2 self-end md:self-center shrink-0 w-full sm:w-auto justify-end">
                   {/* View receipt full button */}
                   {req.screenshotUrl && (
                     <button
@@ -422,9 +425,10 @@ export const AdminPaymentRequests: React.FC<AdminPaymentRequestsProps> = ({
                           title: `${req.userName} - Toʻlov cheki`,
                         })
                       }
-                      className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-heading font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer flex items-center gap-1.5"
+                      aria-label="Chekni koʻrish"
+                      className="min-w-[44px] min-h-[44px] px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-heading font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
                     >
-                      <Eye className="w-3.5 h-3.5" />
+                      <Eye className="w-4 h-4 shrink-0" />
                       <span className="hidden sm:inline">Chekni koʻrish</span>
                     </button>
                   )}
@@ -439,9 +443,9 @@ export const AdminPaymentRequests: React.FC<AdminPaymentRequestsProps> = ({
                           setRejectionReason('');
                         }}
                         disabled={actionLoadingId === req.id}
-                        className="px-3.5 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-heading font-bold transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                        className="min-h-[44px] px-3.5 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-heading font-bold transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
                       >
-                        <XCircle className="w-3.5 h-3.5" />
+                        <XCircle className="w-3.5 h-3.5 shrink-0" />
                         <span>Rad etish</span>
                       </button>
 
@@ -450,9 +454,9 @@ export const AdminPaymentRequests: React.FC<AdminPaymentRequestsProps> = ({
                         type="button"
                         onClick={() => handleApprove(req)}
                         disabled={actionLoadingId === req.id}
-                        className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-heading font-extrabold shadow-sm hover:shadow-emerald-600/20 transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                        className="min-h-[44px] px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-heading font-extrabold shadow-sm hover:shadow-emerald-600/20 transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
                       >
-                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
                         <span>Tasdiqlash</span>
                       </button>
                     </>
@@ -467,54 +471,59 @@ export const AdminPaymentRequests: React.FC<AdminPaymentRequestsProps> = ({
       {/* FULLSCREEN RECEIPT IMAGE MODAL */}
       {previewImage && (
         <div
-          className="fixed inset-0 z-[70] bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 pb-[calc(90px+env(safe-area-inset-bottom,0px))] sm:pb-4 overflow-y-auto"
+          className="fixed inset-0 z-[70] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
           onClick={() => setPreviewImage(null)}
         >
           <div
-            className="relative max-w-3xl w-full bg-white dark:bg-slate-900 rounded-3xl p-4 sm:p-6 shadow-2xl border border-slate-200 dark:border-slate-800 my-auto overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+            className="relative max-w-3xl w-full max-h-[94dvh] flex flex-col bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-in fade-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-100 dark:border-slate-800">
-              <h3 className="font-heading font-bold text-base text-slate-900 dark:text-white">
+            <div className="px-4 sm:px-6 pt-4 sm:pt-5 pb-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3 shrink-0">
+              <h3 className="font-heading font-bold text-base text-slate-900 dark:text-white truncate">
                 {previewImage.title}
               </h3>
               <button
                 type="button"
                 onClick={() => setPreviewImage(null)}
-                className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                aria-label="Yopish"
+                className="w-11 h-11 min-w-[44px] min-h-[44px] shrink-0 flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="max-h-[75vh] overflow-auto rounded-xl bg-slate-950 flex items-center justify-center p-2">
-              {isPdfReceiptUrl(previewImage.url) ? (
-                <iframe
-                  src={previewImage.url}
-                  title={previewImage.title}
-                  className="w-full h-[70vh] rounded-lg bg-white"
-                />
-              ) : (
-                <img
-                  src={previewImage.url}
-                  alt={previewImage.title}
-                  className="max-h-[70vh] w-auto object-contain rounded-lg shadow-md"
-                />
-              )}
+            <div className="flex-1 min-h-0 overflow-auto p-3 sm:p-4">
+              <div className="rounded-xl bg-slate-950 flex items-center justify-center p-2">
+                {isPdfReceiptUrl(previewImage.url) ? (
+                  <iframe
+                    src={previewImage.url}
+                    title={previewImage.title}
+                    className="w-full h-[65dvh] sm:h-[70vh] rounded-lg bg-white"
+                  />
+                ) : (
+                  <img
+                    src={previewImage.url}
+                    alt={previewImage.title}
+                    loading="lazy"
+                    decoding="async"
+                    className="max-h-[65dvh] sm:max-h-[70vh] w-auto object-contain rounded-lg shadow-md"
+                  />
+                )}
+              </div>
             </div>
 
-            <div className="mt-4 flex justify-between items-center">
-              <span className="text-xs text-slate-500 font-body">
+            <div className="px-4 sm:px-6 pt-3 pb-[max(16px,calc(env(safe-area-inset-bottom,0px)+12px))] sm:pb-5 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shrink-0">
+              <span className="text-xs text-slate-500 font-body break-words">
                 Karta: 9860 0901 0699 8728 (Sobirov Aziz) · 59 000 soʻm
               </span>
               <a
                 href={previewImage.url}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 text-xs font-heading font-semibold hover:underline"
+                className="min-h-[44px] inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 text-xs font-heading font-semibold hover:underline"
               >
                 <span>Asl oʻlchamda ochish</span>
-                <ExternalLink className="w-3.5 h-3.5" />
+                <ExternalLink className="w-3.5 h-3.5 shrink-0" />
               </a>
             </div>
           </div>
@@ -524,25 +533,49 @@ export const AdminPaymentRequests: React.FC<AdminPaymentRequestsProps> = ({
       {/* REJECT MODAL WITH REASON */}
       {rejectingItem && (
         <div
-          className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 pb-[calc(90px+env(safe-area-inset-bottom,0px))] sm:pb-4 overflow-y-auto"
+          className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
           onClick={() => setRejectingItem(null)}
         >
           <div
-            className="relative max-w-md w-full bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 my-auto animate-in fade-in zoom-in-95 duration-200"
+            className="relative max-w-md w-full max-h-[92dvh] flex flex-col bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-in fade-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto mb-3">
-              <XCircle className="w-6 h-6 stroke-[2.2]" />
+            <div className="px-5 sm:px-6 pt-5 pb-3.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3 shrink-0">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 shrink-0 rounded-2xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+                  <XCircle className="w-5 h-5 stroke-[2.2]" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="font-heading font-extrabold text-base sm:text-lg text-slate-900 dark:text-white">
+                    Toʻlov soʻrovini rad etish
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-body truncate">
+                    {rejectingItem.userName} soʻrovi rad etiladi
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setRejectingItem(null)}
+                aria-label="Yopish"
+                className="w-11 h-11 min-w-[44px] min-h-[44px] shrink-0 flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
-            <h3 className="font-heading font-extrabold text-lg text-center text-slate-900 dark:text-white">
-              Toʻlov soʻrovini rad etish
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 text-center font-body mt-1">
-              {rejectingItem.userName} tomonidan yuborilgan soʻrov rad etiladi.
-            </p>
-
-            <div className="mt-4">
+            <div
+              onFocusCapture={(e) => {
+                const target = e.target as HTMLElement;
+                if (target && target.tagName === 'TEXTAREA') {
+                  setTimeout(() => {
+                    target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                  }, 250);
+                }
+              }}
+              className="flex-1 overflow-y-auto overscroll-contain px-5 sm:px-6 py-4"
+            >
               <label className="block text-xs font-heading font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                 Rad etish sababi (ixtiyoriy):
               </label>
@@ -551,11 +584,11 @@ export const AdminPaymentRequests: React.FC<AdminPaymentRequestsProps> = ({
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}
                 placeholder="Masalan: Chekdagi summa toʻliq emas yoki rekvizitlar xato..."
-                className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs font-body text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-rose-500"
+                className="w-full p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-base sm:text-xs font-body text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-rose-500"
               />
 
               {/* Quick suggestions */}
-              <div className="mt-2 flex flex-wrap gap-1.5">
+              <div className="mt-2.5 flex flex-wrap gap-2">
                 {[
                   'Chek maʼlumotlari oʻqilmadi',
                   'Toʻlov summasi kam',
@@ -565,7 +598,7 @@ export const AdminPaymentRequests: React.FC<AdminPaymentRequestsProps> = ({
                     key={sug}
                     type="button"
                     onClick={() => setRejectionReason(sug)}
-                    className="text-[11px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                    className="min-h-[44px] text-xs px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
                   >
                     {sug}
                   </button>
@@ -573,11 +606,11 @@ export const AdminPaymentRequests: React.FC<AdminPaymentRequestsProps> = ({
               </div>
             </div>
 
-            <div className="mt-6 flex items-center gap-2.5">
+            <div className="px-5 sm:px-6 pt-3.5 pb-[max(16px,calc(env(safe-area-inset-bottom,0px)+12px))] sm:pb-6 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2.5 shrink-0">
               <button
                 type="button"
                 onClick={() => setRejectingItem(null)}
-                className="flex-1 py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-heading font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                className="flex-1 min-h-[48px] py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-heading font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 Bekor qilish
               </button>
@@ -585,9 +618,9 @@ export const AdminPaymentRequests: React.FC<AdminPaymentRequestsProps> = ({
                 type="button"
                 onClick={handleConfirmReject}
                 disabled={actionLoadingId === rejectingItem.id}
-                className="flex-1 py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-heading font-bold shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                className="flex-1 min-h-[48px] py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs sm:text-sm font-heading font-bold shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5"
               >
-                <XCircle className="w-3.5 h-3.5" />
+                <XCircle className="w-4 h-4 shrink-0" />
                 <span>Rad etish</span>
               </button>
             </div>

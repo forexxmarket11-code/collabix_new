@@ -69,22 +69,22 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   // If user is not logged in (fallback guard)
   if (!user) {
     return (
-      <div className="min-h-screen pb-28 pt-12 px-4 sm:px-6 max-w-lg mx-auto text-center">
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 p-8 sm:p-10 shadow-sm transition-colors duration-300">
+      <div className="min-h-screen pb-[calc(112px+env(safe-area-inset-bottom,0px))] pt-10 px-4 sm:px-6 max-w-lg mx-auto text-center">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 p-7 sm:p-10 shadow-sm transition-colors duration-300">
           <div className="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-900 flex items-center justify-center mx-auto text-indigo-600 dark:text-indigo-400 mb-4">
             <User className="w-8 h-8" />
           </div>
           <h2 className="font-heading font-extrabold text-2xl text-slate-900 dark:text-slate-100 mb-2">
             Profilga kirish
           </h2>
-          <p className="text-sm text-slate-600 dark:text-slate-400 font-body mb-6 leading-relaxed">
+          <p className="text-[15px] sm:text-sm text-slate-600 dark:text-slate-400 font-body mb-6 leading-relaxed">
             Shaxsiy profil, yuborilgan briflar va sozlamalarni koʻrish uchun tizimga kiring yoki yangi hisob oching.
           </p>
           <button
             type="button"
             id="btn-profile-login-prompt"
             onClick={onOpenRegister}
-            className="w-full py-3.5 px-6 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-500 text-white font-heading font-bold text-sm shadow-md transition-all cursor-pointer"
+            className="w-full min-h-[48px] py-3.5 px-6 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-500 text-white font-heading font-bold text-sm shadow-md transition-all cursor-pointer"
           >
             Roʻyxatdan oʻtish / Kirish
           </button>
@@ -116,16 +116,16 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   };
 
   return (
-    <div className="min-h-screen pb-28 pt-8 sm:pt-12 px-4 sm:px-6 max-w-4xl mx-auto transition-colors duration-300">
+    <div className="min-h-screen pb-[calc(112px+env(safe-area-inset-bottom,0px))] pt-6 sm:pt-12 px-4 sm:px-6 max-w-4xl mx-auto transition-colors duration-300">
       {/* Header Banner */}
-      <div className="relative bg-gradient-to-r from-slate-900 via-indigo-950 to-indigo-900 dark:from-slate-950 dark:via-indigo-950 dark:to-slate-900 border border-slate-800/40 rounded-3xl p-6 sm:p-8 text-white mb-6 shadow-md overflow-hidden">
+      <div className="relative bg-gradient-to-r from-slate-900 via-indigo-950 to-indigo-900 dark:from-slate-950 dark:via-indigo-950 dark:to-slate-900 border border-slate-800/40 rounded-3xl p-5 sm:p-8 text-white mb-6 shadow-md overflow-hidden">
         {/* Decorative elements */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-1/3 w-40 h-40 bg-pink-500/10 rounded-full blur-2xl pointer-events-none" />
 
         <div className="relative flex flex-col sm:flex-row items-center sm:items-start gap-5 text-center sm:text-left">
           {/* Avatar with edit trigger */}
-          <div className="relative group">
+          <div className="relative group shrink-0">
             {user.avatar ? (
               <img
                 src={user.avatar}
@@ -145,18 +145,19 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
             <button
               type="button"
               id="btn-profile-avatar-camera"
-              className="absolute bottom-0 right-0 p-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-full shadow-md hover:scale-110 transition-transform cursor-pointer ring-2 ring-indigo-600"
+              className="absolute -bottom-1 -right-1 min-w-[44px] min-h-[44px] bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-full shadow-md hover:scale-105 transition-transform cursor-pointer ring-2 ring-indigo-600 flex items-center justify-center"
               title="Rasmni yangilash"
+              aria-label="Rasmni yangilash"
               onClick={onNavigateToEdit}
             >
-              <Camera className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+              <Camera className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
             </button>
           </div>
 
           {/* User Basic Info */}
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 w-full">
             <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap mb-1">
-              <h1 className="font-heading font-extrabold text-2xl sm:text-3xl text-white tracking-tight">
+              <h1 className="font-heading font-extrabold text-2xl sm:text-3xl text-white tracking-tight break-words">
                 {user?.name || 'Foydalanuvchi'}
               </h1>
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-heading font-bold bg-white/15 text-indigo-200 backdrop-blur-xs border border-white/20">
@@ -165,7 +166,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
               </span>
             </div>
 
-            <p className="text-xs sm:text-sm text-indigo-200 font-body mb-3">
+            <p className="text-xs sm:text-sm text-indigo-200 font-body mb-3 break-all">
               {user.instagramHandle ? (user.instagramHandle.startsWith('@') ? user.instagramHandle : `@${user.instagramHandle}`) : (isBlogger ? '@creator' : '@brand')}
             </p>
 
@@ -187,7 +188,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
             type="button"
             id="btn-navigate-to-edit-profile"
             onClick={onNavigateToEdit}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-pink-500 hover:from-indigo-400 hover:to-pink-400 text-white text-xs sm:text-sm font-heading font-bold shadow-md transition-all cursor-pointer shrink-0"
+            className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-pink-500 hover:from-indigo-400 hover:to-pink-400 text-white text-xs sm:text-sm font-heading font-bold shadow-md transition-all cursor-pointer shrink-0"
           >
             <Edit3 className="w-4 h-4" />
             <span>Profilni tahrirlash</span>
@@ -202,7 +203,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           <span className="block text-[11px] font-heading font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
             Oʻzi haqida
           </span>
-          <p className="text-sm text-slate-700 dark:text-slate-300 font-body leading-relaxed bg-slate-50/70 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-100 dark:border-slate-700/60">
+          <p className="text-[15px] sm:text-sm text-slate-700 dark:text-slate-300 font-body leading-relaxed break-words bg-slate-50/70 dark:bg-slate-800/60 p-3.5 rounded-xl border border-slate-100 dark:border-slate-700/60">
             {user.bio || 'Lifestyle, moda va kreativ videolar yaratuvchi kreator.'}
           </p>
         </div>
@@ -285,7 +286,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 
         {/* Direct Contact Info (Bog'lanish ma'lumotlari) */}
         <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between gap-2 mb-2">
             <span className="block text-[11px] font-heading font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
               Bogʻlanish maʼlumotlari (Briflar uchun)
             </span>
@@ -293,21 +294,21 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
               <button
                 type="button"
                 onClick={onNavigateToEdit}
-                className="text-[10px] text-amber-600 dark:text-amber-400 hover:underline font-medium cursor-pointer"
+                className="min-h-[44px] px-2.5 -my-2 inline-flex items-center text-xs text-amber-600 dark:text-amber-400 hover:underline font-semibold cursor-pointer shrink-0"
               >
                 + Kiritish
               </button>
             )}
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/50 text-xs font-heading font-semibold text-slate-700 dark:text-slate-300">
+            <div className="max-w-full inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/50 text-xs font-heading font-semibold text-slate-700 dark:text-slate-300">
               <Phone className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-              <span>{user.phoneNumber || user.contact || 'Telefon kiritilmagan'}</span>
+              <span className="break-all">{user.phoneNumber || user.contact || 'Telefon kiritilmagan'}</span>
             </div>
 
-            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/50 text-xs font-heading font-semibold text-slate-700 dark:text-slate-300">
+            <div className="max-w-full inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/50 text-xs font-heading font-semibold text-slate-700 dark:text-slate-300">
               <Send className="w-3.5 h-3.5 text-sky-500 shrink-0" />
-              <span>
+              <span className="break-all">
                 {user.telegramUsername
                   ? `@${user.telegramUsername.replace(/^@/, '')}`
                   : user.socialLinks?.telegram
@@ -392,12 +393,12 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                 id="btn-profile-reactivate-subscription"
                 onClick={handleReactivateSubscription}
                 disabled={isReactivating}
-                className="w-full sm:w-auto py-2 px-4 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-heading font-bold shadow-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-60"
+                className="w-full sm:w-auto min-h-[44px] py-2.5 px-4 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-heading font-bold shadow-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-60"
               >
                 {isReactivating ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  <RotateCcw className="w-3.5 h-3.5" />
+                  <RotateCcw className="w-4 h-4" />
                 )}
                 <span>Pro rejimni qayta yoqish</span>
               </button>
@@ -408,9 +409,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                 type="button"
                 id="btn-profile-cancel-subscription"
                 onClick={onOpenCancelModal}
-                className="w-full sm:w-auto py-2 px-3.5 rounded-xl border border-rose-200 dark:border-rose-900/60 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-xs font-heading font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                className="w-full sm:w-auto min-h-[44px] py-2.5 px-4 rounded-xl border border-rose-200 dark:border-rose-900/60 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-xs font-heading font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
               >
-                <Ban className="w-3.5 h-3.5" />
+                <Ban className="w-4 h-4" />
                 <span>Obunani bekor qilish</span>
               </button>
             )}
@@ -420,9 +421,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                 type="button"
                 id="btn-profile-upgrade-pro"
                 onClick={onOpenProModal}
-                className="w-full sm:w-auto py-2 px-4 rounded-xl bg-gradient-to-r from-amber-500 via-indigo-600 to-purple-600 hover:from-amber-600 hover:to-purple-700 text-white text-xs font-heading font-bold shadow-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                className="w-full sm:w-auto min-h-[44px] py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-500 via-indigo-600 to-purple-600 hover:from-amber-600 hover:to-purple-700 text-white text-xs font-heading font-bold shadow-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
               >
-                <Sparkles className="w-3.5 h-3.5 text-amber-200" />
+                <Sparkles className="w-4 h-4 text-amber-200" />
                 <span>Pro rejimga oʻtish</span>
               </button>
             )}
@@ -439,23 +440,23 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 
         {/* Single Compact Card with 3 rows instead of 3 big cards */}
         <div className="mt-4 p-3.5 rounded-2xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800 text-xs">
-          <div className="flex items-center justify-between py-2 first:pt-0">
-            <span className="text-slate-500 dark:text-slate-400 font-medium">Joriy tarif</span>
-            <span className="font-heading font-bold text-slate-900 dark:text-slate-100">
+          <div className="flex items-center justify-between gap-2 py-2 first:pt-0">
+            <span className="text-slate-500 dark:text-slate-400 font-medium shrink-0">Joriy tarif</span>
+            <span className="font-heading font-bold text-slate-900 dark:text-slate-100 text-right">
               {isFree && 'Standart (Bepul)'}
               {isCancelled && 'Bekor qilingan'}
               {isPro && 'Pro rejim (59 000 soʻm/oy)'}
             </span>
           </div>
-          <div className="flex items-center justify-between py-2">
-            <span className="text-slate-500 dark:text-slate-400 font-medium">Amal qilish muddati</span>
-            <span className="font-heading font-bold text-slate-900 dark:text-slate-100">
+          <div className="flex items-center justify-between gap-2 py-2">
+            <span className="text-slate-500 dark:text-slate-400 font-medium shrink-0">Amal qilish muddati</span>
+            <span className="font-heading font-bold text-slate-900 dark:text-slate-100 text-right">
               {isFree ? 'Mavjud emas' : `${formattedEndDate}gacha`}
             </span>
           </div>
-          <div className="flex items-center justify-between py-2 last:pb-0">
-            <span className="text-slate-500 dark:text-slate-400 font-medium">Keyingi toʻlov</span>
-            <span className="font-mono font-bold text-slate-900 dark:text-slate-100">
+          <div className="flex items-center justify-between gap-2 py-2 last:pb-0">
+            <span className="text-slate-500 dark:text-slate-400 font-medium shrink-0">Keyingi toʻlov</span>
+            <span className="font-mono font-bold text-slate-900 dark:text-slate-100 text-right">
               {isFree ? '59 000 soʻm' : isCancelled ? '0 soʻm' : `${planPrice} soʻm`}
             </span>
           </div>
@@ -586,31 +587,33 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           <ThemeToggle id="btn-profile-settings-theme-toggle" variant="pill" />
         </div>
 
-        <div className="p-4 sm:p-5 flex items-center justify-between hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition-colors">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+        <div className="p-4 sm:p-5 flex items-center justify-between gap-3 hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition-colors">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
               <Bell className="w-4 h-4" />
             </div>
-            <div>
+            <div className="min-w-0">
               <h4 className="font-heading font-bold text-sm text-slate-900 dark:text-slate-100">
                 Xabarnomalar va bildirishnomalar
               </h4>
               <p className="text-xs text-slate-500 dark:text-slate-400">Telegram va Email orqali yangi briflar haqida xabar olish</p>
             </div>
           </div>
-          <input
-            type="checkbox"
-            defaultChecked
-            className="w-4 h-4 text-indigo-600 rounded-md cursor-pointer accent-indigo-600"
-          />
+          <label className="min-w-[44px] min-h-[44px] -mr-2 flex items-center justify-center cursor-pointer shrink-0">
+            <input
+              type="checkbox"
+              defaultChecked
+              className="w-5 h-5 text-indigo-600 rounded-md cursor-pointer accent-indigo-600"
+            />
+          </label>
         </div>
 
-        <div className="p-4 sm:p-5 flex items-center justify-between hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition-colors">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-purple-50 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+        <div className="p-4 sm:p-5 flex items-center justify-between gap-3 hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition-colors">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-purple-50 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
               <ShieldCheck className="w-4 h-4" />
             </div>
-            <div>
+            <div className="min-w-0">
               <h4 className="font-heading font-bold text-sm text-slate-900 dark:text-slate-100">
                 Xavfsizlik va kirish paroli
               </h4>
@@ -618,7 +621,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
             </div>
           </div>
           <span
-            className="text-xs font-heading font-medium text-slate-400 dark:text-slate-500"
+            className="text-xs font-heading font-medium text-slate-400 dark:text-slate-500 shrink-0"
           >
             Faol
           </span>
@@ -631,7 +634,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           type="button"
           id="btn-logout-profile"
           onClick={onLogout}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-rose-200 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs sm:text-sm font-heading font-bold transition-colors cursor-pointer"
+          className="w-full sm:w-auto min-h-[48px] inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-rose-200 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs sm:text-sm font-heading font-bold transition-colors cursor-pointer"
         >
           <LogOut className="w-4 h-4" />
           <span>Hisobdan chiqish</span>

@@ -50,7 +50,7 @@ export const WhyCollabixSection: React.FC<WhyCollabixSectionProps> = ({ onExplor
     <section
       id="why-collabix-section"
       ref={sectionRef}
-      className="relative w-full py-20 lg:py-28 bg-white dark:bg-[#0B0F19] border-b border-indigo-100/60 dark:border-slate-800/80 overflow-hidden opacity-100 transition-colors duration-300"
+      className="relative w-full py-14 sm:py-20 lg:py-28 bg-white dark:bg-[#0B0F19] border-b border-indigo-100/60 dark:border-slate-800/80 overflow-hidden opacity-100 transition-colors duration-300"
     >
       {/* Soft background ambient glow */}
       <div className="absolute top-1/2 -left-20 w-80 h-80 bg-purple-100/40 dark:bg-purple-900/10 rounded-full blur-3xl pointer-events-none -z-10" />
@@ -59,7 +59,7 @@ export const WhyCollabixSection: React.FC<WhyCollabixSectionProps> = ({ onExplor
         
         {/* Section Header: Always guaranteed visible */}
         <div
-          className="flex flex-col md:flex-row md:items-end justify-between mb-16 pb-6 border-b border-slate-200 dark:border-slate-800 opacity-100 translate-y-0"
+          className="flex flex-col md:flex-row md:items-end justify-between mb-10 sm:mb-16 pb-6 border-b border-slate-200 dark:border-slate-800 opacity-100 translate-y-0"
         >
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-900 mb-3">
@@ -68,25 +68,25 @@ export const WhyCollabixSection: React.FC<WhyCollabixSectionProps> = ({ onExplor
                 Nima uchun Collabix
               </span>
             </div>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight font-heading">
+            <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight font-heading leading-tight">
               Reklama hamkorligida shaffoflik va tezkor natija
             </h2>
           </div>
 
-          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 font-body mt-4 md:mt-0 max-w-md">
+          <p className="text-[15px] sm:text-base text-slate-600 dark:text-slate-300 font-body mt-3 md:mt-0 max-w-md leading-relaxed">
             Haqiqiy tahliliy metrikalar, tezkor brifing tizimi va to'g'ridan-to'g'ri bog'lanish imkoniyati.
           </p>
         </div>
 
         {/* 3 Distinct Colorful Feature Cards: Always visible */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6 lg:gap-8">
           {WHY_COLLABIX_FEATURES.map((feature, idx) => {
             const theme = featureThemes[idx];
             return (
               <div
                 key={feature.id}
                 id={`feature-card-${idx + 1}`}
-                className={`group relative p-8 bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-2xl shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between overflow-hidden opacity-100 translate-y-0 ${
+                className={`group relative p-6 sm:p-8 bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-2xl shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between overflow-hidden opacity-100 translate-y-0 ${
                   theme.borderHover
                 }`}
                 style={{
@@ -101,7 +101,7 @@ export const WhyCollabixSection: React.FC<WhyCollabixSectionProps> = ({ onExplor
 
                 {/* Card Header */}
                 <div>
-                  <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center justify-between mb-5 sm:mb-6 pb-4 border-b border-slate-100 dark:border-slate-800">
                     <span className="font-mono text-xs font-bold px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
                       QADAM {feature.number}
                     </span>
@@ -110,11 +110,11 @@ export const WhyCollabixSection: React.FC<WhyCollabixSectionProps> = ({ onExplor
                     </div>
                   </div>
 
-                  <h3 className="font-heading text-xl font-bold text-slate-900 dark:text-white mb-3">
+                  <h3 className="font-heading text-xl font-bold text-slate-900 dark:text-white mb-2.5">
                     {feature.title}
                   </h3>
 
-                  <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-body mb-8">
+                  <p className="text-[15px] sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-body mb-6 sm:mb-8">
                     {feature.description}
                   </p>
                 </div>

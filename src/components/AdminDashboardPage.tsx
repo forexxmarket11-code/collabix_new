@@ -155,30 +155,30 @@ export function AdminDashboardPage({ onLogout, onGoToSite, onUnauthorized }: Adm
     loadStats();
   }, [loadStats]);
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#0E0E15] text-slate-900 dark:text-white transition-colors duration-200 pb-16">
+    <div className="min-h-screen w-full max-w-full overflow-x-clip bg-slate-50 dark:bg-[#0E0E15] text-slate-900 dark:text-white transition-colors duration-200 pb-[calc(64px+env(safe-area-inset-bottom,0px))]">
       {/* Top Header Bar */}
       <header className="sticky top-0 z-30 bg-white/95 dark:bg-[#12121A]/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-xs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="w-9 h-9 shrink-0 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-xs">
               <Sparkles className="w-4 h-4" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-base font-heading font-extrabold tracking-tight text-slate-900 dark:text-white">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <span className="text-base font-heading font-extrabold tracking-tight text-slate-900 dark:text-white truncate">
                   Collabix
                 </span>
-                <span className="text-[11px] font-heading font-bold px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300">
+                <span className="text-[10px] sm:text-[11px] font-heading font-bold px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 shrink-0">
                   Admin panel
                 </span>
               </div>
-              <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-body">
+              <span className="hidden sm:block text-[11px] text-slate-500 dark:text-slate-400 font-body truncate">
                 Platforma hisobotlari va statistikasi
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             {/* Theme Toggle Button */}
             <ThemeToggle variant="compact" />
 
@@ -186,7 +186,7 @@ export function AdminDashboardPage({ onLogout, onGoToSite, onUnauthorized }: Adm
               type="button"
               onClick={onGoToSite}
               id="btn-admin-view-site"
-              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-heading font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              className="hidden sm:inline-flex items-center gap-1.5 min-h-[44px] px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-heading font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
             >
               <span>Saytni ochish</span>
               <ExternalLink className="w-3.5 h-3.5" />
@@ -196,9 +196,9 @@ export function AdminDashboardPage({ onLogout, onGoToSite, onUnauthorized }: Adm
               type="button"
               onClick={onLogout}
               id="btn-admin-logout"
-              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-heading font-semibold transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 sm:gap-2 min-h-[44px] px-3 sm:px-3.5 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-heading font-semibold transition-colors cursor-pointer"
             >
-              <LogOut className="w-3.5 h-3.5" />
+              <LogOut className="w-3.5 h-3.5 shrink-0" />
               <span>Chiqish</span>
             </button>
           </div>
@@ -239,7 +239,7 @@ export function AdminDashboardPage({ onLogout, onGoToSite, onUnauthorized }: Adm
               type="button"
               id="tab-btn-approvals"
               onClick={() => setActiveTab('approvals')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-heading font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 whitespace-nowrap ${
+              className={`min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-heading font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 whitespace-nowrap ${
                 activeTab === 'approvals'
                   ? 'bg-white dark:bg-[#1A1A24] text-slate-900 dark:text-white shadow-xs'
                   : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/50'
@@ -258,7 +258,7 @@ export function AdminDashboardPage({ onLogout, onGoToSite, onUnauthorized }: Adm
               type="button"
               id="tab-btn-payment-requests"
               onClick={() => setActiveTab('payment_requests')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-heading font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 whitespace-nowrap ${
+              className={`min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-heading font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 whitespace-nowrap ${
                 activeTab === 'payment_requests'
                   ? 'bg-white dark:bg-[#1A1A24] text-slate-900 dark:text-white shadow-xs'
                   : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/50'
@@ -277,7 +277,7 @@ export function AdminDashboardPage({ onLogout, onGoToSite, onUnauthorized }: Adm
               type="button"
               id="tab-btn-reports"
               onClick={() => setActiveTab('reports')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-heading font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 whitespace-nowrap ${
+              className={`min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-heading font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 whitespace-nowrap ${
                 activeTab === 'reports'
                   ? 'bg-white dark:bg-[#1A1A24] text-slate-900 dark:text-white shadow-xs'
                   : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/50'
@@ -291,7 +291,7 @@ export function AdminDashboardPage({ onLogout, onGoToSite, onUnauthorized }: Adm
               type="button"
               id="tab-btn-agency-applications"
               onClick={() => setActiveTab('agency_applications')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-heading font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 whitespace-nowrap ${
+              className={`min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-heading font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 whitespace-nowrap ${
                 activeTab === 'agency_applications'
                   ? 'bg-white dark:bg-[#1A1A24] text-slate-900 dark:text-white shadow-xs'
                   : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/50'
@@ -310,7 +310,7 @@ export function AdminDashboardPage({ onLogout, onGoToSite, onUnauthorized }: Adm
               type="button"
               id="tab-btn-cancellations"
               onClick={() => setActiveTab('cancellations')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-heading font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 whitespace-nowrap ${
+              className={`min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-heading font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 whitespace-nowrap ${
                 activeTab === 'cancellations'
                   ? 'bg-white dark:bg-[#1A1A24] text-slate-900 dark:text-white shadow-xs'
                   : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/50'
@@ -377,17 +377,21 @@ export function AdminDashboardPage({ onLogout, onGoToSite, onUnauthorized }: Adm
               aria-label="Katalog faqat Pro uchun"
               disabled={isSavingCatalogSetting}
               onClick={handleToggleCatalogProOnly}
-              className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500/40 disabled:opacity-60 ${
-                catalogProOnly
-                  ? 'bg-gradient-to-r from-indigo-600 to-purple-600'
-                  : 'bg-slate-300 dark:bg-slate-700'
-              }`}
+              className="min-w-[48px] min-h-[44px] inline-flex items-center justify-end cursor-pointer focus:outline-none disabled:opacity-60"
             >
               <span
-                className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-                  catalogProOnly ? 'translate-x-5' : 'translate-x-0'
+                className={`relative inline-flex h-7 w-12 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
+                  catalogProOnly
+                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600'
+                    : 'bg-slate-300 dark:bg-slate-700'
                 }`}
-              />
+              >
+                <span
+                  className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                    catalogProOnly ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </span>
             </button>
           </div>
         </div>
@@ -429,9 +433,9 @@ export function AdminDashboardPage({ onLogout, onGoToSite, onUnauthorized }: Adm
                 disabled={isLoading || isRefreshing}
                 title="Maʼlumotlarni qayta yuklash"
                 id="btn-admin-refresh-stats"
-                className="p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-200 dark:hover:border-indigo-800 hover:bg-white dark:hover:bg-slate-800 transition-colors cursor-pointer disabled:opacity-50 inline-flex items-center justify-center"
+                className="min-w-[44px] min-h-[44px] p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-200 dark:hover:border-indigo-800 hover:bg-white dark:hover:bg-slate-800 transition-colors cursor-pointer disabled:opacity-50 inline-flex items-center justify-center"
               >
-                <RotateCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-indigo-600' : ''}`} />
+                <RotateCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-indigo-600' : ''}`} />
               </button>
             </div>
           </div>
@@ -669,9 +673,9 @@ export function AdminDashboardPage({ onLogout, onGoToSite, onUnauthorized }: Adm
 
         {/* SECTION B: DAROMAD HISOBOTI */}
         <section aria-labelledby="heading-revenue-stats" className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 id="heading-revenue-stats" className="text-base font-heading font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <DollarSign className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <DollarSign className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
               <span>B) Daromad hisoboti (obunalardan)</span>
             </h2>
             <span className="text-xs font-heading font-medium text-slate-500 dark:text-slate-400">
@@ -793,9 +797,9 @@ export function AdminDashboardPage({ onLogout, onGoToSite, onUnauthorized }: Adm
 
         {/* SECTION C: TAVSIYALAR (REFERRAL) STATISTIKASI */}
         <section aria-labelledby="heading-referral-stats" className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 id="heading-referral-stats" className="text-base font-heading font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <Gift className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+              <Gift className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0" />
               <span>C) Tavsiyalar (referral) statistikasi</span>
             </h2>
             <span className="text-xs font-heading font-medium text-slate-500 dark:text-slate-400">

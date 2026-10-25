@@ -167,11 +167,11 @@ export const AcceptedContactBlock: React.FC<AcceptedContactBlockProps> = ({
                 </div>
               </div>
 
-              <div className="flex items-center gap-1 shrink-0">
+              <div className="flex items-center gap-1.5 shrink-0">
                 <button
                   type="button"
                   onClick={() => handleCopy(cleanPhone, 'phone')}
-                  className="p-1.5 rounded-lg text-slate-500 hover:text-emerald-600 dark:text-slate-400 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/60 transition-colors cursor-pointer"
+                  className="min-w-[44px] min-h-[44px] rounded-xl text-slate-500 hover:text-emerald-600 dark:text-slate-400 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/60 transition-colors cursor-pointer flex items-center justify-center"
                   title="Raqamdan nusxa olish"
                 >
                   {copiedType === 'phone' ? (
@@ -182,7 +182,7 @@ export const AcceptedContactBlock: React.FC<AcceptedContactBlockProps> = ({
                 </button>
                 <a
                   href={`tel:${cleanPhone.replace(/[\s-]/g, '')}`}
-                  className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-heading font-bold shadow-2xs transition-colors flex items-center gap-1 shrink-0"
+                  className="min-h-[44px] px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-heading font-bold shadow-2xs transition-colors flex items-center justify-center gap-1 shrink-0"
                 >
                   <span>Qoʻngʻiroq</span>
                 </a>
@@ -213,11 +213,11 @@ export const AcceptedContactBlock: React.FC<AcceptedContactBlockProps> = ({
                 </div>
               </div>
 
-              <div className="flex items-center gap-1 shrink-0">
+              <div className="flex items-center gap-1.5 shrink-0">
                 <button
                   type="button"
                   onClick={() => handleCopy(tgDisplay, 'telegram')}
-                  className="p-1.5 rounded-lg text-slate-500 hover:text-sky-600 dark:text-slate-400 dark:hover:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-950/60 transition-colors cursor-pointer"
+                  className="min-w-[44px] min-h-[44px] rounded-xl text-slate-500 hover:text-sky-600 dark:text-slate-400 dark:hover:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-950/60 transition-colors cursor-pointer flex items-center justify-center"
                   title="Telegramdan nusxa olish"
                 >
                   {copiedType === 'telegram' ? (
@@ -230,10 +230,10 @@ export const AcceptedContactBlock: React.FC<AcceptedContactBlockProps> = ({
                   href={tgUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-2.5 py-1 rounded-lg bg-sky-500 hover:bg-sky-400 text-white text-[11px] font-heading font-bold shadow-2xs transition-colors flex items-center gap-1 shrink-0"
+                  className="min-h-[44px] px-3 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-xs font-heading font-bold shadow-2xs transition-colors flex items-center justify-center gap-1 shrink-0"
                 >
                   <span>Yozish</span>
-                  <ExternalLink className="w-3 h-3" />
+                  <ExternalLink className="w-3.5 h-3.5" />
                 </a>
               </div>
             </div>
@@ -244,7 +244,7 @@ export const AcceptedContactBlock: React.FC<AcceptedContactBlockProps> = ({
         <div className="p-3 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-start sm:items-center gap-2.5">
             <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5 sm:mt-0" />
-            <p className="text-xs text-amber-900 dark:text-amber-300 font-body">
+            <p className="text-xs sm:text-sm text-amber-900 dark:text-amber-300 font-body">
               Bogʻlanish maʼlumotlari hali kiritilmagan, Xabarlar boʻlimi orqali yozing
             </p>
           </div>
@@ -253,7 +253,7 @@ export const AcceptedContactBlock: React.FC<AcceptedContactBlockProps> = ({
             <button
               type="button"
               onClick={onOpenChat}
-              className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-heading font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 shrink-0 cursor-pointer self-start sm:self-auto"
+              className="w-full sm:w-auto min-h-[44px] px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-heading font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
             >
               <MessageSquare className="w-3.5 h-3.5" />
               <span>Xabar yozish</span>
@@ -311,6 +311,19 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
   // Action status / feedback
   const [isSubmittingResponse, setIsSubmittingResponse] = useState(false);
   const [responseSuccessMessage, setResponseSuccessMessage] = useState<string | null>(null);
+  const [responseErrorMessage, setResponseErrorMessage] = useState<string | null>(null);
+
+  const handleModalInputFocus = (e: React.FocusEvent<HTMLElement>) => {
+    const target = e.target as HTMLElement;
+    if (
+      target &&
+      (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT')
+    ) {
+      setTimeout(() => {
+        target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      }, 260);
+    }
+  };
 
   // Open target brief directly when navigated from notification
   useEffect(() => {
@@ -653,7 +666,8 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
       setTimeout(() => setResponseSuccessMessage(null), 3500);
     } catch (err) {
       console.error("Brifni qabul qilishda xatolik:", err);
-      alert("Xatolik yuz berdi. Iltimos, qayta urinib koʻring.");
+      setResponseErrorMessage("Xatolik yuz berdi. Iltimos, qayta urinib koʻring.");
+      setTimeout(() => setResponseErrorMessage(null), 4000);
     } finally {
       setIsSubmittingResponse(false);
     }
@@ -714,7 +728,8 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
       setTimeout(() => setResponseSuccessMessage(null), 3500);
     } catch (err) {
       console.error("Brifni rad etishda xatolik:", err);
-      alert("Xatolik yuz berdi. Iltimos, qayta urinib koʻring.");
+      setResponseErrorMessage("Xatolik yuz berdi. Iltimos, qayta urinib koʻring.");
+      setTimeout(() => setResponseErrorMessage(null), 4000);
     } finally {
       setIsSubmittingResponse(false);
     }
@@ -821,12 +836,19 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
   };
 
   return (
-    <div className="min-h-screen pb-28 pt-8 sm:pt-12 px-4 sm:px-6 max-w-5xl mx-auto">
+    <div className="min-h-screen pb-28 pt-6 sm:pt-12 px-4 sm:px-6 max-w-5xl mx-auto">
       {/* Toast / Notification Alert */}
       {responseSuccessMessage && (
-        <div className="fixed top-20 right-4 z-50 bg-emerald-600 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2.5 text-xs sm:text-sm font-heading font-bold animate-in slide-in-from-top-4 duration-200">
+        <div className="fixed top-20 inset-x-4 sm:left-auto sm:right-4 z-[80] bg-emerald-600 text-white px-4 sm:px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2.5 text-xs sm:text-sm font-heading font-bold animate-in slide-in-from-top-4 duration-200">
           <CheckCircle2 className="w-5 h-5 shrink-0" />
-          <span>{responseSuccessMessage}</span>
+          <span className="break-words">{responseSuccessMessage}</span>
+        </div>
+      )}
+
+      {responseErrorMessage && (
+        <div className="fixed top-20 inset-x-4 sm:left-auto sm:right-4 z-[80] bg-rose-600 text-white px-4 sm:px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2.5 text-xs sm:text-sm font-heading font-bold animate-in slide-in-from-top-4 duration-200">
+          <AlertCircle className="w-5 h-5 shrink-0" />
+          <span className="break-words">{responseErrorMessage}</span>
         </div>
       )}
 
@@ -840,7 +862,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
           <h1 className="font-heading font-extrabold text-2xl sm:text-3xl text-slate-900 dark:text-white tracking-tight">
             Brif va Buyurtmalar
           </h1>
-          <p className="text-sm sm:text-base text-slate-600 dark:text-[#D0D0D8] font-body mt-1">
+          <p className="text-[15px] sm:text-base text-slate-600 dark:text-[#D0D0D8] font-body mt-1 leading-relaxed">
             {isCreator
               ? "Sizga yoʻllangan shaxsiy takliflar va barcha ochiq eʼlonlar platformasi."
               : "Kreatorlarga yoʻllangan shaxsiy briflar va barcha ochiq eʼlonlar platformasi."}
@@ -849,12 +871,12 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
 
         {/* "+ Brif yaratish" tugmasi — Faqat brend hisoblari uchun (kreatorlar uchun ko'rinmaydi) */}
         {showCreateBriefButton && (
-          <div className="flex items-center pt-2 sm:pt-0 shrink-0">
+          <div className="flex items-center pt-1 sm:pt-0 shrink-0">
             <button
               type="button"
               id="btn-orders-new-brief"
               onClick={onOpenCreateBrief}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-heading font-bold text-sm sm:text-base shadow-lg shadow-indigo-600/25 hover:shadow-indigo-600/40 transition-all cursor-pointer shrink-0 active:scale-95"
+              className="w-full sm:w-auto min-h-[48px] inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-heading font-bold text-sm sm:text-base shadow-lg shadow-indigo-600/25 hover:shadow-indigo-600/40 transition-all cursor-pointer shrink-0 active:scale-95"
             >
               <Plus className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5]" />
               <span>Brif yaratish</span>
@@ -869,15 +891,15 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
           type="button"
           id="tab-briefs-open"
           onClick={() => setActiveMainTab('open')}
-          className={`flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs sm:text-sm font-heading font-bold transition-all cursor-pointer ${
+          className={`min-h-[44px] px-2 flex items-center justify-center gap-1.5 sm:gap-2 py-2.5 rounded-xl text-xs sm:text-sm font-heading font-bold transition-all cursor-pointer min-w-0 ${
             activeMainTab === 'open'
               ? 'bg-white dark:bg-[#1E1E2D] text-indigo-600 dark:text-indigo-400 shadow-xs'
               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
-          <Globe className="w-4 h-4" />
-          <span>Ochiq eʼlonlar</span>
-          <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 font-mono font-bold">
+          <Globe className="w-4 h-4 shrink-0" />
+          <span className="truncate">Ochiq eʼlonlar</span>
+          <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 font-mono font-bold shrink-0">
             {openCustomBriefs.length}
           </span>
         </button>
@@ -886,15 +908,15 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
           type="button"
           id="tab-briefs-direct"
           onClick={() => setActiveMainTab('direct')}
-          className={`flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs sm:text-sm font-heading font-bold transition-all cursor-pointer ${
+          className={`min-h-[44px] px-2 flex items-center justify-center gap-1.5 sm:gap-2 py-2.5 rounded-xl text-xs sm:text-sm font-heading font-bold transition-all cursor-pointer min-w-0 ${
             activeMainTab === 'direct'
               ? 'bg-white dark:bg-[#1E1E2D] text-indigo-600 dark:text-indigo-400 shadow-xs'
               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
-          <UserCheck className="w-4 h-4" />
-          <span>{isCreator ? 'Menga yuborilgan' : 'Shaxsiy briflar'}</span>
-          <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-200/80 dark:bg-slate-800 font-mono">
+          <UserCheck className="w-4 h-4 shrink-0" />
+          <span className="truncate">{isCreator ? 'Menga yuborilgan' : 'Shaxsiy briflar'}</span>
+          <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-slate-200/80 dark:bg-slate-800 font-mono shrink-0">
             {countAllDirect}
           </span>
         </button>
@@ -906,7 +928,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
       {activeMainTab === 'direct' && (
         <div className="space-y-6 animate-in fade-in duration-200">
           {/* Status Filter Tabs */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar -mx-1 px-1">
             {[
               { key: 'all', label: `Barchasi (${countAllDirect})` },
               { key: 'yangi', label: `Yangi / Kutilmoqda (${countYangiDirect})` },
@@ -917,7 +939,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                 key={tab.key}
                 type="button"
                 onClick={() => setDirectFilter(tab.key as typeof directFilter)}
-                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-heading font-bold whitespace-nowrap transition-all cursor-pointer ${
+                className={`min-h-[44px] px-4 py-2.5 rounded-xl text-xs sm:text-sm font-heading font-bold whitespace-nowrap transition-all cursor-pointer flex items-center justify-center ${
                   directFilter === tab.key
                     ? 'bg-slate-900 dark:bg-indigo-600 text-white shadow-xs'
                     : 'bg-white dark:bg-[#1A1A24] text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-200/80 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/80'
@@ -993,7 +1015,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                 onClick={() => {
                                   window.location.hash = `#kreator-${brief.selectedCreatorId}`;
                                 }}
-                                className="font-heading font-bold text-base text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 text-left transition-colors cursor-pointer"
+                                className="min-h-[44px] inline-flex items-center font-heading font-bold text-base text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 text-left transition-colors cursor-pointer"
                                 title="Kreator profilini ochish"
                               >
                                 {partnerName}
@@ -1049,10 +1071,10 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
 
                     {/* Brief Details Box */}
                     <div className="bg-slate-50/70 dark:bg-[#12121A] border border-slate-100 dark:border-slate-800 rounded-xl p-3.5 sm:p-4 space-y-2">
-                      <h4 className="font-heading font-bold text-sm sm:text-base text-slate-900 dark:text-white">
+                      <h4 className="font-heading font-bold text-base text-slate-900 dark:text-white break-words">
                         {brief.taskTitle}
                       </h4>
-                      <p className="text-xs text-slate-600 dark:text-[#D0D0D8] font-body line-clamp-2 leading-relaxed">
+                      <p className="text-[15px] sm:text-xs text-slate-600 dark:text-[#D0D0D8] font-body line-clamp-2 leading-relaxed break-words">
                         {brief.requirementsSummary || brief.description}
                       </p>
 
@@ -1110,16 +1132,16 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
 
                     {/* Guarantee Status Pill - Requirement 6 */}
                     <div className="flex items-center justify-between flex-wrap gap-2 text-xs pt-1">
-                      <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
-                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                      <div className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+                        <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                         <span>{guarantee.statusText}</span>
                         <button
                           type="button"
                           onClick={() => setGuaranteeInfoModal(brief)}
-                          className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer"
+                          className="min-w-[44px] min-h-[44px] -my-2 inline-flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer"
                           title="Kafolat shartlarini koʻrish"
                         >
-                          <HelpCircle className="w-3.5 h-3.5" />
+                          <HelpCircle className="w-4 h-4" />
                         </button>
                       </div>
 
@@ -1128,7 +1150,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                         <button
                           type="button"
                           onClick={() => setGuaranteeInfoModal(brief)}
-                          className="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[11px] font-heading font-bold hover:bg-emerald-100 transition-colors cursor-pointer"
+                          className="min-h-[44px] px-3 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-heading font-bold hover:bg-emerald-100 transition-colors cursor-pointer inline-flex items-center justify-center"
                         >
                           Pulni qaytarish kafolati
                         </button>
@@ -1136,19 +1158,19 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                     </div>
 
                     {/* Card Footer: Action Buttons (Requirements 2, 3, 4, 5) */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-slate-100 dark:border-slate-800/80">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800/80">
                       <button
                         type="button"
                         onClick={() => setViewingDetailsBrief(brief)}
-                        className="inline-flex items-center gap-1.5 text-xs font-heading font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors cursor-pointer self-start sm:self-auto"
+                        className="min-h-[44px] inline-flex items-center gap-1.5 text-xs sm:text-sm font-heading font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors cursor-pointer self-start sm:self-auto"
                       >
-                        <Eye className="w-3.5 h-3.5" />
+                        <Eye className="w-4 h-4" />
                         <span>Brif tafsilotlari</span>
-                        <ArrowRight className="w-3 h-3" />
+                        <ArrowRight className="w-3.5 h-3.5" />
                       </button>
 
                       {/* Action buttons based on Role and Status */}
-                      <div className="flex items-center gap-2 flex-wrap self-end sm:self-auto">
+                      <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto justify-end">
                         {/* 1. CREATOR VIEW: "Qabul qilish" & "Rad etish" (Req 2, 3, 4) */}
                         {isCreator && isNewWaiting && (
                           <>
@@ -1158,7 +1180,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                               id={`btn-reject-brief-${brief.id}`}
                               disabled={isSubmittingResponse}
                               onClick={() => handleOpenRejectModal(brief)}
-                              className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300/80 dark:border-slate-700 text-xs font-heading font-semibold transition-all cursor-pointer active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
+                              className="flex-1 sm:flex-none min-h-[44px] px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300/80 dark:border-slate-700 text-xs font-heading font-semibold transition-all cursor-pointer active:scale-95 disabled:opacity-50 flex items-center justify-center gap-1.5"
                             >
                               <X className="w-3.5 h-3.5" />
                               <span>Rad etish</span>
@@ -1170,7 +1192,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                               id={`btn-accept-brief-${brief.id}`}
                               disabled={isSubmittingResponse}
                               onClick={() => handleAcceptBrief(brief)}
-                              className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-heading font-bold shadow-xs shadow-emerald-600/20 transition-all cursor-pointer active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
+                              className="flex-1 sm:flex-none min-h-[44px] px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-heading font-bold shadow-xs shadow-emerald-600/20 transition-all cursor-pointer active:scale-95 disabled:opacity-50 flex items-center justify-center gap-1.5"
                             >
                               <Check className="w-3.5 h-3.5 stroke-[3]" />
                               <span>Qabul qilish</span>
@@ -1184,9 +1206,9 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                             type="button"
                             id={`btn-chat-brief-${brief.id}`}
                             onClick={() => handleStartChatWithPartner(brief)}
-                            className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-heading font-bold shadow-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+                            className="w-full sm:w-auto min-h-[44px] px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-heading font-bold shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
                           >
-                            <MessageSquare className="w-3.5 h-3.5" />
+                            <MessageSquare className="w-4 h-4" />
                             <span>Xabar yozish</span>
                           </button>
                         )}
@@ -1222,7 +1244,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                     ? 'Rad etilgan briflar mavjud emas'
                     : 'Hozircha shaxsiy briflar mavjud emas'}
                 </p>
-                <p className="text-xs text-slate-500 dark:text-[#D0D0D8] font-body mb-4">
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-[#D0D0D8] font-body mb-4">
                   {isCreator
                     ? "Brendlar sizga shaxsiy brif yoʻllaganda, ular shu yerda koʻrinadi."
                     : "Kreatorlarga yoʻllagan shaxsiy briflaringiz shu yerda shakllanadi."}
@@ -1231,7 +1253,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                   <button
                     type="button"
                     onClick={() => setDirectFilter('all')}
-                    className="text-xs font-heading font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
+                    className="min-h-[44px] px-4 py-2 inline-flex items-center justify-center text-xs font-heading font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
                   >
                     Barcha briflarni koʻrish
                   </button>
@@ -1257,12 +1279,12 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Ochiq eʼlonlarni nomi, brend yoki talablar boʻyicha qidirish..."
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-body text-slate-900 dark:text-white bg-slate-50 dark:bg-[#12121A] focus:bg-white dark:focus:bg-[#1A1A24] focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 transition-colors"
+                className="w-full min-h-[48px] pl-10 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-base sm:text-sm font-body text-slate-900 dark:text-white bg-slate-50 dark:bg-[#12121A] focus:bg-white dark:focus:bg-[#1A1A24] focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 transition-colors"
               />
             </div>
 
             {/* Categories Pills */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar -mx-1 px-1">
               {CATEGORIES_LIST.map((category) => {
                 const isSelected = selectedCategory === category;
                 return (
@@ -1270,7 +1292,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                     key={category}
                     type="button"
                     onClick={() => setSelectedCategory(category)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-heading font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                    className={`min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-heading font-semibold whitespace-nowrap transition-all cursor-pointer flex items-center justify-center ${
                       isSelected
                         ? 'bg-indigo-600 text-white shadow-xs'
                         : 'bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/70 dark:hover:bg-slate-700'
@@ -1363,12 +1385,12 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                     </h4>
 
                     {/* 3. Tavsifning FAQAT birinchi qatori (1 qator, "..." bilan kesilgan) */}
-                    <p className="text-xs sm:text-sm text-slate-600 dark:text-[#D0D0D8] font-body truncate leading-relaxed">
+                    <p className="text-[15px] sm:text-sm text-slate-600 dark:text-[#D0D0D8] font-body truncate leading-relaxed">
                       {firstLineDesc}
                     </p>
 
                     {/* 4. Bitta qisqa qator: narx + muddat bitta chiziqda */}
-                    <div className="text-xs font-heading font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 pt-0.5">
+                    <div className="text-xs font-heading font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 pt-0.5 break-words">
                       <span>{priceAndDeadlineText}</span>
                     </div>
 
@@ -1403,7 +1425,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                         type="button"
                         id={`btn-view-brief-${brief.id}`}
                         onClick={() => setViewingDetailsBrief(brief)}
-                        className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-heading font-bold shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
+                        className="w-full sm:w-auto min-h-[44px] px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-heading font-bold shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
                       >
                         <Eye className="w-4 h-4" />
                         <span>Batafsil</span>
@@ -1418,7 +1440,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                 <p className="text-sm font-heading font-semibold text-slate-700 dark:text-slate-200 mb-1">
                   Hozircha ochiq eʼlonlar mavjud emas
                 </p>
-                <p className="text-xs text-slate-500 dark:text-[#D0D0D8] font-body">
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-[#D0D0D8] font-body">
                   Brendlar ochiq briflar joylashtirganda, ular shu yerda koʻrinadi.
                 </p>
               </div>
@@ -1434,7 +1456,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                     setSelectedCategory('Barchasi');
                     setSearchQuery('');
                   }}
-                  className="text-xs font-heading font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
+                  className="min-h-[44px] px-4 py-2 inline-flex items-center justify-center text-xs font-heading font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
                 >
                   Filtrlarni tozalash
                 </button>
@@ -1450,19 +1472,22 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
       {applyingBrief && (
         <div
           id="modal-apply-brief-backdrop"
-          className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 pb-[calc(90px+env(safe-area-inset-bottom,0px))] sm:pb-4 overflow-y-auto"
+          className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4"
         >
-          <div className="bg-white dark:bg-[#1A1A24] rounded-3xl border border-slate-200 dark:border-slate-800 w-full max-w-lg shadow-2xl p-5 sm:p-7 space-y-5 animate-in zoom-in-95 duration-150 max-h-[85vh] sm:max-h-[90vh] overflow-y-auto pb-[calc(44px+env(safe-area-inset-bottom,0px))] sm:pb-9">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+          <div
+            onFocusCapture={handleModalInputFocus}
+            className="bg-white dark:bg-[#1A1A24] rounded-t-3xl sm:rounded-3xl border-t sm:border border-slate-200 dark:border-slate-800 w-full sm:max-w-lg shadow-2xl flex flex-col max-h-[94dvh] sm:max-h-[90vh] overflow-hidden animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200"
+          >
+            <div className="px-5 py-4 sm:px-7 sm:py-5 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-3 shrink-0 bg-white/95 dark:bg-[#1A1A24]/95 backdrop-blur-md">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
                   <Send className="w-4 h-4" />
                 </div>
-                <div>
-                  <h3 className="font-heading font-bold text-base text-slate-900 dark:text-white">
+                <div className="min-w-0">
+                  <h3 className="font-heading font-bold text-base text-slate-900 dark:text-white truncate">
                     Ochiq brifga ariza yuborish
                   </h3>
-                  <span className="text-xs text-slate-500 dark:text-[#D0D0D8] font-body">
+                  <span className="text-xs text-slate-500 dark:text-[#D0D0D8] font-body block truncate">
                     Brend taklifingiz bilan tanishadi
                   </span>
                 </div>
@@ -1470,102 +1495,106 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
               <button
                 type="button"
                 onClick={() => setApplyingBrief(null)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                aria-label="Yopish"
+                className="min-w-[44px] min-h-[44px] rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer flex items-center justify-center shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#12121A] border border-slate-100 dark:border-slate-800 text-xs space-y-1.5">
-              <span className="block font-heading font-bold text-slate-900 dark:text-white truncate">
-                {applyingBrief.taskTitle}
-              </span>
-              <span className="block text-slate-500 dark:text-[#D0D0D8] font-body">
-                Brend: <strong>{applyingBrief.brandName || 'Brend'}</strong> • Formatlar: {applyingBrief.formats.join(', ')}
-              </span>
-              {applyingBrief.paymentType === 'barter' ? (
-                <div className="pt-1 flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-300 font-medium">
-                  <span className="px-2 py-0.5 rounded-md bg-amber-100/80 dark:bg-amber-950/60 font-bold font-heading text-[11px]">🔄 Barter taklifi</span>
-                  <span>{applyingBrief.barterDescription || 'Mahsulot/xizmat taklifi'}</span>
-                  {applyingBrief.barterEstimatedValue ? <span className="text-slate-500 font-mono">(taxm. {applyingBrief.barterEstimatedValue} soʻm)</span> : null}
-                </div>
-              ) : (applyingBrief.budgetMin || applyingBrief.budgetMax) ? (
-                <div className="pt-1 text-xs text-emerald-700 dark:text-emerald-400 font-medium font-mono">
-                  Byudjet: {applyingBrief.budgetMin ? `${applyingBrief.budgetMin} soʻmdan` : ''} {applyingBrief.budgetMax ? `${applyingBrief.budgetMax} soʻmgacha` : ''}
-                </div>
-              ) : null}
-            </div>
-
-            {applicationSuccess ? (
-              <div className="p-6 text-center space-y-2 bg-emerald-50 dark:bg-emerald-950/40 rounded-2xl border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300">
-                <CheckCircle2 className="w-10 h-10 mx-auto text-emerald-600 dark:text-emerald-400" />
-                <h4 className="font-heading font-bold text-base">Arizangiz muvaffaqiyatli yuborildi!</h4>
-                <p className="text-xs font-body">
-                  Brend javob qaytarganda sizga bildirishnoma keladi.
-                </p>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmitApplication} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-heading font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    {applyingBrief.paymentType === 'barter'
-                      ? "Qoʻshimcha toʻlov taklifi (agar kerak boʻlsa, ixtiyoriy)"
-                      : "Siz taklif etayotgan narx (ixtiyoriy)"}
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={proposedPrice}
-                      onChange={(e) => setProposedPrice(e.target.value)}
-                      placeholder={applyingBrief.paymentType === 'barter' ? "Masalan: 500 000 yoki boʻsh qoldiring" : "Masalan: 3 000 000"}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-body text-slate-900 dark:text-white bg-white dark:bg-[#12121A] focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20"
-                    />
-                    <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-body text-slate-400 pointer-events-none">
-                      soʻm
-                    </span>
+            <div className="flex-1 overflow-y-auto overscroll-contain p-5 sm:p-7 space-y-5 pb-[max(24px,calc(env(safe-area-inset-bottom,0px)+16px))] sm:pb-7">
+              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#12121A] border border-slate-100 dark:border-slate-800 text-xs space-y-1.5">
+                <span className="block font-heading font-bold text-slate-900 dark:text-white break-words">
+                  {applyingBrief.taskTitle}
+                </span>
+                <span className="block text-slate-500 dark:text-[#D0D0D8] font-body break-words">
+                  Brend: <strong>{applyingBrief.brandName || 'Brend'}</strong> • Formatlar: {applyingBrief.formats.join(', ')}
+                </span>
+                {applyingBrief.paymentType === 'barter' ? (
+                  <div className="pt-1 flex flex-wrap items-center gap-1.5 text-xs text-amber-700 dark:text-amber-300 font-medium">
+                    <span className="px-2 py-0.5 rounded-md bg-amber-100/80 dark:bg-amber-950/60 font-bold font-heading text-[11px]">🔄 Barter taklifi</span>
+                    <span>{applyingBrief.barterDescription || 'Mahsulot/xizmat taklifi'}</span>
+                    {applyingBrief.barterEstimatedValue ? <span className="text-slate-500 font-mono">(taxm. {applyingBrief.barterEstimatedValue} soʻm)</span> : null}
                   </div>
-                </div>
+                ) : (applyingBrief.budgetMin || applyingBrief.budgetMax) ? (
+                  <div className="pt-1 text-xs text-emerald-700 dark:text-emerald-400 font-medium font-mono">
+                    Byudjet: {applyingBrief.budgetMin ? `${applyingBrief.budgetMin} soʻmdan` : ''} {applyingBrief.budgetMax ? `${applyingBrief.budgetMax} soʻmgacha` : ''}
+                  </div>
+                ) : null}
+              </div>
 
-                <div>
-                  <label className="block text-xs font-heading font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Taklifingiz va xabaringiz <span className="text-rose-500">*</span>
-                  </label>
-                  <textarea
-                    rows={4}
-                    value={applicationMessage}
-                    onChange={(e) => {
-                      setApplicationMessage(e.target.value);
-                      if (applicationError) setApplicationError('');
-                    }}
-                    placeholder="Salom! Men ushbu vazifani belgilangan muddatda yuqori sifatda tayyorlay olaman..."
-                    className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-body text-slate-900 dark:text-white bg-white dark:bg-[#12121A] focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 resize-y"
-                  />
-                  {applicationError && (
-                    <p className="text-xs font-heading font-semibold text-rose-600 dark:text-rose-400 mt-1 flex items-center gap-1">
-                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                      <span>{applicationError}</span>
-                    </p>
-                  )}
+              {applicationSuccess ? (
+                <div className="p-6 text-center space-y-2 bg-emerald-50 dark:bg-emerald-950/40 rounded-2xl border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300">
+                  <CheckCircle2 className="w-10 h-10 mx-auto text-emerald-600 dark:text-emerald-400" />
+                  <h4 className="font-heading font-bold text-base">Arizangiz muvaffaqiyatli yuborildi!</h4>
+                  <p className="text-xs sm:text-sm font-body">
+                    Brend javob qaytarganda sizga bildirishnoma keladi.
+                  </p>
                 </div>
+              ) : (
+                <form onSubmit={handleSubmitApplication} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-heading font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                      {applyingBrief.paymentType === 'barter'
+                        ? "Qoʻshimcha toʻlov taklifi (agar kerak boʻlsa, ixtiyoriy)"
+                        : "Siz taklif etayotgan narx (ixtiyoriy)"}
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={proposedPrice}
+                        onChange={(e) => setProposedPrice(e.target.value)}
+                        placeholder={applyingBrief.paymentType === 'barter' ? "Masalan: 500 000 yoki boʻsh qoldiring" : "Masalan: 3 000 000"}
+                        className="w-full min-h-[48px] pl-3.5 pr-14 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-base sm:text-sm font-body text-slate-900 dark:text-white bg-white dark:bg-[#12121A] focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20"
+                      />
+                      <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-body text-slate-400 pointer-events-none">
+                        soʻm
+                      </span>
+                    </div>
+                  </div>
 
-                <div className="flex items-center justify-end gap-2.5 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setApplyingBrief(null)}
-                    className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-heading font-semibold transition-colors cursor-pointer"
-                  >
-                    Bekor qilish
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs sm:text-sm font-heading font-bold shadow-xs transition-all cursor-pointer flex items-center gap-2"
-                  >
-                    <Send className="w-3.5 h-3.5" />
-                    <span>Arizani yuborish</span>
-                  </button>
-                </div>
-              </form>
-            )}
+                  <div>
+                    <label className="block text-xs font-heading font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                      Taklifingiz va xabaringiz <span className="text-rose-500">*</span>
+                    </label>
+                    <textarea
+                      rows={4}
+                      value={applicationMessage}
+                      onChange={(e) => {
+                        setApplicationMessage(e.target.value);
+                        if (applicationError) setApplicationError('');
+                      }}
+                      placeholder="Salom! Men ushbu vazifani belgilangan muddatda yuqori sifatda tayyorlay olaman..."
+                      className="w-full p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-base sm:text-sm font-body text-slate-900 dark:text-white bg-white dark:bg-[#12121A] focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 resize-y"
+                    />
+                    {applicationError && (
+                      <p className="text-xs font-heading font-semibold text-rose-600 dark:text-rose-400 mt-1.5 flex items-center gap-1">
+                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                        <span>{applicationError}</span>
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2.5 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setApplyingBrief(null)}
+                      className="min-h-[48px] px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs sm:text-sm font-heading font-semibold transition-colors cursor-pointer"
+                    >
+                      Bekor qilish
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 sm:flex-none min-h-[48px] px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs sm:text-sm font-heading font-bold shadow-xs transition-all cursor-pointer flex items-center justify-center gap-2"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      <span>Arizani yuborish</span>
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -1576,36 +1605,37 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
       {viewingDetailsBrief && (
         <div
           id="modal-brief-details-backdrop"
-          className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 pb-[calc(90px+env(safe-area-inset-bottom,0px))] sm:pb-4 overflow-y-auto"
+          className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4"
         >
           <div
             id="modal-brief-details-card"
-            className="bg-white dark:bg-[#1A1A24] rounded-3xl border border-slate-200 dark:border-slate-800 w-full max-w-xl shadow-2xl flex flex-col max-h-[85vh] sm:max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-150 relative"
+            className="bg-white dark:bg-[#1A1A24] rounded-t-3xl sm:rounded-3xl border-t sm:border border-slate-200 dark:border-slate-800 w-full sm:max-w-xl shadow-2xl flex flex-col max-h-[94dvh] sm:max-h-[90vh] overflow-hidden animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200 relative"
           >
             {/* Modal Header (Fixed top bar) */}
-            <div className="p-5 sm:px-7 sm:py-5 border-b border-slate-100 dark:border-slate-800/80 flex items-start justify-between gap-3 shrink-0 bg-white/95 dark:bg-[#1A1A24]/95 backdrop-blur-md z-10">
-              <div>
+            <div className="p-4 sm:px-7 sm:py-5 border-b border-slate-100 dark:border-slate-800/80 flex items-start justify-between gap-3 shrink-0 bg-white/95 dark:bg-[#1A1A24]/95 backdrop-blur-md z-10">
+              <div className="min-w-0">
                 <span className="text-[11px] font-heading font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
                   {viewingDetailsBrief.recipientType === 'direct' ? 'Shaxsiy brif tafsilotlari' : 'Ochiq brif tafsilotlari'}
                 </span>
-                <h3 className="font-heading font-extrabold text-lg sm:text-xl text-slate-900 dark:text-white mt-0.5">
+                <h3 className="font-heading font-extrabold text-lg sm:text-xl text-slate-900 dark:text-white mt-0.5 break-words">
                   {viewingDetailsBrief.taskTitle}
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setViewingDetailsBrief(null)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
+                aria-label="Yopish"
+                className="min-w-[44px] min-h-[44px] rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0 flex items-center justify-center"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Modal Scrollable Body */}
-            <div className="p-5 sm:p-7 pt-4 space-y-5 overflow-y-auto flex-1 min-h-0 pb-10 sm:pb-12">
+            <div className="p-4 sm:p-7 pt-4 space-y-5 overflow-y-auto overscroll-contain flex-1 min-h-0 pb-10 sm:pb-12">
               {/* Status indicator in Modal */}
             {viewingDetailsBrief.recipientType === 'direct' && (
-              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-[#12121A] border border-slate-100 dark:border-slate-800">
+              <div className="flex items-center justify-between gap-2 flex-wrap p-3 rounded-xl bg-slate-50 dark:bg-[#12121A] border border-slate-100 dark:border-slate-800">
                 <span className="text-xs font-heading font-semibold text-slate-600 dark:text-slate-300">
                   Brif holati:
                 </span>
@@ -1630,14 +1660,16 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
 
             {/* Brand & Categories Header */}
             <div className="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-slate-50 dark:bg-[#12121A] border border-slate-100 dark:border-slate-800 flex-wrap">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0">
                 <img
                   src={viewingDetailsBrief.brandAvatar || 'https://images.unsplash.com/photo-1572021335469-31706a17aaef?auto=format&fit=crop&w=200&q=80'}
                   alt="Brand"
-                  className="w-11 h-11 rounded-xl object-cover"
+                  loading="lazy"
+                  decoding="async"
+                  className="w-11 h-11 rounded-xl object-cover shrink-0"
                 />
-                <div>
-                  <span className="block text-xs font-heading font-bold text-slate-900 dark:text-white">
+                <div className="min-w-0">
+                  <span className="block text-xs font-heading font-bold text-slate-900 dark:text-white truncate">
                     {viewingDetailsBrief.brandName || 'Brend hamkor'}
                   </span>
                   <span className="block text-[11px] text-slate-500 dark:text-[#D0D0D8] font-body">
@@ -1659,7 +1691,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
               <h4 className="text-xs font-heading font-bold text-slate-900 dark:text-white mb-1.5">
                 Vazifa tavsifi va talablar:
               </h4>
-              <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 font-body leading-relaxed whitespace-pre-line bg-slate-50/60 dark:bg-[#12121A] p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+              <p className="text-[15px] sm:text-sm text-slate-700 dark:text-slate-300 font-body leading-relaxed whitespace-pre-line break-words bg-slate-50/60 dark:bg-[#12121A] p-4 rounded-xl border border-slate-100 dark:border-slate-800">
                 {viewingDetailsBrief.description}
               </p>
             </div>
@@ -1848,19 +1880,19 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
           </div>
 
           {/* Modal Bottom Action Controls (Docked elevated footer layer with prominent visual boundary, border, shadow, and gradient) */}
-          <div className="shrink-0 p-4 sm:px-7 sm:py-4 bg-white/95 dark:bg-[#1A1A24]/95 backdrop-blur-md border-t border-slate-200/90 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 shadow-[0_-10px_25px_-5px_rgba(0,0,0,0.08)] dark:shadow-[0_-10px_25px_-5px_rgba(0,0,0,0.5)] relative z-20">
+          <div className="shrink-0 p-4 pb-[max(16px,calc(env(safe-area-inset-bottom,0px)+8px))] sm:px-7 sm:py-4 bg-white/95 dark:bg-[#1A1A24]/95 backdrop-blur-md border-t border-slate-200/90 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2.5 shadow-[0_-10px_25px_-5px_rgba(0,0,0,0.08)] dark:shadow-[0_-10px_25px_-5px_rgba(0,0,0,0.5)] relative z-20">
             {/* Visual gradient edge separating scrollable content from action buttons */}
             <div className="absolute -top-3 left-0 right-0 h-3 bg-gradient-to-t from-black/5 dark:from-black/25 to-transparent pointer-events-none" />
 
             <button
               type="button"
               onClick={() => setViewingDetailsBrief(null)}
-              className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-heading font-semibold transition-colors cursor-pointer"
+              className="min-h-[44px] px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-heading font-semibold transition-colors cursor-pointer"
             >
               Yopish
             </button>
 
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap flex-1 sm:flex-none justify-end">
               {/* A. If direct brief and creator is reviewing a 'yangi' brief */}
               {viewingDetailsBrief.recipientType === 'direct' &&
                 isCreator &&
@@ -1869,7 +1901,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                     <button
                       type="button"
                       onClick={() => handleOpenRejectModal(viewingDetailsBrief)}
-                      className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 text-xs font-heading font-semibold transition-all cursor-pointer flex items-center gap-1.5"
+                      className="min-h-[44px] px-3.5 sm:px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 text-xs font-heading font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5"
                     >
                       <X className="w-3.5 h-3.5" />
                       <span>Rad etish</span>
@@ -1877,7 +1909,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                     <button
                       type="button"
                       onClick={() => handleAcceptBrief(viewingDetailsBrief)}
-                      className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-heading font-bold shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
+                      className="min-h-[44px] px-4 sm:px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-heading font-bold shadow-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
                     >
                       <Check className="w-3.5 h-3.5 stroke-[3]" />
                       <span>Qabul qilish</span>
@@ -1895,7 +1927,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                       setViewingDetailsBrief(null);
                       handleStartChatWithPartner(b);
                     }}
-                    className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-heading font-bold shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
+                    className="min-h-[44px] px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-heading font-bold shadow-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
                   >
                     <MessageSquare className="w-3.5 h-3.5" />
                     <span>Xabar yozish</span>
@@ -1913,7 +1945,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                       setViewingDetailsBrief(null);
                       handleOpenApplyModal(b);
                     }}
-                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-heading font-bold shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
+                    className="min-h-[44px] px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-heading font-bold shadow-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
                   >
                     <Send className="w-3.5 h-3.5" />
                     <span>Ariza yuborish</span>
@@ -1931,20 +1963,23 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
       {rejectingBrief && (
         <div
           id="modal-reject-brief-backdrop"
-          className="fixed inset-0 z-[75] bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 pb-[calc(90px+env(safe-area-inset-bottom,0px))] sm:pb-4 overflow-y-auto"
+          className="fixed inset-0 z-[75] bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4"
         >
-          <div className="bg-white dark:bg-[#1A1A24] rounded-3xl border border-slate-200 dark:border-slate-800 w-full max-w-md shadow-2xl p-5 sm:p-7 space-y-4 animate-in zoom-in-95 duration-150 max-h-[85vh] overflow-y-auto pb-[calc(44px+env(safe-area-inset-bottom,0px))] sm:pb-9">
+          <div
+            onFocusCapture={handleModalInputFocus}
+            className="bg-white dark:bg-[#1A1A24] rounded-t-3xl sm:rounded-3xl border-t sm:border border-slate-200 dark:border-slate-800 w-full sm:max-w-md shadow-2xl flex flex-col max-h-[94dvh] sm:max-h-[90vh] overflow-hidden animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200"
+          >
             {/* Header */}
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-2.5">
+            <div className="px-5 py-4 sm:px-7 sm:py-5 border-b border-slate-100 dark:border-slate-800/80 flex items-start justify-between gap-3 shrink-0 bg-white/95 dark:bg-[#1A1A24]/95 backdrop-blur-md">
+              <div className="flex items-center gap-2.5 min-w-0">
                 <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0">
                   <XCircle className="w-5 h-5" />
                 </div>
-                <div>
-                  <h3 className="font-heading font-bold text-base text-slate-900 dark:text-white">
+                <div className="min-w-0">
+                  <h3 className="font-heading font-bold text-base text-slate-900 dark:text-white leading-snug">
                     Bu brifni rad etishni tasdiqlaysizmi?
                   </h3>
-                  <span className="text-xs text-slate-500 dark:text-[#D0D0D8] font-body">
+                  <span className="text-xs text-slate-500 dark:text-[#D0D0D8] font-body block">
                     Brendga doʻstona javob bildirishnomasi yuboriladi
                   </span>
                 </div>
@@ -1952,89 +1987,92 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
               <button
                 type="button"
                 onClick={() => setRejectingBrief(null)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                aria-label="Yopish"
+                className="min-w-[44px] min-h-[44px] rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0 flex items-center justify-center"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Target brief brief summary */}
-            <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#12121A] border border-slate-100 dark:border-slate-800 text-xs">
-              <span className="block font-heading font-bold text-slate-900 dark:text-white truncate">
-                {rejectingBrief.taskTitle}
-              </span>
-              <span className="block text-slate-500 dark:text-[#D0D0D8] font-body text-[11px] mt-0.5">
-                Brend: {rejectingBrief.brandName || 'Brend'}
-              </span>
-            </div>
-
-            {/* Optional rejection reason options */}
-            <div className="space-y-2">
-              <label className="block text-xs font-heading font-semibold text-slate-700 dark:text-slate-300">
-                Rad etish sababi <span className="text-slate-400 font-normal">(ixtiyoriy)</span>:
-              </label>
-
-              <div className="space-y-1.5">
-                {REJECTION_REASONS.map((reason) => (
-                  <label
-                    key={reason}
-                    className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs cursor-pointer transition-colors ${
-                      selectedRejectionTemplate === reason
-                        ? 'border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/40 text-indigo-900 dark:text-indigo-200 font-medium'
-                        : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1A1A24] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="rejection-reason"
-                      value={reason}
-                      checked={selectedRejectionTemplate === reason}
-                      onChange={() => setSelectedRejectionTemplate(reason)}
-                      className="text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5"
-                    />
-                    <span>{reason}</span>
-                  </label>
-                ))}
+            <div className="flex-1 overflow-y-auto overscroll-contain p-5 sm:p-7 space-y-4 pb-[max(24px,calc(env(safe-area-inset-bottom,0px)+16px))] sm:pb-7">
+              {/* Target brief summary */}
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#12121A] border border-slate-100 dark:border-slate-800 text-xs">
+                <span className="block font-heading font-bold text-slate-900 dark:text-white break-words">
+                  {rejectingBrief.taskTitle}
+                </span>
+                <span className="block text-slate-500 dark:text-[#D0D0D8] font-body text-[11px] mt-0.5">
+                  Brend: {rejectingBrief.brandName || 'Brend'}
+                </span>
               </div>
 
-              {/* Custom reason / note */}
-              <div className="pt-1">
-                <input
-                  type="text"
-                  value={customRejectionReason}
-                  onChange={(e) => setCustomRejectionReason(e.target.value)}
-                  placeholder="Qoʻshimcha qisqa izoh (masalan: keyingi oyda boʻsh boʻlaman)..."
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-body text-slate-900 dark:text-white bg-slate-50 dark:bg-[#12121A] focus:bg-white dark:focus:bg-[#1A1A24] focus:outline-none focus:border-indigo-600"
-                />
-              </div>
-            </div>
+              {/* Optional rejection reason options */}
+              <div className="space-y-2">
+                <label className="block text-xs font-heading font-semibold text-slate-700 dark:text-slate-300">
+                  Rad etish sababi <span className="text-slate-400 font-normal">(ixtiyoriy)</span>:
+                </label>
 
-            {/* Actions */}
-            <div className="pt-2 flex items-center justify-end gap-2.5">
-              <button
-                type="button"
-                onClick={() => setRejectingBrief(null)}
-                className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-heading font-semibold transition-colors cursor-pointer"
-              >
-                Bekor qilish
-              </button>
-              {/* Neutral slate button, friendly appearance - not harsh red */}
-              <button
-                type="button"
-                id="btn-confirm-rejection"
-                disabled={isSubmittingResponse}
-                onClick={handleConfirmRejectBrief}
-                className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-heading font-bold transition-all cursor-pointer shadow-xs disabled:opacity-50 flex items-center gap-1.5"
-              >
-                {isSubmittingResponse ? (
-                  <span>Yuborilmoqda...</span>
-                ) : (
-                  <>
-                    <XCircle className="w-3.5 h-3.5" />
-                    <span>Rad etishni tasdiqlash</span>
-                  </>
-                )}
-              </button>
+                <div className="space-y-2">
+                  {REJECTION_REASONS.map((reason) => (
+                    <label
+                      key={reason}
+                      className={`min-h-[44px] flex items-center gap-2.5 p-3 rounded-xl border text-xs sm:text-sm cursor-pointer transition-colors ${
+                        selectedRejectionTemplate === reason
+                          ? 'border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/40 text-indigo-900 dark:text-indigo-200 font-medium'
+                          : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1A1A24] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="rejection-reason"
+                        value={reason}
+                        checked={selectedRejectionTemplate === reason}
+                        onChange={() => setSelectedRejectionTemplate(reason)}
+                        className="text-indigo-600 focus:ring-indigo-500 w-4 h-4 shrink-0"
+                      />
+                      <span>{reason}</span>
+                    </label>
+                  ))}
+                </div>
+
+                {/* Custom reason / note */}
+                <div className="pt-1">
+                  <input
+                    type="text"
+                    value={customRejectionReason}
+                    onChange={(e) => setCustomRejectionReason(e.target.value)}
+                    placeholder="Qoʻshimcha qisqa izoh (masalan: keyingi oyda boʻsh boʻlaman)..."
+                    className="w-full min-h-[48px] px-3.5 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-base sm:text-xs font-body text-slate-900 dark:text-white bg-slate-50 dark:bg-[#12121A] focus:bg-white dark:focus:bg-[#1A1A24] focus:outline-none focus:border-indigo-600"
+                  />
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="pt-2 flex items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setRejectingBrief(null)}
+                  className="min-h-[48px] px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-heading font-semibold transition-colors cursor-pointer"
+                >
+                  Bekor qilish
+                </button>
+                {/* Neutral slate button, friendly appearance - not harsh red */}
+                <button
+                  type="button"
+                  id="btn-confirm-rejection"
+                  disabled={isSubmittingResponse}
+                  onClick={handleConfirmRejectBrief}
+                  className="flex-1 sm:flex-none min-h-[48px] px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-heading font-bold transition-all cursor-pointer shadow-xs disabled:opacity-50 flex items-center justify-center gap-1.5"
+                >
+                  {isSubmittingResponse ? (
+                    <span>Yuborilmoqda...</span>
+                  ) : (
+                    <>
+                      <XCircle className="w-4 h-4" />
+                      <span>Rad etishni tasdiqlash</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -2046,12 +2084,12 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
       {viewingApplicationsBrief && (
         <div
           id="modal-applications-brief-backdrop"
-          className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 pb-[calc(90px+env(safe-area-inset-bottom,0px))] sm:pb-4 overflow-y-auto"
+          className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4"
         >
-          <div className="bg-white dark:bg-[#1A1A24] rounded-3xl border border-slate-200 dark:border-slate-800 w-full max-w-xl shadow-2xl flex flex-col max-h-[85vh] sm:max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-150 relative">
+          <div className="bg-white dark:bg-[#1A1A24] rounded-t-3xl sm:rounded-3xl border-t sm:border border-slate-200 dark:border-slate-800 w-full sm:max-w-xl shadow-2xl flex flex-col max-h-[94dvh] sm:max-h-[90vh] overflow-hidden animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200 relative">
             {/* Header (Fixed top bar) */}
-            <div className="p-5 sm:px-7 sm:py-5 border-b border-slate-100 dark:border-slate-800/80 flex items-start justify-between gap-3 shrink-0 bg-white/95 dark:bg-[#1A1A24]/95 backdrop-blur-md z-10">
-              <div>
+            <div className="p-4 sm:px-7 sm:py-5 border-b border-slate-100 dark:border-slate-800/80 flex items-start justify-between gap-3 shrink-0 bg-white/95 dark:bg-[#1A1A24]/95 backdrop-blur-md z-10">
+              <div className="min-w-0">
                 <h3 className="font-heading font-extrabold text-lg text-slate-900 dark:text-white">
                   Kelgan arizalar ({viewingApplicationsBrief.applications?.length || 0})
                 </h3>
@@ -2062,14 +2100,15 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
               <button
                 type="button"
                 onClick={() => setViewingApplicationsBrief(null)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
+                aria-label="Yopish"
+                className="min-w-[44px] min-h-[44px] rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0 flex items-center justify-center"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Applications scrollable body */}
-            <div className="p-5 sm:p-7 pt-4 space-y-3 overflow-y-auto flex-1 min-h-0 pb-10 sm:pb-12">
+            <div className="p-4 sm:p-7 pt-4 space-y-3 overflow-y-auto overscroll-contain flex-1 min-h-0 pb-10 sm:pb-12">
               {viewingApplicationsBrief.applications && viewingApplicationsBrief.applications.length > 0 ? (
                 viewingApplicationsBrief.applications.map((app) => {
                   const isAppAccepted = app.creatorStatus === 'qabul_qilindi' || app.status === 'accepted';
@@ -2087,6 +2126,8 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                             <img
                               src={app.creatorAvatar}
                               alt={app.creatorName}
+                              loading="lazy"
+                              decoding="async"
                               className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-slate-700 shrink-0"
                               onError={(e) => {
                                 (e.target as HTMLElement).style.display = 'none';
@@ -2108,14 +2149,16 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                 setViewingApplicationsBrief(null);
                                 window.location.hash = `#kreator-${app.creatorId}`;
                               }}
-                              className="block font-heading font-bold text-xs sm:text-sm text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 text-left cursor-pointer transition-colors"
+                              className="min-h-[44px] flex flex-col justify-center text-left cursor-pointer group"
                               title="Kreator profilini ochish"
                             >
-                              {app.creatorName}
+                              <span className="block font-heading font-bold text-xs sm:text-sm text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                {app.creatorName}
+                              </span>
+                              <span className="block text-[11px] text-indigo-600 dark:text-indigo-400 font-mono">
+                                {app.creatorHandle || '@kreator'}
+                              </span>
                             </button>
-                            <span className="block text-[11px] text-indigo-600 dark:text-indigo-400 font-mono">
-                              {app.creatorHandle || '@kreator'}
-                            </span>
                           </div>
                         </div>
 
@@ -2153,7 +2196,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                         </div>
                       </div>
 
-                      <p className="text-xs text-slate-700 dark:text-slate-300 font-body bg-white dark:bg-[#1A1A24] p-3 rounded-xl border border-slate-100 dark:border-slate-800 leading-relaxed">
+                      <p className="text-[15px] sm:text-xs text-slate-700 dark:text-slate-300 font-body bg-white dark:bg-[#1A1A24] p-3 rounded-xl border border-slate-100 dark:border-slate-800 leading-relaxed break-words">
                         {app.message}
                       </p>
 
@@ -2197,10 +2240,10 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                         />
                       )}
 
-                      <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1 flex-wrap gap-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between text-[11px] text-slate-400 pt-1 gap-2.5">
                         <span>Ariza sanasi: {app.createdAt}</span>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           {/* Brand accept/reject buttons for this applicant */}
                           {isAppPending && (
                             <>
@@ -2214,7 +2257,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                     'Boshqa nomzod tanlandi'
                                   )
                                 }
-                                className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-heading font-semibold transition-colors cursor-pointer"
+                                className="min-h-[44px] px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-heading font-semibold transition-colors cursor-pointer flex items-center justify-center"
                               >
                                 Rad etish
                               </button>
@@ -2227,9 +2270,9 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                                     'qabul_qilindi'
                                   )
                                 }
-                                className="px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-heading font-bold transition-colors cursor-pointer flex items-center gap-1"
+                                className="min-h-[44px] px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-heading font-bold transition-colors cursor-pointer flex items-center justify-center gap-1"
                               >
-                                <Check className="w-3 h-3 stroke-[3]" />
+                                <Check className="w-3.5 h-3.5 stroke-[3]" />
                                 <span>Qabul qilish</span>
                               </button>
                             </>
@@ -2241,7 +2284,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                               setViewingApplicationsBrief(null);
                               window.location.hash = `#kreator-${app.creatorId}`;
                             }}
-                            className="inline-flex items-center gap-1 font-heading font-bold text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 text-xs transition-colors cursor-pointer"
+                            className="min-h-[44px] px-2.5 inline-flex items-center gap-1 font-heading font-bold text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 text-xs transition-colors cursor-pointer"
                           >
                             <ExternalLink className="w-3.5 h-3.5" />
                             <span>Profilni koʻrish</span>
@@ -2267,7 +2310,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                               setViewingApplicationsBrief(null);
                               if (onOpenChat) onOpenChat(targetCreator);
                             }}
-                            className="inline-flex items-center gap-1 font-heading font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
+                            className="min-h-[44px] px-2.5 inline-flex items-center gap-1 font-heading font-bold text-indigo-600 dark:text-indigo-400 hover:underline text-xs cursor-pointer"
                           >
                             <MessageSquare className="w-3.5 h-3.5" />
                             <span>Chatda bogʻlanish</span>
@@ -2288,8 +2331,8 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
               <div className="h-6 sm:h-8" aria-hidden="true" />
             </div>
 
-            {/* Modal Bottom Action Controls (Docked elevated footer layer with visual boundary, border, shadow, and gradient) */}
-            <div className="shrink-0 p-4 sm:px-7 sm:py-4 bg-white/95 dark:bg-[#1A1A24]/95 backdrop-blur-md border-t border-slate-200/90 dark:border-slate-800 flex items-center justify-between gap-3 shadow-[0_-10px_25px_-5px_rgba(0,0,0,0.08)] dark:shadow-[0_-10px_25px_-5px_rgba(0,0,0,0.5)] relative z-20">
+            {/* Modal Bottom Action Controls */}
+            <div className="shrink-0 p-4 pb-[max(16px,calc(env(safe-area-inset-bottom,0px)+8px))] sm:px-7 sm:py-4 bg-white/95 dark:bg-[#1A1A24]/95 backdrop-blur-md border-t border-slate-200/90 dark:border-slate-800 flex items-center justify-between gap-3 shadow-[0_-10px_25px_-5px_rgba(0,0,0,0.08)] dark:shadow-[0_-10px_25px_-5px_rgba(0,0,0,0.5)] relative z-20">
               <div className="absolute -top-3 left-0 right-0 h-3 bg-gradient-to-t from-black/5 dark:from-black/25 to-transparent pointer-events-none" />
               <span className="text-xs text-slate-500 dark:text-slate-400 font-heading">
                 Jami: {viewingApplicationsBrief.applications?.length || 0} ta ariza
@@ -2297,7 +2340,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
               <button
                 type="button"
                 onClick={() => setViewingApplicationsBrief(null)}
-                className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-heading font-semibold transition-colors cursor-pointer"
+                className="min-h-[44px] px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-heading font-semibold transition-colors cursor-pointer"
               >
                 Yopish
               </button>
@@ -2312,19 +2355,19 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
       {guaranteeInfoModal && (
         <div
           id="modal-guarantee-backdrop"
-          className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 pb-[calc(90px+env(safe-area-inset-bottom,0px))] sm:pb-4 overflow-y-auto"
+          className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4"
         >
-          <div className="bg-white dark:bg-[#1A1A24] rounded-3xl border border-slate-200 dark:border-slate-800 w-full max-w-md shadow-2xl p-5 sm:p-7 space-y-4 animate-in zoom-in-95 duration-150 max-h-[85vh] overflow-y-auto pb-[calc(44px+env(safe-area-inset-bottom,0px))] sm:pb-9">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+          <div className="bg-white dark:bg-[#1A1A24] rounded-t-3xl sm:rounded-3xl border-t sm:border border-slate-200 dark:border-slate-800 w-full sm:max-w-md shadow-2xl flex flex-col max-h-[94dvh] sm:max-h-[90vh] overflow-hidden animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200">
+            <div className="px-5 py-4 sm:px-7 sm:py-5 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-3 shrink-0 bg-white/95 dark:bg-[#1A1A24]/95 backdrop-blur-md">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
                   <ShieldCheck className="w-6 h-6 stroke-[2.2]" />
                 </div>
-                <div>
-                  <h3 className="font-heading font-extrabold text-base sm:text-lg text-slate-900 dark:text-white">
+                <div className="min-w-0">
+                  <h3 className="font-heading font-extrabold text-base sm:text-lg text-slate-900 dark:text-white truncate">
                     100% pul qaytarish kafolati
                   </h3>
-                  <span className="text-xs text-slate-500 dark:text-[#D0D0D8] font-body">
+                  <span className="text-xs text-slate-500 dark:text-[#D0D0D8] font-body block truncate">
                     Collabix xavfsizlik va shaffoflik standarti
                   </span>
                 </div>
@@ -2335,71 +2378,74 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                   setGuaranteeInfoModal(null);
                   setRefundRequestedSuccess(false);
                 }}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                aria-label="Yopish"
+                className="min-w-[44px] min-h-[44px] rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0 flex items-center justify-center"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Guarantee Explanation in Natural Uzbek */}
-            <div className="p-4 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800/50 space-y-2.5 text-xs text-emerald-900 dark:text-emerald-200 leading-relaxed font-body">
-              <div className="flex items-start gap-2">
-                <span className="text-base leading-none">🛡️</span>
-                <p>
-                  <strong>Kafolat qoidasi:</strong> Agar siz yuborgan brifga <strong>30 kun ichida</strong> birorta ham kreator javob bermasa (qabul qilmasa yoki rad etmasa), toʻlovingiz 100% toʻliq qaytarib beriladi.
-                </p>
+            <div className="flex-1 overflow-y-auto overscroll-contain p-5 sm:p-7 space-y-4 pb-[max(24px,calc(env(safe-area-inset-bottom,0px)+16px))] sm:pb-7">
+              {/* Guarantee Explanation in Natural Uzbek */}
+              <div className="p-4 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800/50 space-y-2.5 text-[15px] sm:text-xs text-emerald-900 dark:text-emerald-200 leading-relaxed font-body">
+                <div className="flex items-start gap-2">
+                  <span className="text-base leading-none shrink-0">🛡️</span>
+                  <p>
+                    <strong>Kafolat qoidasi:</strong> Agar siz yuborgan brifga <strong>30 kun ichida</strong> birorta ham kreator javob bermasa (qabul qilmasa yoki rad etmasa), toʻlovingiz 100% toʻliq qaytarib beriladi.
+                  </p>
+                </div>
+
+                <div className="flex items-start gap-2 pt-2 border-t border-emerald-200/60 dark:border-emerald-800/40">
+                  <span className="text-base leading-none shrink-0">ℹ️</span>
+                  <p>
+                    <strong>Kreator javobi:</strong> Kreator brifni koʻrib chiqib <strong>"Qabul qilish"</strong> yoki <strong>"Rad etish"</strong> tugmasini bossa, bu rasmiy javob hisoblanadi (chunki kreator taklifni koʻrib chiqdi).
+                  </p>
+                </div>
               </div>
 
-              <div className="flex items-start gap-2 pt-1 border-t border-emerald-200/60 dark:border-emerald-800/40">
-                <span className="text-base leading-none">ℹ️</span>
-                <p>
-                  <strong>Kreator javobi:</strong> Kreator brifni koʻrib chiqib <strong>"Qabul qilish"</strong> yoki <strong>"Rad etish"</strong> tugmasini bossa, bu rasmiy javob hisoblanadi (chunki kreator taklifni koʻrib chiqdi).
-                </p>
+              {/* Current Brief Guarantee Status */}
+              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#12121A] border border-slate-100 dark:border-slate-800 text-xs space-y-1">
+                <span className="text-slate-400 block text-[11px]">Tanlangan brif holati:</span>
+                <span className="font-heading font-bold text-slate-900 dark:text-white block break-words">
+                  {guaranteeInfoModal.taskTitle}
+                </span>
+                <span className="font-heading font-semibold text-emerald-600 dark:text-emerald-400 block pt-1">
+                  {checkBriefGuaranteeStatus(guaranteeInfoModal).statusText}
+                </span>
               </div>
-            </div>
 
-            {/* Current Brief Guarantee Status */}
-            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#12121A] border border-slate-100 dark:border-slate-800 text-xs space-y-1">
-              <span className="text-slate-400 block text-[11px]">Tanlangan brif holati:</span>
-              <span className="font-heading font-bold text-slate-900 dark:text-white block">
-                {guaranteeInfoModal.taskTitle}
-              </span>
-              <span className="font-heading font-semibold text-emerald-600 dark:text-emerald-400 block pt-1">
-                {checkBriefGuaranteeStatus(guaranteeInfoModal).statusText}
-              </span>
-            </div>
+              {/* Refund request button if 30+ days expired */}
+              {checkBriefGuaranteeStatus(guaranteeInfoModal).isEligibleForRefund && isBrand && (
+                <div className="pt-2">
+                  {refundRequestedSuccess ? (
+                    <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-heading font-bold text-center">
+                      ✓ Pulni qaytarish arizangiz qabul qilindi. 24 soat ichida hisobingizga tushiriladi.
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setRefundRequestedSuccess(true)}
+                      className="w-full min-h-[48px] py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-heading font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                      <span>100% toʻlovni qaytarishni soʻrash</span>
+                    </button>
+                  )}
+                </div>
+              )}
 
-            {/* Refund request button if 30+ days expired */}
-            {checkBriefGuaranteeStatus(guaranteeInfoModal).isEligibleForRefund && isBrand && (
-              <div className="pt-2">
-                {refundRequestedSuccess ? (
-                  <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-heading font-bold text-center">
-                    ✓ Pulni qaytarish arizangiz qabul qilindi. 24 soat ichida hisobingizga tushiriladi.
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setRefundRequestedSuccess(true)}
-                    className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-heading font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    <span>100% toʻlovni qaytarishni soʻrash</span>
-                  </button>
-                )}
+              <div className="pt-1 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setGuaranteeInfoModal(null);
+                    setRefundRequestedSuccess(false);
+                  }}
+                  className="w-full sm:w-auto min-h-[48px] px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs sm:text-sm font-heading font-semibold transition-colors cursor-pointer"
+                >
+                  Tushundim
+                </button>
               </div>
-            )}
-
-            <div className="pt-1 flex justify-end">
-              <button
-                type="button"
-                onClick={() => {
-                  setGuaranteeInfoModal(null);
-                  setRefundRequestedSuccess(false);
-                }}
-                className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-heading font-semibold transition-colors cursor-pointer"
-              >
-                Tushundim
-              </button>
             </div>
           </div>
         </div>

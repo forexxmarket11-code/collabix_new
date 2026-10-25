@@ -88,13 +88,13 @@ export const AgencyPage: React.FC<AgencyPageProps> = ({
   };
 
   return (
-    <div className="min-h-screen pb-24 pt-6 sm:pt-10 px-4 sm:px-6 max-w-5xl mx-auto">
+    <div className="min-h-screen pb-24 pt-4 sm:pt-10 px-4 sm:px-6 max-w-5xl mx-auto">
       {/* Top Navigation / Back Button */}
-      <div className="mb-6 sm:mb-8">
+      <div className="mb-5 sm:mb-8">
         <button
           type="button"
           onClick={onBackToHome}
-          className="inline-flex items-center gap-2 text-xs sm:text-sm font-heading font-bold text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer group"
+          className="inline-flex items-center gap-2 min-h-[44px] py-2 text-xs sm:text-sm font-heading font-bold text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer group"
         >
           <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
           <span>Bosh sahifaga qaytish</span>
@@ -109,14 +109,14 @@ export const AgencyPage: React.FC<AgencyPageProps> = ({
           <Sparkles className="w-3.5 h-3.5 text-amber-500" />
         </div>
 
-        <h1 className="font-heading font-extrabold text-3xl sm:text-4xl md:text-5xl text-slate-900 dark:text-white tracking-tight leading-tight">
+        <h1 className="font-heading font-extrabold text-2xl sm:text-4xl md:text-5xl text-slate-900 dark:text-white tracking-tight leading-tight">
           Mijozlaringizga kreator topish osonroq.{' '}
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-400 dark:via-purple-300 dark:to-pink-400">
             Collabix bilan hamkor boʻling.
           </span>
         </h1>
 
-        <p className="mt-4 text-sm sm:text-base text-slate-600 dark:text-[#D0D0D8] font-body leading-relaxed max-w-2xl mx-auto">
+        <p className="mt-4 text-[15px] sm:text-base text-slate-600 dark:text-[#D0D0D8] font-body leading-relaxed max-w-2xl mx-auto">
           Mijozlaringizga bloger va inflyuenserlarni qidirib vaqt sarflamang. Collabix platformasi orqali saralangan kreatorlarni bir zumda toping va har bir jalb qilingan mijozdan doimiy komissiya oling.
         </p>
       </div>
@@ -133,7 +133,7 @@ export const AgencyPage: React.FC<AgencyPageProps> = ({
             <h3 className="font-heading font-extrabold text-lg text-slate-900 dark:text-white mb-2">
               Bepul Pro hisob
             </h3>
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-[#D0D0D8] font-body leading-relaxed">
+            <p className="text-[15px] sm:text-sm text-slate-600 dark:text-[#D0D0D8] font-body leading-relaxed">
               Oʻzingiz ham platformadan cheksiz foydalanasiz. Barcha kreatorlarning toʻliq aloqa maʼlumotlari, statistikasi va tahlillari doimo siz uchun ochiq.
             </p>
           </div>
@@ -153,7 +153,7 @@ export const AgencyPage: React.FC<AgencyPageProps> = ({
             <h3 className="font-heading font-extrabold text-lg text-slate-900 dark:text-white mb-2">
               Oylik komissiya
             </h3>
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-[#D0D0D8] font-body leading-relaxed">
+            <p className="text-[15px] sm:text-sm text-slate-600 dark:text-[#D0D0D8] font-body leading-relaxed">
               Har bir olib kelgan mijozdan doimiy foiz. Mijozingiz Collabix obunasidan foydalangan har bir oy uchun hisobingizga kafolatlangan komissiya tushadi.
             </p>
           </div>
@@ -173,7 +173,7 @@ export const AgencyPage: React.FC<AgencyPageProps> = ({
             <h3 className="font-heading font-extrabold text-lg text-slate-900 dark:text-white mb-2">
               Hech qanday xarajat yoʻq
             </h3>
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-[#D0D0D8] font-body leading-relaxed">
+            <p className="text-[15px] sm:text-sm text-slate-600 dark:text-[#D0D0D8] font-body leading-relaxed">
               Qoʻshilish va ishtirok etish butunlay bepul. Agentlikdan hech qanday aʼzolik toʻlovi yoki moliyaviy majburiyat talab qilinmaydi.
             </p>
           </div>
@@ -224,7 +224,7 @@ export const AgencyPage: React.FC<AgencyPageProps> = ({
       </div>
 
       {/* Application Form Section - Requirement 2 & 3 */}
-      <div className="max-w-2xl mx-auto bg-white dark:bg-[#1A1A24] rounded-3xl border border-slate-200/90 dark:border-slate-800 p-6 sm:p-10 shadow-lg">
+      <div className="max-w-2xl mx-auto bg-white dark:bg-[#1A1A24] rounded-3xl border border-slate-200/90 dark:border-slate-800 p-5 sm:p-10 shadow-lg">
         <div className="text-center mb-6 sm:mb-8">
           <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto mb-3">
             <Building2 className="w-6 h-6" />
@@ -232,34 +232,50 @@ export const AgencyPage: React.FC<AgencyPageProps> = ({
           <h2 className="font-heading font-extrabold text-xl sm:text-2xl text-slate-900 dark:text-white">
             Hamkorlik arizasi
           </h2>
-          <p className="mt-1 text-xs sm:text-sm text-slate-600 dark:text-[#D0D0D8] font-body">
+          <p className="mt-1 text-[15px] sm:text-sm text-slate-600 dark:text-[#D0D0D8] font-body">
             Qisqa maʼlumotlarni qoldiring, tez orada siz bilan bogʻlanamiz.
           </p>
         </div>
 
         {isSuccess ? (
-          <div className="p-7 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/80 text-center space-y-3 animate-in zoom-in-95 duration-200">
+          <div className="p-6 sm:p-7 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/80 text-center space-y-3 animate-in zoom-in-95 duration-200">
             <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto">
               <CheckCircle2 className="w-7 h-7" />
             </div>
             <h3 className="font-heading font-extrabold text-lg text-emerald-900 dark:text-emerald-200">
               Arizangiz qabul qilindi! Tez orada siz bilan bog'lanamiz.
             </h3>
-            <p className="text-xs sm:text-sm text-emerald-700 dark:text-emerald-300 font-body leading-relaxed max-w-md mx-auto">
+            <p className="text-[15px] sm:text-sm text-emerald-700 dark:text-emerald-300 font-body leading-relaxed max-w-md mx-auto">
               Collabix hamkorlik dasturiga qiziqish bildirganingiz uchun rahmat. Masʼul mutaxassisimiz kiritilgan aloqa vositasi orqali tez orada aloqaga chiqadi.
             </p>
             <div className="pt-2">
               <button
                 type="button"
                 onClick={() => setIsSuccess(false)}
-                className="text-xs font-heading font-bold text-emerald-800 dark:text-emerald-200 hover:underline cursor-pointer"
+                className="min-h-[44px] px-4 py-2 inline-flex items-center justify-center text-xs font-heading font-bold text-emerald-800 dark:text-emerald-200 hover:underline cursor-pointer"
               >
                 Yangi ariza toʻldirish
               </button>
             </div>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
+          <form
+            onSubmit={handleSubmit}
+            onFocusCapture={(e) => {
+              const target = e.target as HTMLElement;
+              if (
+                target &&
+                (target.tagName === 'INPUT' ||
+                  target.tagName === 'TEXTAREA' ||
+                  target.tagName === 'SELECT')
+              ) {
+                setTimeout(() => {
+                  target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                }, 250);
+              }
+            }}
+            className="space-y-4 sm:space-y-5"
+          >
             {errorMessage && (
               <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-xs font-heading font-semibold text-rose-700 dark:text-rose-300 flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
@@ -280,7 +296,7 @@ export const AgencyPage: React.FC<AgencyPageProps> = ({
                   value={agencyName}
                   onChange={(e) => setAgencyName(e.target.value)}
                   placeholder="Masalan: Nova Marketing Agency"
-                  className="w-full pl-10 pr-4 py-2.5 sm:py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-body text-slate-900 dark:text-white bg-slate-50 dark:bg-[#12121A] focus:bg-white dark:focus:bg-[#1A1A24] focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 transition-colors"
+                  className="w-full min-h-[48px] pl-10 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-base sm:text-sm font-body text-slate-900 dark:text-white bg-slate-50 dark:bg-[#12121A] focus:bg-white dark:focus:bg-[#1A1A24] focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 transition-colors"
                 />
               </div>
             </div>
@@ -298,7 +314,7 @@ export const AgencyPage: React.FC<AgencyPageProps> = ({
                   value={contactPerson}
                   onChange={(e) => setContactPerson(e.target.value)}
                   placeholder="Masalan: Sardor Rahimov"
-                  className="w-full pl-10 pr-4 py-2.5 sm:py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-body text-slate-900 dark:text-white bg-slate-50 dark:bg-[#12121A] focus:bg-white dark:focus:bg-[#1A1A24] focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 transition-colors"
+                  className="w-full min-h-[48px] pl-10 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-base sm:text-sm font-body text-slate-900 dark:text-white bg-slate-50 dark:bg-[#12121A] focus:bg-white dark:focus:bg-[#1A1A24] focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 transition-colors"
                 />
               </div>
             </div>
@@ -316,7 +332,7 @@ export const AgencyPage: React.FC<AgencyPageProps> = ({
                   value={phoneOrEmail}
                   onChange={(e) => setPhoneOrEmail(e.target.value)}
                   placeholder="+998 90 123 45 67 yoki agency@domain.uz"
-                  className="w-full pl-10 pr-4 py-2.5 sm:py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-body text-slate-900 dark:text-white bg-slate-50 dark:bg-[#12121A] focus:bg-white dark:focus:bg-[#1A1A24] focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 transition-colors"
+                  className="w-full min-h-[48px] pl-10 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-base sm:text-sm font-body text-slate-900 dark:text-white bg-slate-50 dark:bg-[#12121A] focus:bg-white dark:focus:bg-[#1A1A24] focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 transition-colors"
                 />
               </div>
             </div>
@@ -333,7 +349,7 @@ export const AgencyPage: React.FC<AgencyPageProps> = ({
                   value={websiteOrInstagram}
                   onChange={(e) => setWebsiteOrInstagram(e.target.value)}
                   placeholder="@nova_agency yoki https://novaagency.uz"
-                  className="w-full pl-10 pr-4 py-2.5 sm:py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-body text-slate-900 dark:text-white bg-slate-50 dark:bg-[#12121A] focus:bg-white dark:focus:bg-[#1A1A24] focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 transition-colors"
+                  className="w-full min-h-[48px] pl-10 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-base sm:text-sm font-body text-slate-900 dark:text-white bg-slate-50 dark:bg-[#12121A] focus:bg-white dark:focus:bg-[#1A1A24] focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 transition-colors"
                 />
               </div>
             </div>
@@ -348,7 +364,7 @@ export const AgencyPage: React.FC<AgencyPageProps> = ({
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Agentligingiz haqida qisqacha maʼlumot yoki savollaringiz..."
-                className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-body text-slate-900 dark:text-white bg-slate-50 dark:bg-[#12121A] focus:bg-white dark:focus:bg-[#1A1A24] focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 transition-colors resize-y"
+                className="w-full p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 text-base sm:text-sm font-body text-slate-900 dark:text-white bg-slate-50 dark:bg-[#12121A] focus:bg-white dark:focus:bg-[#1A1A24] focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 transition-colors resize-y"
               />
             </div>
 
@@ -358,7 +374,7 @@ export const AgencyPage: React.FC<AgencyPageProps> = ({
                 type="submit"
                 id="btn-submit-agency-application"
                 disabled={isSubmitting}
-                className="w-full py-3.5 sm:py-4 rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:via-purple-500 hover:to-pink-500 text-white font-heading font-extrabold text-sm sm:text-base shadow-lg shadow-indigo-600/20 transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-[0.99] disabled:opacity-50"
+                className="w-full min-h-[48px] py-3.5 sm:py-4 rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:via-purple-500 hover:to-pink-500 text-white font-heading font-extrabold text-sm sm:text-base shadow-lg shadow-indigo-600/20 transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-[0.99] disabled:opacity-50"
               >
                 {isSubmitting ? (
                   <span>Yuborilmoqda...</span>
