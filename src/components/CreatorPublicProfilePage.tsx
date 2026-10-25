@@ -669,7 +669,7 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
   const isVerified = creatorProfile.verified ?? (creatorProfile.accountStatus !== 'rejected');
   const category = creatorProfile.categories?.[0] || 'Blogger';
   const city = creatorProfile.city || 'Toshkent';
-  const rating = typeof creatorProfile.rating === 'number' ? creatorProfile.rating : 5.0;
+  const rating = typeof creatorProfile.rating === 'number' ? creatorProfile.rating : 0;
   const reviewsCount = creatorProfile.completedOrdersCount ?? creatorProfile.reviewsCount ?? 0;
   const totalFollowers =
     creatorProfile.totalFollowers ||
@@ -723,10 +723,10 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
     setCurrentSlideIndex((prev) => (prev - 1 + portfolioItems.length) % portfolioItems.length);
   };
 
-  const heightDisplay = creatorProfile.height ? `${creatorProfile.height} sm` : (initialCreator?.height ? `${initialCreator.height} sm` : '176 sm');
-  const weightDisplay = creatorProfile.weight ? `${creatorProfile.weight} kg` : (initialCreator?.weight ? `${initialCreator.weight} kg` : '54 kg');
-  const ageDisplay = creatorProfile.age ? `${creatorProfile.age} yosh` : (initialCreator?.age ? `${initialCreator.age} yosh` : '22 yosh');
-  const experienceDisplay = creatorProfile.experienceYears ? `${creatorProfile.experienceYears} yil` : (initialCreator?.experienceYears ? `${initialCreator.experienceYears} yil` : '3 yil');
+  const heightDisplay = creatorProfile.height ? `${creatorProfile.height} sm` : (initialCreator?.height ? `${initialCreator.height} sm` : 'Koʻrsatilmagan');
+  const weightDisplay = creatorProfile.weight ? `${creatorProfile.weight} kg` : (initialCreator?.weight ? `${initialCreator.weight} kg` : 'Koʻrsatilmagan');
+  const ageDisplay = creatorProfile.age ? `${creatorProfile.age} yosh` : (initialCreator?.age ? `${initialCreator.age} yosh` : 'Koʻrsatilmagan');
+  const experienceDisplay = creatorProfile.experienceYears ? `${creatorProfile.experienceYears} yil` : (initialCreator?.experienceYears ? `${initialCreator.experienceYears} yil` : 'Koʻrsatilmagan');
   const viewsDisplay = (typeof creatorProfile.views === 'number' ? creatorProfile.views : (typeof initialCreator?.views === 'number' ? initialCreator.views : 1)).toLocaleString('uz-UZ');
 
   // Check if creator is strictly "Mini Blogger"
@@ -1052,7 +1052,7 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
 
                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-200/80 dark:border-amber-800/70 text-amber-900 dark:text-amber-300 font-heading font-bold">
                   <Star className="w-4 h-4 fill-amber-400 text-amber-500" />
-                  <span>★ {rating.toFixed(1)}</span>
+                  <span>{rating > 0 ? `★ ${rating.toFixed(1)}` : "Yangi kreator"}</span>
                   <span className="text-[11px] opacity-70 font-normal">({reviewsCount} ta baho)</span>
                 </div>
               </div>
@@ -1393,7 +1393,7 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
                 {/* Reyting (yulduzcha + son, masalan ★ 4.8) */}
                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-200/80 dark:border-amber-800/70 text-amber-900 dark:text-amber-300 font-heading font-bold">
                   <Star className="w-4 h-4 fill-amber-400 text-amber-500" />
-                  <span>★ {rating.toFixed(1)}</span>
+                  <span>{rating > 0 ? `★ ${rating.toFixed(1)}` : "Yangi kreator"}</span>
                   <span className="text-[11px] opacity-70 font-normal">({reviewsCount} ta baho)</span>
                 </div>
               </div>

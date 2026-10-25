@@ -402,7 +402,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
                 {/* Reyting — yulduzcha icon + raqam, ochiq sariq/oltin rangdagi kichik pastilja (pill) ichida */}
                 <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50/90 dark:bg-amber-950/50 border border-amber-200/80 dark:border-amber-900/60 text-amber-800 dark:text-amber-300 text-xs sm:text-sm font-heading font-bold shrink-0 shadow-2xs">
                   <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
-                  <span>{creator.rating.toFixed(1)}</span>
+                  <span>{creator.rating > 0 ? creator.rating.toFixed(1) : 'Yangi'}</span>
                 </div>
               </div>
 
@@ -437,11 +437,11 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
                 <div className="flex-1 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 rounded-full transition-all duration-300"
-                    style={{ width: `${creator.verified ? 100 : 92}%` }}
+                    style={{ width: `${Math.min(100, Math.max(0, creator.profileCompletion ?? 0))}%` }}
                   />
                 </div>
                 <span className="text-xs font-mono font-bold text-indigo-700 dark:text-indigo-300 shrink-0">
-                  {creator.verified ? '100%' : '92%'}
+                  {`${Math.min(100, Math.max(0, creator.profileCompletion ?? 0))}%`}
                 </span>
               </div>
 
@@ -464,7 +464,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
                       <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.24 1.07-.14 1.61.24 1.17 1.15 2.15 2.31 2.39.81.18 1.67.07 2.39-.32.74-.41 1.23-1.14 1.37-1.96.11-.64.1-1.29.1-1.93.01-4.71.01-9.42 0-14.13z" />
                     </svg>
                     <span className="font-mono font-bold text-slate-900 dark:text-white">
-                      {parseInt(creator.followers) > 200 ? '45K' : '18K'}
+                      {creator.tiktokFollowers || '—'}
                     </span>
                   </div>
                 </div>
@@ -472,7 +472,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
                 <div className="flex items-center gap-2.5 ml-auto">
                   {/* Completed works count */}
                   <span className="text-xs font-body text-slate-500 dark:text-slate-400 font-medium hidden sm:inline">
-                    <span className="text-slate-800 dark:text-slate-200 font-semibold">{creator.reviewsCount || 12}</span> ta ish
+                    <span className="text-slate-800 dark:text-slate-200 font-semibold">{creator.reviewsCount || 0}</span> ta ish
                   </span>
 
                   {/* "Brif yuborish" direct action button on card (>=44px touch target) */}
@@ -634,7 +634,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
                         </div>
                         <div>
                           <span className="block text-xs font-mono text-slate-500 dark:text-slate-400 uppercase tracking-wider">Reyting</span>
-                          <span className="font-heading font-extrabold text-base sm:text-lg text-amber-500">★ {selectedCreator.rating} ({selectedCreator.reviewsCount})</span>
+                          <span className="font-heading font-extrabold text-base sm:text-lg text-amber-500">{selectedCreator.rating > 0 ? `★ ${selectedCreator.rating} (${selectedCreator.reviewsCount})` : 'Hali baho yoʻq'}</span>
                         </div>
                         <div>
                           <span className="block text-xs font-mono text-slate-500 dark:text-slate-400 uppercase tracking-wider">Moʻljal narx</span>

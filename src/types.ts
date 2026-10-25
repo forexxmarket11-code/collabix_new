@@ -20,6 +20,8 @@ export interface CatalogCreator {
   avatar: string;
   followers: string;
   followersCount: number;
+  tiktokFollowers?: string;
+  profileCompletion?: number;
   rating: number;
   reviewsCount: number;
   priceRange: '500k-1.5m' | '1.5m-5m' | '5m-15m' | '15m+';

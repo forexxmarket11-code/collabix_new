@@ -6,6 +6,9 @@ import {
   signOut,
   onAuthStateChanged,
   User as FirebaseUser,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  deleteUser,
 } from 'firebase/auth';
 import {
   getFirestore,
@@ -529,6 +532,54 @@ export async function loginUser(email: string, pass: string): Promise<UserSessio
 }
 
 /**
+ * Foydalanuvchi o'z hisobini butunlay o'chiradi (Google Play talabi).
+ * Profil, yopiq kontakt, kontakt ruxsatlari va ochish yozuvlari o'chiriladi,
+ * keyin Firebase Auth hisobi o'chiriladi. Briflar, xabarlar va to'lov yozuvlari
+ * boshqa foydalanuvchilar va hisobot uchun saqlanib qoladi.
+ */
+export async function deleteMyAccount(password: string): Promise<void> {
+  const fbUser = auth.currentUser;
+  if (!fbUser || !fbUser.email) {
+    throw new Error('Hisobni oʻchirish uchun avval tizimga kiring.');
+  }
+  if (fbUser.uid === ADMIN_UID) {
+    throw new Error('Admin hisobini bu yerdan oʻchirib boʻlmaydi.');
+  }
+  try {
+    await reauthenticateWithCredential(fbUser, EmailAuthProvider.credential(fbUser.email, password));
+  } catch (err: any) {
+    const code = String(err?.code || '');
+    if (code.includes('wrong-password') || code.includes('invalid-credential') || code.includes('invalid-login')) {
+      throw new Error('Parol notoʻgʻri. Qaytadan urinib koʻring.');
+    }
+    if (code.includes('too-many-requests')) {
+      throw new Error('Juda koʻp urinish boʻldi. Birozdan soʻng qayta urinib koʻring.');
+    }
+    throw new Error('Tasdiqlashda xatolik yuz berdi. Internetni tekshirib, qayta urinib koʻring.');
+  }
+
+  const uid = fbUser.uid;
+  const subcollections = ['contactGrants', 'unlocks', 'private'];
+  for (const sub of subcollections) {
+    try {
+      const snap = await getDocs(collection(db, 'users', uid, sub));
+      await Promise.all(snap.docs.map((d) => deleteDoc(d.ref).catch(() => {})));
+    } catch {}
+  }
+  try {
+    await deleteDoc(doc(db, 'users', uid));
+  } catch (err) {
+    console.warn('Profil hujjatini oʻchirishda xatolik:', err);
+  }
+
+  await deleteUser(fbUser);
+
+  try {
+    localStorage.removeItem('collabix_user');
+  } catch {}
+}
+
+/**
  * Sign out user from Firebase Auth
  */
 export async function logoutUser(): Promise<void> {
@@ -602,22 +653,20 @@ export function subscribeToCreatorDocument(
  */
 export async function incrementCreatorViews(creatorId: string): Promise<void> {
   if (!creatorId || creatorId === 'creator-profile' || creatorId === 'profil') return;
-  if (!auth.currentUser || (auth.currentUser.uid !== creatorId && !isCurrentUserAdmin())) {
+  // Faqat boshqa (tizimga kirgan) foydalanuvchi ko'rganda sanaladi; o'z profilini va admin ko'rishini sanamaymiz
+  if (!auth.currentUser || auth.currentUser.uid === creatorId || isCurrentUserAdmin()) {
     return;
   }
+  // Bir sessiyada bitta profil bir marta sanaladi
+  const seenKey = `collabix_viewed_${creatorId}`;
   try {
-    const userDocRef = doc(db, 'users', creatorId);
-    await updateDoc(userDocRef, {
-      views: increment(1),
-    });
+    if (sessionStorage.getItem(seenKey)) return;
+    sessionStorage.setItem(seenKey, '1');
+  } catch {}
+  try {
+    await updateDoc(doc(db, 'users', creatorId), { views: increment(1) });
   } catch (err) {
-    try {
-      const snap = await getDoc(doc(db, 'users', creatorId));
-      if (snap.exists()) {
-        const cur = (snap.data() as any).views || 0;
-        await setDoc(doc(db, 'users', creatorId), { views: cur + 1 }, { merge: true });
-      }
-    } catch {}
+    console.debug("Ko'rishlar sonini oshirib bo'lmadi:", err);
   }
 }
 
@@ -1764,7 +1813,7 @@ export function userSessionToCatalogCreator(user: UserSession): CatalogCreator {
   }
 
   const followersStr =
-    user.totalFollowers || user.socialLinks?.instagramFollowers || '10K+';
+    user.totalFollowers || user.socialLinks?.instagramFollowers || '—';
 
   return {
     id: user.uid || '',
@@ -1777,13 +1826,15 @@ export function userSessionToCatalogCreator(user: UserSession): CatalogCreator {
       user.avatar ||
       `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(user.name || user.uid || 'collabix')}`,
     followers: followersStr,
-    followersCount: typeof (user as any).followersCount === 'number' ? (user as any).followersCount : 10000,
-    rating: typeof (user as any).rating === 'number' ? (user as any).rating : 5.0,
+    followersCount: typeof (user as any).followersCount === 'number' ? (user as any).followersCount : 0,
+    rating: typeof (user as any).rating === 'number' ? (user as any).rating : 0,
     reviewsCount: typeof (user as any).reviewsCount === 'number' ? (user as any).reviewsCount : 0,
     priceRange: '1.5m-5m',
     priceDisplay,
     verified: Boolean(user.verified ?? (user.accountStatus !== 'rejected')),
-    engagementRate: user.engagementRate || '7.8%',
+    engagementRate: user.engagementRate || '—',
+    tiktokFollowers: user.socialLinks?.tiktokFollowers || '',
+    profileCompletion: typeof user.profileCompletion === 'number' ? user.profileCompletion : undefined,
     bio: user.bio || '',
     tags: user.categories && user.categories.length > 0 ? user.categories : ['Blogger', 'Kontent'],
     height: user.height,

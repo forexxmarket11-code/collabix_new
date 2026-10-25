@@ -99,7 +99,7 @@ service cloud.firestore {
         && isValidInitialUserCreate(userId)
       );
 
-      allow update: if isAdmin() || isSpendingUnlockCredit(userId) || (
+      allow update: if isAdmin() || isSpendingUnlockCredit(userId) || isViewIncrement(userId) || (
         isOwner(userId)
         && isValidId(userId)
         && !hasProtectedUserFieldChanges()
@@ -110,12 +110,20 @@ service cloud.firestore {
         ))
       );
 
-      allow delete: if isAdmin();
+      allow delete: if isAdmin() || isOwner(userId);
     }
 
     // ===== Kontakt ochish (72 soat) va yopiq kontaktlar =====
     function userPath(uid) {
       return /databases/$(database)/documents/users/$(uid);
+    }
+
+    // Boshqa foydalanuvchi profilni ko'rganda faqat 'views' ni 1 taga oshirish mumkin
+    function isViewIncrement(userId) {
+      return isSignedIn()
+        && request.auth.uid != userId
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views'])
+        && request.resource.data.views == resource.data.get('views', 0) + 1;
     }
 
     // Brend o'z balansidan aynan 1 ta kontakt sarflaydi va shu paketda ochish yozuvi yaratiladi
@@ -153,7 +161,7 @@ service cloud.firestore {
         isOwner(userId) || isAdmin() || hasContactGrant(userId) || hasValidUnlock(userId) || isReaderProBrand()
       );
       allow create, update: if isOwner(userId) || isAdmin();
-      allow delete: if isAdmin();
+      allow delete: if isOwner(userId) || isAdmin();
     }
 
     // Brendning kontakt ochish yozuvlari
@@ -170,7 +178,7 @@ service cloud.firestore {
         && getAfter(userPath(userId)).data.get('unlockedContactsCount', 0) == get(userPath(userId)).data.get('unlockedContactsCount', 0) - 1
         && getAfter(userPath(userId)).data.get('lastUnlockedCreatorId', '') == creatorId
       );
-      allow delete: if isAdmin();
+      allow delete: if isAdmin() || isOwner(userId);
     }
 
     // Hamkorga o'z kontaktini ko'rish ruxsati (brif qabul qilinganda)
@@ -387,7 +395,10 @@ service cloud.firestore {
         && request.resource.data.userId is string
         && request.resource.data.userId.size() >= 1
         && request.resource.data.userId.size() <= 128
-        && (!('senderId' in request.resource.data) || request.resource.data.senderId == '' || request.resource.data.senderId == request.auth.uid)
+        && request.resource.data.senderId == request.auth.uid
+        && request.resource.data.userId != request.auth.uid
+        && (!('message' in request.resource.data) || (request.resource.data.message is string && request.resource.data.message.size() <= 600))
+        && (!('title' in request.resource.data) || (request.resource.data.title is string && request.resource.data.title.size() <= 200))
       );
 
       allow update: if isAdmin() || (

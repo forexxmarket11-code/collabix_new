@@ -40,6 +40,7 @@ import { TopPlacementModal } from './TopPlacementModal';
 import {
   formatUzbekDate,
   getDaysRemainingInTrial,
+  deleteMyAccount,
 } from '../firebase';
 import { isUserPro } from '../utils/subscription';
 
@@ -65,6 +66,34 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   const [isReactivating, setIsReactivating] = useState(false);
   const [subActionFeedback, setSubActionFeedback] = useState<string | null>(null);
   const [isTopModalOpen, setIsTopModalOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const handleDeleteAccount = async () => {
+    if (isDeleting) return;
+    if (deleteConfirmText.trim().toUpperCase() !== 'OCHIRISH') {
+      setDeleteError("Tasdiqlash uchun maydonga OCHIRISH deb yozing.");
+      return;
+    }
+    if (!deletePassword) {
+      setDeleteError('Parolingizni kiriting.');
+      return;
+    }
+    setIsDeleting(true);
+    setDeleteError(null);
+    try {
+      await deleteMyAccount(deletePassword);
+      setIsDeleteOpen(false);
+      onLogout();
+    } catch (err: any) {
+      setDeleteError(err?.message || "Hisobni oʻchirishda xatolik yuz berdi.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   // If user is not logged in (fallback guard)
   if (!user) {
@@ -639,7 +668,95 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           <LogOut className="w-4 h-4" />
           <span>Hisobdan chiqish</span>
         </button>
+        <div className="mt-3">
+          <button
+            type="button"
+            id="btn-open-delete-account"
+            onClick={() => {
+              setIsDeleteOpen(true);
+              setDeleteError(null);
+              setDeletePassword('');
+              setDeleteConfirmText('');
+            }}
+            className="min-h-[44px] px-4 text-xs font-heading font-semibold text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 underline underline-offset-4 cursor-pointer"
+          >
+            Hisobni butunlay oʻchirish
+          </button>
+        </div>
       </div>
+
+      {isDeleteOpen && (
+        <div
+          className="fixed inset-0 z-[80] bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-5"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isDeleting) setIsDeleteOpen(false);
+          }}
+        >
+          <div className="w-full sm:max-w-md max-h-[92dvh] overflow-y-auto bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl p-5 sm:p-7 pb-[max(20px,calc(env(safe-area-inset-bottom,0px)+16px))]">
+            <div className="flex items-start gap-3">
+              <div className="w-11 h-11 rounded-2xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="font-heading font-extrabold text-lg text-slate-900 dark:text-white">Hisobni oʻchirish</h3>
+                <p className="mt-1 text-[14px] text-slate-600 dark:text-slate-300 leading-relaxed">
+                  Profilingiz, kontakt maʼlumotlaringiz va katalogdagi kartangiz butunlay oʻchiriladi. Bu amalni qaytarib boʻlmaydi.
+                  Faol Pro obuna yoki kontakt balansi ham yoʻqoladi.
+                </p>
+              </div>
+            </div>
+
+            <label className="block mt-5 text-xs font-heading font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+              Tasdiqlash uchun OCHIRISH deb yozing
+            </label>
+            <input
+              type="text"
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              autoCapitalize="characters"
+              className="mt-1.5 w-full min-h-[48px] px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-base text-slate-900 dark:text-white"
+              placeholder="OCHIRISH"
+            />
+
+            <label className="block mt-4 text-xs font-heading font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+              Parolingiz
+            </label>
+            <input
+              type="password"
+              value={deletePassword}
+              onChange={(e) => setDeletePassword(e.target.value)}
+              autoComplete="current-password"
+              className="mt-1.5 w-full min-h-[48px] px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-base text-slate-900 dark:text-white"
+            />
+
+            {deleteError && (
+              <div className="mt-4 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-sm text-rose-700 dark:text-rose-300">
+                {deleteError}
+              </div>
+            )}
+
+            <div className="mt-6 flex flex-col-reverse sm:flex-row gap-2.5 sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setIsDeleteOpen(false)}
+                disabled={isDeleting}
+                className="min-h-[48px] px-5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-heading font-bold text-sm cursor-pointer disabled:opacity-50"
+              >
+                Bekor qilish
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteAccount}
+                disabled={isDeleting}
+                className="min-h-[48px] px-5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-heading font-bold text-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+              >
+                {isDeleting && <Loader2 className="w-4 h-4 animate-spin" />}
+                <span>{isDeleting ? 'Oʻchirilmoqda...' : 'Hisobni oʻchirish'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Top Placement Modal */}
       <TopPlacementModal

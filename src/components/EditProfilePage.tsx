@@ -28,7 +28,18 @@ import {
 } from 'lucide-react';
 import { UserSession, CreatorMediaItem } from '../types';
 import { saveUserProfile, fetchUserProfile, calculateProfileCompletion } from '../firebase';
-import { getBloggerCatalogReadiness } from '../utils/subscription';
+import { getBloggerCatalogReadiness, isFilledSocialValue } from '../utils/subscription';
+
+// Bo'sh shablon havolalarni (masalan "https://instagram.com/") saqlamaslik uchun tozalash
+function cleanSocialLinks<T extends Record<string, any>>(links: T): T {
+  const out: Record<string, any> = { ...links };
+  for (const key of ['instagram', 'tiktok', 'youtube', 'telegram']) {
+    if (typeof out[key] === 'string' && !isFilledSocialValue(out[key])) {
+      out[key] = '';
+    }
+  }
+  return out as T;
+}
 
 interface EditProfilePageProps {
   user: UserSession | null;
@@ -524,7 +535,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
       telegramUsername: cleanTg || undefined,
       phoneNumber: cleanPhone || undefined,
       socialLinks: {
-        ...socialLinks,
+        ...cleanSocialLinks(socialLinks),
         instagramEnabled: enabledSocials.instagram,
         tiktokEnabled: enabledSocials.tiktok,
         youtubeEnabled: enabledSocials.youtube,
@@ -550,7 +561,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
         max: priceMax.trim(),
       },
       socialLinks: {
-        ...socialLinks,
+        ...cleanSocialLinks(socialLinks),
         instagramEnabled: enabledSocials.instagram,
         tiktokEnabled: enabledSocials.tiktok,
         youtubeEnabled: enabledSocials.youtube,
@@ -654,7 +665,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
           telegramUsername: cleanTgDraft || undefined,
           phoneNumber: phoneNumber.trim() || undefined,
           socialLinks: {
-            ...socialLinks,
+            ...cleanSocialLinks(socialLinks),
             instagramEnabled: enabledSocials.instagram,
             tiktokEnabled: enabledSocials.tiktok,
             youtubeEnabled: enabledSocials.youtube,

@@ -284,15 +284,15 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           >
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-              <span className="font-medium text-slate-700 dark:text-slate-300">500+ faol kreatorlar</span>
+              <span className="font-medium text-slate-700 dark:text-slate-300">Toʻgʻridan-toʻgʻri muloqot, vositachisiz</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-indigo-500 shrink-0" />
-              <span className="font-medium text-slate-700 dark:text-slate-300">O'rtacha 24 soatda kelishuv</span>
+              <span className="font-medium text-slate-700 dark:text-slate-300">Pro rejim oyiga 59 000 soʻm</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-orange-500 shrink-0" />
-              <span className="font-medium text-slate-700 dark:text-slate-300">98% rejalashtirilgan qamrov</span>
+              <span className="font-medium text-slate-700 dark:text-slate-300">30 kunlik pulni qaytarish kafolati</span>
             </div>
           </div>
 
