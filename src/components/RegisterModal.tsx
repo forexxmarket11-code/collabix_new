@@ -20,6 +20,7 @@ import {
   loginUser,
   getUzbekAuthErrorMessage,
   normalizeContactToAuthEmail,
+  requestPasswordReset,
 } from '../firebase';
 
 interface RegisterModalProps {
@@ -60,6 +61,23 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
 
   // Status & Validation
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [resetInfo, setResetInfo] = useState<string | null>(null);
+  const [isSendingReset, setIsSendingReset] = useState(false);
+
+  const handleForgotPassword = async () => {
+    if (isSendingReset) return;
+    setErrorMessage(null);
+    setResetInfo(null);
+    setIsSendingReset(true);
+    try {
+      await requestPasswordReset(contact);
+      setResetInfo("Agar bu email roʻyxatdan oʻtgan boʻlsa, parolni tiklash havolasi yuborildi. Pochtangizni (va «Spam» papkasini) tekshiring.");
+    } catch (err: any) {
+      setErrorMessage(err?.message || "Xatolik yuz berdi. Qayta urinib koʻring.");
+    } finally {
+      setIsSendingReset(false);
+    }
+  };
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -713,6 +731,24 @@ export const RegisterModal: React.FC<RegisterModalProps> = ({
                     </button>
                   </div>
                 </div>
+
+                <div className="-mt-1 flex justify-end">
+                  <button
+                    type="button"
+                    id="modal-link-forgot-password"
+                    onClick={handleForgotPassword}
+                    disabled={isSendingReset}
+                    className="min-h-[44px] px-1 text-sm font-heading font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer disabled:opacity-60"
+                  >
+                    {isSendingReset ? 'Yuborilmoqda...' : 'Parolni unutdingizmi?'}
+                  </button>
+                </div>
+
+                {resetInfo && (
+                  <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-sm">
+                    {resetInfo}
+                  </div>
+                )}
 
                 <div className="pt-2">
                   <button

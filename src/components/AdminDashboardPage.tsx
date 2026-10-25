@@ -38,6 +38,7 @@ import {
   fetchReferralStatistics,
   subscribeToCatalogSettings,
   updateCatalogProOnlySetting,
+  scrubContactsFromBriefs,
 } from '../firebase';
 import {
   UsersStatistics,
@@ -84,7 +85,15 @@ export function AdminDashboardPage({ onLogout, onGoToSite, onUnauthorized }: Adm
     const unsub = onFirebaseAuthReady((uid) => {
       if (uid !== ADMIN_UID) {
         handleUnauthorized();
+        return;
       }
+      // Eski briflarda qolgan kontaktlarni bir sessiyada bir marta tozalash
+      try {
+        if (!sessionStorage.getItem('collabix_briefs_scrubbed')) {
+          sessionStorage.setItem('collabix_briefs_scrubbed', '1');
+          scrubContactsFromBriefs().catch(() => {});
+        }
+      } catch {}
     });
     return () => unsub();
   }, [handleUnauthorized]);

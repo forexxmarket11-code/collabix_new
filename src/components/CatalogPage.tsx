@@ -476,6 +476,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
                   </span>
 
                   {/* "Brif yuborish" direct action button on card (>=44px touch target) */}
+                  {currentUser?.role !== 'bloger' && (
                   <button
                     type="button"
                     id={`btn-card-send-brief-${creator.id}`}
@@ -485,6 +486,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
                     <Send className="w-3.5 h-3.5 text-amber-300 shrink-0" />
                     <span>Brif yuborish</span>
                   </button>
+                  )}
                 </div>
               </div>
             </div>

@@ -445,7 +445,7 @@ export default function App() {
     handlePageChange('create-brief');
   };
 
-  const handleBriefCreated = async (brief: BriefData) => {
+  const handleBriefCreated = async (brief: BriefData): Promise<boolean> => {
     try {
       const savedId = await createBriefInFirestore(brief);
       setUserBriefs((prev) => {
@@ -453,16 +453,20 @@ export default function App() {
         const filtered = prev.filter((item) => item.id !== nextBrief.id);
         return [nextBrief, ...filtered];
       });
+      return true;
     } catch (err) {
       console.error("Firestore ga brif yozishda xatolik:", err);
+      return false;
     }
   };
 
-  const handleApplyToBrief = async (briefId: string, application: BriefApplication) => {
+  const handleApplyToBrief = async (briefId: string, application: BriefApplication): Promise<boolean> => {
     try {
       await applyToBriefInFirestore(briefId, application);
+      return true;
     } catch (err) {
       console.error("Firestore ga ariza yozishda xatolik:", err);
+      return false;
     }
   };
 

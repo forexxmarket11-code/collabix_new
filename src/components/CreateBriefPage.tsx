@@ -22,7 +22,7 @@ import { subscribeToApprovedCreators } from '../firebase';
 
 interface CreateBriefPageProps {
   onBack: () => void;
-  onBriefCreated: (brief: BriefData) => void;
+  onBriefCreated: (brief: BriefData) => void | Promise<boolean | void>;
   onViewOrders: () => void;
   preselectedCreator?: { id: string; name: string; avatar?: string; handle?: string } | null;
   currentUser?: UserSession | null;
@@ -136,6 +136,7 @@ export const CreateBriefPage: React.FC<CreateBriefPageProps> = ({
     creator?: string;
   }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
   const [createdBriefData, setCreatedBriefData] = useState<BriefData | null>(null);
 
@@ -252,8 +253,6 @@ export const CreateBriefPage: React.FC<CreateBriefPageProps> = ({
       brandName: currentUser?.name || 'Brend hamkor',
       brandAvatar: currentUser?.avatar || 'https://images.unsplash.com/photo-1572021335469-31706a17aaef?auto=format&fit=crop&w=200&q=80',
       brandId: currentUser?.uid,
-      brandPhoneNumber: currentUser?.phoneNumber || (currentUser as any)?.phone || (currentUser?.contact && !currentUser.contact.includes('@') ? currentUser.contact : undefined),
-      brandTelegramUsername: currentUser?.telegramUsername || (currentUser?.socialLinks?.telegram ? currentUser.socialLinks.telegram.replace(/^https?:\/\/t\.me\//, '').replace(/^@/, '') : undefined),
       paymentType,
       budgetMin: paymentType === 'money' ? (budgetMin.trim() || undefined) : undefined,
       budgetMax: paymentType === 'money' ? (budgetMax.trim() || undefined) : undefined,
@@ -270,13 +269,23 @@ export const CreateBriefPage: React.FC<CreateBriefPageProps> = ({
       createdAt: 'Hozirgina',
     };
 
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setIsSuccess(true);
-      setCreatedBriefData(brief);
-      onBriefCreated(brief);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 600);
+    setSubmitError(null);
+    Promise.resolve(onBriefCreated(brief))
+      .then((result) => {
+        if (result === false) {
+          setSubmitError("Brifni saqlab boʻlmadi. Internetni tekshirib, qaytadan yuboring.");
+          return;
+        }
+        setIsSuccess(true);
+        setCreatedBriefData(brief);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      })
+      .catch(() => {
+        setSubmitError("Brifni saqlab boʻlmadi. Internetni tekshirib, qaytadan yuboring.");
+      })
+      .finally(() => {
+        setIsSubmitting(false);
+      });
   };
 
   // SUCCESS CONFIRMATION VIEW
@@ -997,6 +1006,11 @@ export const CreateBriefPage: React.FC<CreateBriefPageProps> = ({
         id="sticky-brief-footer"
         className="fixed bottom-0 inset-x-0 z-50 bg-white/95 dark:bg-[#1A1A24]/95 backdrop-blur-md border-t border-slate-200/90 dark:border-slate-800 pt-3 px-4 pb-[max(14px,calc(env(safe-area-inset-bottom,0px)+8px))] shadow-[0_-8px_24px_rgba(0,0,0,0.06)] dark:shadow-[0_-8px_24px_rgba(0,0,0,0.4)]"
       >
+        {submitError && (
+          <div className="max-w-3xl mx-auto mb-3 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-sm text-rose-700 dark:text-rose-300">
+            {submitError}
+          </div>
+        )}
         <div className="max-w-3xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="hidden sm:block text-xs text-slate-500 dark:text-[#D0D0D8] font-body">
             {selectedFormats.length > 0 ? (

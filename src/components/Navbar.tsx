@@ -118,6 +118,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               >
                 Katalog
               </button>
+              {currentUser?.role !== 'bloger' && (
               <button
                 id="nav-link-create-brief"
                 onClick={onCreateBriefClick}
@@ -129,6 +130,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               >
                 Brif yaratish
               </button>
+              )}
               {currentUser ? (
                 <button
                   id="nav-link-profile"
@@ -331,6 +333,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 >
                   Katalog
                 </button>
+                {currentUser?.role !== 'bloger' && (
                 <button
                   id="mobile-nav-create-brief"
                   onClick={() => {
@@ -343,6 +346,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 >
                   Brif yaratish
                 </button>
+                )}
                 {currentUser ? (
                   <button
                     id="mobile-nav-profile"

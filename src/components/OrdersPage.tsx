@@ -44,7 +44,7 @@ interface OrdersPageProps {
   currentUser?: UserSession | null;
   onOpenCreateBrief?: () => void;
   customBriefs?: BriefData[];
-  onApplyToBrief?: (briefId: string, application: BriefApplication) => void;
+  onApplyToBrief?: (briefId: string, application: BriefApplication) => void | Promise<boolean | void>;
   onOpenChat?: (targetUser?: { uid: string; name: string; avatar?: string; handle?: string; role?: string }) => void;
   initialBriefId?: string | null;
   onClearInitialBriefId?: () => void;
@@ -590,8 +590,8 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
       creatorName: currentUser?.name || 'Ijodkor',
       creatorHandle: currentUser?.handle || currentUser?.instagramHandle || '@kreator',
       creatorAvatar: currentUser?.avatar || (currentUser as any)?.photoURL || (currentUser as any)?.avatarUrl || undefined,
-      creatorPhoneNumber: cPhone,
-      creatorTelegramUsername: cTg,
+      // Kontaktlar arizaga yozilmaydi: ochiq briflar hammaga ko'rinadi.
+      // Brend kontaktni yopiq joydan "ruxsat" (contactGrants) orqali oladi.
       message: applicationMessage.trim(),
       proposedPrice: proposedPrice.trim() || undefined,
       createdAt: 'Hozirgina',
@@ -599,18 +599,25 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
       creatorStatus: 'yangi',
     };
 
-    if (onApplyToBrief) {
-      onApplyToBrief(applyingBrief.id, newApplication);
-    }
-
-    // Also update locally in case parent state updates synchronously
-    applyingBrief.applications = [newApplication, ...(applyingBrief.applications || [])];
-
-    setApplicationSuccess(true);
-    setTimeout(() => {
-      setApplyingBrief(null);
-      setApplicationSuccess(false);
-    }, 1500);
+    const targetBrief = applyingBrief;
+    setApplicationError('');
+    Promise.resolve(onApplyToBrief ? onApplyToBrief(targetBrief.id, newApplication) : true)
+      .then((ok) => {
+        if (ok === false) {
+          setApplicationError("Arizani yuborib boʻlmadi. Internetni tekshirib, qayta urinib koʻring.");
+          return;
+        }
+        // Also update locally in case parent state updates synchronously
+        targetBrief.applications = [newApplication, ...(targetBrief.applications || [])];
+        setApplicationSuccess(true);
+        setTimeout(() => {
+          setApplyingBrief(null);
+          setApplicationSuccess(false);
+        }, 1500);
+      })
+      .catch(() => {
+        setApplicationError("Arizani yuborib boʻlmadi. Internetni tekshirib, qayta urinib koʻring.");
+      });
   };
 
   // =========================================================================

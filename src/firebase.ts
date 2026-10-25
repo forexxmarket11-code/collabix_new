@@ -9,6 +9,7 @@ import {
   EmailAuthProvider,
   reauthenticateWithCredential,
   deleteUser,
+  sendPasswordResetEmail,
 } from 'firebase/auth';
 import {
   getFirestore,
@@ -180,6 +181,33 @@ export function normalizeContactToAuthEmail(rawInput: string): {
     displayContact: trimmed,
     phoneNumber: '',
   };
+}
+
+/**
+ * Parolni tiklash: email bilan ro'yxatdan o'tganlarga Google xat yuboradi.
+ * Telefon raqam bilan ro'yxatdan o'tganlarda email yo'q, ular adminga murojaat qiladi.
+ */
+export async function requestPasswordReset(rawContact: string): Promise<void> {
+  const value = (rawContact || '').trim();
+  if (!value) {
+    throw new Error("Avval email manzilingizni yozing, keyin «Parolni unutdingizmi?» ni bosing.");
+  }
+  const { authEmail, isPhone } = normalizeContactToAuthEmail(value);
+  if (isPhone || !authEmail.includes('@')) {
+    throw new Error("Telefon raqam bilan roʻyxatdan oʻtgan boʻlsangiz, parolni tiklash uchun forexxmarket11@gmail.com ga roʻyxatdan oʻtgan raqamingizni yozing.");
+  }
+  try {
+    await sendPasswordResetEmail(auth, authEmail);
+  } catch (err: any) {
+    const code = String(err?.code || '');
+    if (code.includes('invalid-email')) {
+      throw new Error("Email manzil notoʻgʻri yozilgan.");
+    }
+    if (code.includes('too-many-requests')) {
+      throw new Error("Juda koʻp urinish boʻldi. Birozdan soʻng qayta urinib koʻring.");
+    }
+    // user-not-found va boshqalarda ham bir xil javob beramiz (kim ro'yxatdan o'tganini oshkor qilmaslik uchun)
+  }
 }
 
 /**
@@ -2282,6 +2310,50 @@ export function onFirebaseAuthReady(
 }
 
 /**
+ * Admin: eski briflarda saqlanib qolgan telefon/Telegram ma'lumotlarini tozalash.
+ * (Avval ariza va qabul qilishda kontaktlar brifga yozilardi; ochiq briflar hammaga ko'rinadi.)
+ */
+export async function scrubContactsFromBriefs(): Promise<number> {
+  if (!isCurrentUserAdmin()) return 0;
+  const contactKeys = ['creatorPhoneNumber', 'creatorTelegramUsername', 'brandPhoneNumber', 'brandTelegramUsername'];
+  let cleaned = 0;
+  try {
+    const snap = await getDocs(collection(db, 'briefs'));
+    for (const d of snap.docs) {
+      const data = d.data() as any;
+      const updates: Record<string, any> = {};
+      for (const k of contactKeys) {
+        if (k in data) updates[k] = deleteField();
+      }
+      if (Array.isArray(data.applications)) {
+        let appsChanged = false;
+        const apps = data.applications.map((app: any) => {
+          if (!app || typeof app !== 'object') return app;
+          const copy = { ...app };
+          for (const k of contactKeys) {
+            if (k in copy) {
+              delete copy[k];
+              appsChanged = true;
+            }
+          }
+          return copy;
+        });
+        if (appsChanged) updates.applications = apps;
+      }
+      if (Object.keys(updates).length > 0) {
+        try {
+          await updateDoc(d.ref, updates);
+          cleaned++;
+        } catch {}
+      }
+    }
+  } catch (err) {
+    console.warn('Briflarni tozalashda xatolik:', err);
+  }
+  return cleaned;
+}
+
+/**
  * Real-time subscription to Briefs collection in Firestore
  * - Open briefs ('open') are loaded for the public directory.
  * - Direct briefs ('direct') are strictly loaded ONLY for the targeted creator (selectedCreatorId)
@@ -2613,8 +2685,6 @@ export async function respondToBriefInFirestore(
       }
     }
 
-    if (cPhone) updates.creatorPhoneNumber = cPhone;
-    if (cTg) updates.creatorTelegramUsername = cTg;
 
     // Also populate brand's contact from Firestore if missing on the brief
     if (data.brandId && (!data.brandPhoneNumber || !data.brandTelegramUsername)) {
@@ -2624,8 +2694,6 @@ export async function respondToBriefInFirestore(
           const bData = bDataProfile as UserSession;
           const bPhone = bData.phoneNumber || (bData as any).phone || (bData.contact && !bData.contact.includes('@') ? bData.contact : undefined);
           const bTg = bData.telegramUsername || (bData.socialLinks?.telegram ? bData.socialLinks.telegram.replace(/^https?:\/\/t\.me\//, '').replace(/^@/, '') : undefined);
-          if (bPhone && !data.brandPhoneNumber) updates.brandPhoneNumber = bPhone;
-          if (bTg && !data.brandTelegramUsername) updates.brandTelegramUsername = bTg;
         }
       } catch (err) {
         console.warn("Brend kontaktini olishda xatolik:", err);
@@ -2742,31 +2810,17 @@ export async function respondToBriefApplicationInFirestore(
       }
     }
 
-    if (bPhone) targetApp.brandPhoneNumber = bPhone;
-    if (bTg) targetApp.brandTelegramUsername = bTg;
 
-    // Lookup creator profile if missing on targetApp
-    if ((!targetApp.creatorPhoneNumber || !targetApp.creatorTelegramUsername) && targetApp.creatorId) {
-      try {
-        const cDataProfile = await fetchUserProfile(targetApp.creatorId);
-        if (cDataProfile) {
-          const cData = cDataProfile as UserSession;
-          if (!targetApp.creatorPhoneNumber) {
-            targetApp.creatorPhoneNumber = cData.phoneNumber || (cData as any).phone || (cData.contact && !cData.contact.includes('@') ? cData.contact : undefined);
-          }
-          if (!targetApp.creatorTelegramUsername) {
-            targetApp.creatorTelegramUsername = cData.telegramUsername || (cData.socialLinks?.telegram ? cData.socialLinks.telegram.replace(/^https?:\/\/t\.me\//, '').replace(/^@/, '') : undefined);
-          }
-        }
-      } catch (err) {
-        console.warn("Kreator kontaktini olishda xatolik:", err);
-      }
-    }
+    // Kontaktlar brifga yozilmaydi (ochiq briflar hammaga ko'rinadi); ular ruxsat orqali ochiladi
   }
   if (status === 'rad_etildi' && rejectionReason) {
     targetApp.rejectionReason = rejectionReason.trim();
   }
 
+  delete (targetApp as any).creatorPhoneNumber;
+  delete (targetApp as any).creatorTelegramUsername;
+  delete (targetApp as any).brandPhoneNumber;
+  delete (targetApp as any).brandTelegramUsername;
   existingApps[appIndex] = targetApp;
 
   const briefUpdates: Record<string, any> = {
@@ -2776,10 +2830,6 @@ export async function respondToBriefApplicationInFirestore(
 
   if (status === 'qabul_qilindi') {
     briefUpdates.selectedApplicationId = applicationId;
-    if (targetApp.brandPhoneNumber) briefUpdates.brandPhoneNumber = targetApp.brandPhoneNumber;
-    if (targetApp.brandTelegramUsername) briefUpdates.brandTelegramUsername = targetApp.brandTelegramUsername;
-    if (targetApp.creatorPhoneNumber) briefUpdates.creatorPhoneNumber = targetApp.creatorPhoneNumber;
-    if (targetApp.creatorTelegramUsername) briefUpdates.creatorTelegramUsername = targetApp.creatorTelegramUsername;
   }
 
   await updateDoc(docRef, briefUpdates);
