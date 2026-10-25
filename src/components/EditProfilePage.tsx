@@ -247,6 +247,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
   // UI status
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [saveToast, setSaveToast] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   // Load fresh profile data from Firestore if available
@@ -576,22 +577,27 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
       accountStatus: user?.accountStatus === 'rejected' ? 'rejected' : 'approved',
     };
 
+    setSaveError(null);
     if (user?.uid) {
       try {
         await saveUserProfile(user.uid, updatedUser);
       } catch (err) {
         console.error("Firestore profil saqlashda xatolik:", err);
+        setIsSaving(false);
+        setSaveError("Saqlab boʻlmadi. Internetni tekshirib, qayta urinib koʻring.");
+        return;
       }
     }
 
     onSave(updatedUser);
-    setIsSaving(false);
     setSaveToast(true);
 
-    // Auto-hide toast after 3.5 seconds
+    // Saqlangach qisqa tasdiq ko'rsatib, profil sahifasiga qaytamiz
     setTimeout(() => {
       setSaveToast(false);
-    }, 3500);
+      setIsSaving(false);
+      onBack();
+    }, 800);
   };
 
   // If user is not logged in (safety guard after all hooks are executed)
@@ -1973,6 +1979,11 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
         className="fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-[#1A1A24]/95 backdrop-blur-xl border-t border-slate-200/90 dark:border-slate-800 shadow-[0_-8px_25px_rgba(0,0,0,0.08)] pt-3 pb-[max(12px,calc(env(safe-area-inset-bottom,0px)+8px))] px-4 sm:px-6 transition-all"
       >
         <div className="max-w-4xl mx-auto">
+          {saveError && (
+            <div className="mb-2.5 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 text-xs font-heading font-bold">
+              <span>{saveError}</span>
+            </div>
+          )}
           {saveToast && (
             <div className="sm:hidden mb-2.5 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-heading font-bold animate-in fade-in">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
