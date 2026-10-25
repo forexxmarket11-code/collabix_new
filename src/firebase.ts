@@ -443,7 +443,7 @@ export async function registerUser(
     telegramUsername: '',
     role: role,
     registeredAt: new Date().toLocaleDateString('uz-UZ'),
-    city: 'Toshkent, Oʻzbekiston',
+    city: '',
     profileCompletion: initialCompletion,
     subscriptionStatus: 'free',
     accountStatus: 'approved',
@@ -547,7 +547,7 @@ export async function loginUser(email: string, pass: string): Promise<UserSessio
       contact: displayContact,
       role: 'bloger',
       registeredAt: new Date().toLocaleDateString('uz-UZ'),
-      city: 'Toshkent, Oʻzbekiston',
+      city: '',
       accountStatus: 'approved',
     };
   }
@@ -1849,7 +1849,7 @@ export function userSessionToCatalogCreator(user: UserSession): CatalogCreator {
     handle,
     category,
     specialty: user.bio || (user.categories && user.categories.join(', ')) || 'Kreativ kontent muallifi',
-    city: user.city || 'Toshkent',
+    city: user.city || 'Oʻzbekiston',
     avatar:
       (user.avatar && !user.avatar.includes('images.unsplash.com') ? user.avatar : '') ||
       `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(user.name || user.uid || 'collabix')}`,

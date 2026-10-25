@@ -624,7 +624,7 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
 
   const isVerified = creatorProfile.verified ?? (creatorProfile.accountStatus !== 'rejected');
   const category = creatorProfile.categories?.[0] || 'Blogger';
-  const city = creatorProfile.city || 'Toshkent';
+  const city = creatorProfile.city || 'Oʻzbekiston';
   const rating = typeof creatorProfile.rating === 'number' ? creatorProfile.rating : 0;
   const reviewsCount = creatorProfile.completedOrdersCount ?? creatorProfile.reviewsCount ?? 0;
   const totalFollowers =

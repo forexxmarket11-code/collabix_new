@@ -784,6 +784,7 @@ export default function App() {
             )}
             <ProfilePage
               user={currentUser}
+              userBriefs={userBriefs}
               onLogout={handleLogout}
               onOpenRegister={handleStart}
               onUpdateUser={handleUpdateUser}

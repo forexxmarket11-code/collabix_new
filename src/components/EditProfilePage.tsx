@@ -136,7 +136,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
   // 2. Basic Info state
   const [name, setName] = useState<string>(user?.name || '');
   const [instagramHandle, setInstagramHandle] = useState<string>(user?.instagramHandle || '');
-  const [city, setCity] = useState<string>(user?.city?.split(',')[0] || 'Toshkent');
+  const [city, setCity] = useState<string>(user?.city?.split(',')[0] || '');
   const [gender, setGender] = useState<'erkak' | 'ayol' | ''>(user?.gender || '');
   const [languages, setLanguages] = useState<string[]>(
     user?.languages && user.languages.length > 0 ? user.languages : ['Oʻzbek']
@@ -963,6 +963,9 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
                   onChange={(e) => setCity(e.target.value)}
                   className="w-full min-h-[48px] pl-10 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-base sm:text-sm font-body text-slate-900 dark:text-white bg-slate-50/50 dark:bg-[#12121A] transition-colors focus:bg-white dark:focus:bg-[#12121A] focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-600 cursor-pointer"
                 >
+                  <option value="" disabled className="bg-white dark:bg-[#1A1A24] text-slate-500">
+                    Shaharni tanlang
+                  </option>
                   {CITIES.map((c) => (
                     <option key={c} value={c} className="bg-white dark:bg-[#1A1A24] text-slate-900 dark:text-white">
                       {c}

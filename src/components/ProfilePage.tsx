@@ -34,7 +34,7 @@ import {
   Flame,
   Key,
 } from 'lucide-react';
-import { UserSession } from '../types';
+import { UserSession, BriefData } from '../types';
 import { ThemeToggle } from './ThemeToggle';
 import { TopPlacementModal } from './TopPlacementModal';
 import {
@@ -52,6 +52,7 @@ interface ProfilePageProps {
   onNavigateToEdit?: () => void;
   onOpenCancelModal?: () => void;
   onOpenProModal?: () => void;
+  userBriefs?: BriefData[];
 }
 
 export const ProfilePage: React.FC<ProfilePageProps> = ({
@@ -62,6 +63,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   onNavigateToEdit,
   onOpenCancelModal,
   onOpenProModal,
+  userBriefs = [],
 }) => {
   const [isReactivating, setIsReactivating] = useState(false);
   const [subActionFeedback, setSubActionFeedback] = useState<string | null>(null);
@@ -123,6 +125,35 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   }
 
   const isBlogger = user.role === 'bloger';
+
+  // Haqiqiy statistikalar (briflar ma'lumotlaridan)
+  const myUid = user?.uid || '';
+  const isAcceptedBrief = (b: BriefData) =>
+    b.creatorStatus === 'qabul_qilindi' || Boolean((b as any).selectedApplicationId);
+  const profileStats: { label: string; value: string; hint: string }[] = (() => {
+    if (!user) return [];
+    if (isBlogger) {
+      const directToMe = userBriefs.filter((b) => b.recipientType === 'direct' && b.selectedCreatorId === myUid);
+      const myApplications = userBriefs.filter((b) => (b.applications || []).some((a) => a.creatorId === myUid));
+      const accepted =
+        directToMe.filter((b) => b.creatorStatus === 'qabul_qilindi').length +
+        myApplications.filter((b) =>
+          (b.applications || []).some((a) => a.creatorId === myUid && (a.status === 'accepted' || a.creatorStatus === 'qabul_qilindi'))
+        ).length;
+      return [
+        { label: 'Kelgan takliflar', value: `${directToMe.length} ta`, hint: 'Sizga yuborilgan shaxsiy briflar' },
+        { label: 'Yuborilgan arizalar', value: `${myApplications.length} ta`, hint: 'Ochiq briflarga arizalaringiz' },
+        { label: 'Profil koʻrishlari', value: `${typeof user.views === 'number' ? user.views : 0} marta`, hint: `Qabul qilingan hamkorliklar: ${accepted} ta` },
+      ];
+    }
+    const mine = userBriefs.filter((b) => b.brandId === myUid);
+    const applicationsCount = mine.reduce((sum, b) => sum + (b.applications?.length || 0), 0);
+    return [
+      { label: 'Yuborilgan briflar', value: `${mine.length} ta`, hint: 'Siz yaratgan barcha briflar' },
+      { label: 'Kelgan arizalar', value: `${applicationsCount} ta`, hint: 'Ochiq briflaringizga' },
+      { label: 'Kelishilgan hamkorliklar', value: `${mine.filter(isAcceptedBrief).length} ta`, hint: 'Qabul qilingan briflar' },
+    ];
+  })();
 
   const subscriptionStatus = user.subscriptionStatus || 'free';
   const isCancelled = subscriptionStatus === 'cancelled';
@@ -191,18 +222,22 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
               </h1>
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-heading font-bold bg-white/15 text-indigo-200 backdrop-blur-xs border border-white/20">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Tasdiqlangan kreator</span>
+                <span>{isBlogger ? 'Kreator' : 'Brend'}</span>
               </span>
             </div>
 
-            <p className="text-xs sm:text-sm text-indigo-200 font-body mb-3 break-all">
-              {user.instagramHandle ? (user.instagramHandle.startsWith('@') ? user.instagramHandle : `@${user.instagramHandle}`) : (isBlogger ? '@creator' : '@brand')}
-            </p>
+            {user.instagramHandle ? (
+              <p className="text-xs sm:text-sm text-indigo-200 font-body mb-3 break-all">
+                {user.instagramHandle.startsWith('@') ? user.instagramHandle : `@${user.instagramHandle}`}
+              </p>
+            ) : (
+              <div className="mb-3" />
+            )}
 
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white/10 text-xs text-white/90 font-medium">
                 <Building2 className="w-3.5 h-3.5 text-indigo-300" />
-                <span>{user.city || 'Toshkent'}</span>
+                <span>{user.city ? user.city.split(',')[0] : 'Shahar tanlanmagan'}</span>
               </div>
               {user.gender && (
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white/10 text-xs text-white/90 font-medium capitalize">
@@ -319,7 +354,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
             <span className="block text-[11px] font-heading font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
               Bogʻlanish maʼlumotlari (Briflar uchun)
             </span>
-            {!user.phoneNumber && !user.telegramUsername && (
+            {(!user.phoneNumber || !user.telegramUsername) && (
               <button
                 type="button"
                 onClick={onNavigateToEdit}
@@ -332,7 +367,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           <div className="flex flex-wrap items-center gap-2">
             <div className="max-w-full inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/50 text-xs font-heading font-semibold text-slate-700 dark:text-slate-300">
               <Phone className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-              <span className="break-all">{user.phoneNumber || user.contact || 'Telefon kiritilmagan'}</span>
+              <span className="break-all">{user.phoneNumber || (user.contact && !user.contact.includes('@') ? user.contact : '') || 'Telefon kiritilmagan'}</span>
             </div>
 
             <div className="max-w-full inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/50 text-xs font-heading font-semibold text-slate-700 dark:text-slate-300">
@@ -349,25 +384,18 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         </div>
       </div>
 
-      {/* Stats Cards */}
+      {/* Stats Cards — haqiqiy ma'lumotlar */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 mb-6">
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 p-4 shadow-2xs transition-colors duration-300">
-          <span className="text-xs text-slate-500 dark:text-slate-400 font-body">Faol buyurtmalar</span>
-          <div className="font-heading font-extrabold text-xl text-slate-900 dark:text-slate-100 mt-0.5">3 ta</div>
-          <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold mt-0.5 inline-block">1 tasi tasdiqlashda</span>
-        </div>
-
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 p-4 shadow-2xs transition-colors duration-300">
-          <span className="text-xs text-slate-500 dark:text-slate-400 font-body">Yuborilgan briflar</span>
-          <div className="font-heading font-extrabold text-xl text-slate-900 dark:text-slate-100 mt-0.5">8 ta</div>
-          <span className="text-[11px] text-indigo-600 dark:text-indigo-400 font-semibold mt-0.5 inline-block">Jami byudjet</span>
-        </div>
-
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 p-4 shadow-2xs transition-colors duration-300">
-          <span className="text-xs text-slate-500 dark:text-slate-400 font-body">Hamkorlik reytingi</span>
-          <div className="font-heading font-extrabold text-xl text-slate-900 dark:text-slate-100 mt-0.5">★ 5.0</div>
-          <span className="text-[11px] text-amber-600 dark:text-amber-400 font-semibold mt-0.5 inline-block">Ishonchli hisob</span>
-        </div>
+        {profileStats.map((st) => (
+          <div
+            key={st.label}
+            className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 p-4 shadow-2xs transition-colors duration-300"
+          >
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-body">{st.label}</span>
+            <div className="font-heading font-extrabold text-xl text-slate-900 dark:text-slate-100 mt-0.5">{st.value}</div>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold mt-0.5 inline-block">{st.hint}</span>
+          </div>
+        ))}
       </div>
 
       {/* Obuna holati Card - Completely Simplified */}
