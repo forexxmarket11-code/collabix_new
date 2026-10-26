@@ -1139,14 +1139,14 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
               className={`text-xs font-mono font-medium ${
                 bio.trim().length > 0 && bio.trim().length < 20
                   ? 'text-amber-600 dark:text-amber-400 font-bold'
-                  : bio.length > 450
+                  : bio.length > 1350
                   ? 'text-amber-600 font-bold'
                   : bio.trim().length >= 20
                   ? 'text-emerald-600 dark:text-emerald-400 font-semibold'
                   : 'text-slate-400'
               }`}
             >
-              {bio.trim().length}/500 (kamida 20 ta belgi)
+              {bio.trim().length}/1500 (kamida 20 ta belgi)
             </span>
           </div>
 
@@ -1155,8 +1155,8 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
           </p>
 
           <textarea
-            rows={4}
-            maxLength={500}
+            rows={7}
+            maxLength={1500}
             value={bio}
             onChange={(e) => setBio(e.target.value)}
             placeholder="Oʻzingiz va kontentingiz haqida yozing..."
