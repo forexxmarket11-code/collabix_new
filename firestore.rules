@@ -60,7 +60,10 @@ service cloud.firestore {
         'referredBy',
         'referralBalance',
         'referralEarnedTotal',
-        'referralRewarded'
+        'referralRewarded',
+        'catalogApproved',
+        'catalogRejectReason',
+        'catalogReviewedAtMillis'
       ]);
     }
 
@@ -94,6 +97,9 @@ service cloud.firestore {
         && !('referralBalance' in data)
         && !('referralEarnedTotal' in data)
         && !('referralRewarded' in data)
+        && !('catalogApproved' in data)
+        && !('catalogRejectReason' in data)
+        && !('catalogReviewedAtMillis' in data)
         && !('isAdmin' in data)
         && !('permissions' in data)
         && !('proExpiresAtMillis' in data)

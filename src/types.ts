@@ -238,6 +238,12 @@ export interface UserSession {
   lastUnlockedCreatorId?: string;
   proExpiresAtMillis?: number;
   proGifted?: boolean;
+  /** Katalog uchun admin tasdig'i (faqat admin yozadi) */
+  catalogApproved?: boolean;
+  catalogRejectReason?: string;
+  catalogReviewedAtMillis?: number;
+  /** Bloger rad etilgandan keyin qayta yuborgan vaqt */
+  catalogResubmittedAtMillis?: number;
   topPlacementUntil?: string | null;
   createdAt?: any;
   updatedAt?: any;

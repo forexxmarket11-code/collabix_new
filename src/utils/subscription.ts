@@ -80,7 +80,7 @@ export function isFilledPriceValue(raw?: string | null): boolean {
   return /[1-9]/.test(trimmed);
 }
 
-export type BloggerAdminCatalogStatus = 'in_catalog' | 'no_pro' | 'incomplete';
+export type BloggerAdminCatalogStatus = 'in_catalog' | 'no_pro' | 'incomplete' | 'pending_review' | 'review_rejected';
 
 export interface BloggerCatalogReadiness {
   hasAvatar: boolean;
@@ -92,6 +92,12 @@ export interface BloggerCatalogReadiness {
   isNotRejected: boolean;
   isProfileComplete: boolean;
   isVisibleInCatalog: boolean;
+  /** Admin katalogga tasdiqlaganmi */
+  isCatalogApproved: boolean;
+  /** Profil tayyor, admin tekshiruvini kutmoqda */
+  isAwaitingReview: boolean;
+  /** Admin katalogga qabul qilmagan (qayta yuborilmagan) */
+  isCatalogRejected: boolean;
   adminStatus: BloggerAdminCatalogStatus;
 }
 
@@ -103,7 +109,8 @@ export interface BloggerCatalogReadiness {
  */
 export function getBloggerCatalogReadiness(
   user: Partial<UserSession> | null | undefined,
-  catalogProOnly: boolean = true
+  catalogProOnly: boolean = true,
+  catalogReviewRequired: boolean = false
 ): BloggerCatalogReadiness {
   const hasAvatar = Boolean(
     user?.avatar && typeof user.avatar === 'string' && user.avatar.trim().length > 0
@@ -144,8 +151,19 @@ export function getBloggerCatalogReadiness(
   const isNotRejected = user?.accountStatus !== 'rejected';
   const proRequirementMet = !catalogProOnly || hasPro;
 
+  // Admin tasdig'i: catalogApproved === true -> tasdiqlangan, false -> rad etilgan.
+  // Rad etilgandan keyin bloger qayta yuborsa (catalogResubmittedAtMillis > catalogReviewedAtMillis) yana kutish holatiga o'tadi.
+  const reviewedAt = Number(user?.catalogReviewedAtMillis || 0);
+  const resubmittedAt = Number(user?.catalogResubmittedAtMillis || 0);
+  const isCatalogApproved = user?.catalogApproved === true;
+  const isCatalogRejected = user?.catalogApproved === false && !(resubmittedAt > reviewedAt);
+  const approvalMet = isCatalogApproved || (!catalogReviewRequired && user?.catalogApproved !== false);
+
   const isVisibleInCatalog = Boolean(
-    isNotRejected && isProfileComplete && proRequirementMet
+    isNotRejected && isProfileComplete && proRequirementMet && approvalMet
+  );
+  const isAwaitingReview = Boolean(
+    isNotRejected && isProfileComplete && proRequirementMet && !approvalMet && !isCatalogRejected
   );
 
   let adminStatus: BloggerAdminCatalogStatus = 'incomplete';
@@ -153,6 +171,10 @@ export function getBloggerCatalogReadiness(
     adminStatus = 'incomplete';
   } else if (catalogProOnly && !hasPro) {
     adminStatus = 'no_pro';
+  } else if (isCatalogRejected) {
+    adminStatus = 'review_rejected';
+  } else if (isAwaitingReview) {
+    adminStatus = 'pending_review';
   } else if (isNotRejected) {
     adminStatus = 'in_catalog';
   } else {
@@ -169,6 +191,9 @@ export function getBloggerCatalogReadiness(
     isNotRejected,
     isProfileComplete,
     isVisibleInCatalog,
+    isCatalogApproved,
+    isAwaitingReview,
+    isCatalogRejected,
     adminStatus,
   };
 }

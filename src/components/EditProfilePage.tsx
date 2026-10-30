@@ -47,6 +47,7 @@ function cleanSocialLinks<T extends Record<string, any>>(links: T): T {
 interface EditProfilePageProps {
   user: UserSession | null;
   catalogProOnly?: boolean;
+  catalogReviewRequired?: boolean;
   onOpenProModal?: () => void;
   onSave: (updated: UserSession) => void;
   onBack: () => void;
@@ -127,6 +128,7 @@ function compressImage(file: File, maxWidth = 800, maxHeight = 800, quality = 0.
 export const EditProfilePage: React.FC<EditProfilePageProps> = ({
   user,
   catalogProOnly = true,
+  catalogReviewRequired = false,
   onOpenProModal,
   onSave,
   onBack,
@@ -681,7 +683,7 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
         };
 
         const liveScore = calculateProfileCompletion(draftUser);
-        const liveReadiness = getBloggerCatalogReadiness(draftUser, catalogProOnly);
+        const liveReadiness = getBloggerCatalogReadiness(draftUser, catalogProOnly, catalogReviewRequired);
         const isBloggerUser = user.role !== 'brend';
 
         const scrollToSection = (sectionId: string) => {
@@ -767,6 +769,16 @@ export const EditProfilePage: React.FC<EditProfilePageProps> = ({
               {isBloggerUser && liveReadiness.isVisibleInCatalog && (
                 <span className="shrink-0 px-3 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-xs font-heading font-bold border border-emerald-200 dark:border-emerald-800 self-start sm:self-auto">
                   Katalogda faol ✅
+                </span>
+              )}
+              {isBloggerUser && liveReadiness.isAwaitingReview && (
+                <span className="shrink-0 px-3 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 text-xs font-heading font-bold border border-amber-200 dark:border-amber-800 self-start sm:self-auto">
+                  Admin tekshiruvida ⏳
+                </span>
+              )}
+              {isBloggerUser && liveReadiness.isCatalogRejected && (
+                <span className="shrink-0 px-3 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 text-xs font-heading font-bold border border-rose-200 dark:border-rose-800 self-start sm:self-auto">
+                  Katalogga qabul qilinmadi ❌
                 </span>
               )}
             </div>

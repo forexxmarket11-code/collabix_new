@@ -1026,6 +1026,9 @@ const PROTECTED_USER_FIELDS = new Set([
   'referralRewarded',
   'proExpiresAtMillis',
   'proGifted',
+  'catalogApproved',
+  'catalogRejectReason',
+  'catalogReviewedAtMillis',
   'createdAt',
 ]);
 
@@ -1895,45 +1898,39 @@ export function userSessionToCatalogCreator(user: UserSession): CatalogCreator {
  * Subscribe in real-time to Firestore 'settings/catalog' document.
  * Default value when document does not exist: { catalogProOnly: true }.
  */
+export interface CatalogSettings {
+  catalogProOnly: boolean;
+  /** Yangi blogerlar katalogga faqat admin tasdig'idan keyin chiqadi */
+  catalogReviewRequired: boolean;
+}
+
+function parseCatalogSettings(data: any): CatalogSettings {
+  const catalogProOnly =
+    typeof data?.catalogProOnly === 'boolean'
+      ? data.catalogProOnly
+      : typeof data?.proOnly === 'boolean'
+      ? data.proOnly
+      : true;
+  return { catalogProOnly, catalogReviewRequired: data?.catalogReviewRequired === true };
+}
+
 export function subscribeToCatalogSettings(
-  callback: (settings: { catalogProOnly: boolean }) => void
+  callback: (settings: CatalogSettings) => void
 ): () => void {
   const settingsRef = doc(db, 'settings', 'catalog');
 
   return onSnapshot(
     settingsRef,
     (snap) => {
-      if (snap.exists()) {
-        const data = snap.data() as any;
-        const catalogProOnly =
-          typeof data?.catalogProOnly === 'boolean'
-            ? data.catalogProOnly
-            : typeof data?.proOnly === 'boolean'
-            ? data.proOnly
-            : true;
-        callback({ catalogProOnly });
-      } else {
-        callback({ catalogProOnly: true });
-      }
+      callback(parseCatalogSettings(snap.exists() ? snap.data() : null));
     },
     () => {
       getDoc(settingsRef)
         .then((snap) => {
-          if (snap.exists()) {
-            const data = snap.data() as any;
-            const catalogProOnly =
-              typeof data?.catalogProOnly === 'boolean'
-                ? data.catalogProOnly
-                : typeof data?.proOnly === 'boolean'
-                ? data.proOnly
-                : true;
-            callback({ catalogProOnly });
-          } else {
-            callback({ catalogProOnly: true });
-          }
+          callback(parseCatalogSettings(snap.exists() ? snap.data() : null));
         })
         .catch(() => {
-          callback({ catalogProOnly: true });
+          callback(parseCatalogSettings(null));
         });
     }
   );
@@ -1977,6 +1974,7 @@ export function subscribeToApprovedCreators(
   let lastUid: string | null | undefined = undefined;
   let hasEmitted = false;
   let catalogProOnly = true;
+  let catalogReviewRequired = false;
   let latestDocs: any[] | null = null;
 
   const parseDocs = (docs: any[]) => {
@@ -1997,7 +1995,7 @@ export function subscribeToApprovedCreators(
         accountStatus: data.accountStatus === 'rejected' ? 'rejected' : 'approved',
       };
 
-      const readiness = getBloggerCatalogReadiness(userObj, catalogProOnly);
+      const readiness = getBloggerCatalogReadiness(userObj, catalogProOnly, catalogReviewRequired);
       if (readiness.isVisibleInCatalog) {
         rawApprovedUsers.push(userObj);
         approvedCreators.push(userSessionToCatalogCreator(userObj));
@@ -2011,8 +2009,10 @@ export function subscribeToApprovedCreators(
   const settingsUnsub = subscribeToCatalogSettings((settings) => {
     if (isDisposed) return;
     const prev = catalogProOnly;
+    const prevReview = catalogReviewRequired;
     catalogProOnly = settings.catalogProOnly;
-    if (prev !== catalogProOnly && latestDocs !== null) {
+    catalogReviewRequired = settings.catalogReviewRequired;
+    if ((prev !== catalogProOnly || prevReview !== catalogReviewRequired) && latestDocs !== null) {
       parseDocs(latestDocs);
     }
   });
@@ -4341,4 +4341,112 @@ export async function giftProAdmin(uid: string, days: number): Promise<{ endMs: 
   } catch {}
 
   return { endMs };
+}
+
+
+/* ------------------------------------------------------------------ */
+/* Katalog uchun admin tekshiruvi                                       */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Admin: tekshiruvni yoqish. Hozir katalogda turgan blogerlar avtomatik tasdiqlanadi
+ * (katalog bo'shab qolmasligi uchun), keyin yangi blogerlar faqat tasdiqdan so'ng chiqadi.
+ */
+export async function enableCatalogReviewAdmin(currentlyVisibleUids: string[]): Promise<void> {
+  requireAdminAuth();
+  const now = Date.now();
+  const uids = Array.from(new Set(currentlyVisibleUids.filter(Boolean)));
+  for (let i = 0; i < uids.length; i += 400) {
+    const batch = writeBatch(db);
+    uids.slice(i, i + 400).forEach((uid) => {
+      batch.set(
+        doc(db, 'users', uid),
+        { catalogApproved: true, catalogRejectReason: '', catalogReviewedAtMillis: now },
+        { merge: true }
+      );
+    });
+    await batch.commit();
+  }
+  await setDoc(
+    doc(db, 'settings', 'catalog'),
+    {
+      catalogReviewRequired: true,
+      updatedAt: serverTimestamp(),
+      updatedBy: auth.currentUser?.uid || ADMIN_UID,
+    },
+    { merge: true }
+  );
+}
+
+/** Admin: tekshiruvni o'chirish (hamma to'liq profillar yana avtomatik chiqadi, rad etilganlardan tashqari) */
+export async function disableCatalogReviewAdmin(): Promise<void> {
+  requireAdminAuth();
+  await setDoc(
+    doc(db, 'settings', 'catalog'),
+    {
+      catalogReviewRequired: false,
+      updatedAt: serverTimestamp(),
+      updatedBy: auth.currentUser?.uid || ADMIN_UID,
+    },
+    { merge: true }
+  );
+}
+
+/** Admin: blogerni katalogga tasdiqlash */
+export async function approveCreatorForCatalogAdmin(uid: string): Promise<void> {
+  requireAdminAuth();
+  await setDoc(
+    doc(db, 'users', uid),
+    { catalogApproved: true, catalogRejectReason: '', catalogReviewedAtMillis: Date.now(), updatedAt: serverTimestamp() },
+    { merge: true }
+  );
+  try {
+    await createNotificationInFirestore({
+      userId: uid,
+      type: 'tizim',
+      title: 'Profilingiz tasdiqlandi ✅',
+      message: 'Tabriklaymiz! Profilingiz admin tomonidan tasdiqlandi va endi katalogda brendlarga koʻrinadi.',
+      read: false,
+      createdAt: new Date().toISOString(),
+      createdAtMillis: Date.now(),
+    });
+  } catch {}
+}
+
+/** Admin: blogerni katalogga qabul qilmaslik (sabab bilan) */
+export async function rejectCreatorForCatalogAdmin(uid: string, reason: string): Promise<void> {
+  requireAdminAuth();
+  const cleanReason = (reason || '').trim().slice(0, 500);
+  await setDoc(
+    doc(db, 'users', uid),
+    { catalogApproved: false, catalogRejectReason: cleanReason, catalogReviewedAtMillis: Date.now(), updatedAt: serverTimestamp() },
+    { merge: true }
+  );
+  try {
+    await createNotificationInFirestore({
+      userId: uid,
+      type: 'tizim',
+      title: 'Profilingiz katalogga qabul qilinmadi',
+      message: cleanReason
+        ? `Sabab: ${cleanReason}. Profilingizni tuzatib, qayta tekshiruvga yuboring.`
+        : 'Profilingizni tuzatib, qayta tekshiruvga yuboring.',
+      read: false,
+      createdAt: new Date().toISOString(),
+      createdAtMillis: Date.now(),
+    });
+  } catch {}
+}
+
+/** Bloger: rad etilgan profilni tuzatib qayta tekshiruvga yuborish */
+export async function resubmitCatalogReview(uid: string): Promise<number> {
+  if (!auth.currentUser || auth.currentUser.uid !== uid) {
+    throw new Error('Faqat oʻz profilingizni yuborishingiz mumkin.');
+  }
+  const now = Date.now();
+  await setDoc(
+    doc(db, 'users', uid),
+    { catalogResubmittedAtMillis: now, updatedAt: serverTimestamp() },
+    { merge: true }
+  );
+  return now;
 }

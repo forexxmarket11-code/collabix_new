@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { AlertCircle, Sparkles, ArrowRight, X, CheckCircle2 } from 'lucide-react';
+import { AlertCircle, Sparkles, ArrowRight, X, CheckCircle2, Clock, Send } from 'lucide-react';
 import { PageType, UserSession } from '../types';
 import { getBloggerCatalogReadiness } from '../utils/subscription';
+import { resubmitCatalogReview } from '../firebase';
 
 interface BloggerCatalogBannerProps {
   user: UserSession | null;
   catalogProOnly: boolean;
+  catalogReviewRequired?: boolean;
   currentPage: PageType;
   onFillProfile: () => void;
   onOpenProModal: () => void;
@@ -16,6 +18,7 @@ interface BloggerCatalogBannerProps {
 export const BloggerCatalogBanner: React.FC<BloggerCatalogBannerProps> = ({
   user,
   catalogProOnly,
+  catalogReviewRequired = false,
   currentPage,
   onFillProfile,
   onOpenProModal,
@@ -25,18 +28,23 @@ export const BloggerCatalogBanner: React.FC<BloggerCatalogBannerProps> = ({
   const [dismissedIncomplete, setDismissedIncomplete] = useState(false);
   const [dismissedNeedPro, setDismissedNeedPro] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
+  const [dismissedReview, setDismissedReview] = useState(false);
+  const [resubmitting, setResubmitting] = useState(false);
+  const [resubmitError, setResubmitError] = useState('');
 
   const isBlogger = Boolean(
     user && user.role === 'bloger' && user.accountStatus !== 'rejected'
   );
 
-  const readiness = getBloggerCatalogReadiness(user, catalogProOnly);
+  const readiness = getBloggerCatalogReadiness(user, catalogProOnly, catalogReviewRequired);
 
   // Reset dismissals when user switches accounts
   useEffect(() => {
     setDismissedIncomplete(false);
     setDismissedNeedPro(false);
     setShowCelebration(false);
+    setDismissedReview(false);
+    setResubmitError('');
   }, [user?.uid]);
 
   // Handle one-time "🎉 Profilingiz katalogda!" message when everything is ready
@@ -78,7 +86,11 @@ export const BloggerCatalogBanner: React.FC<BloggerCatalogBannerProps> = ({
         ? showCelebration
         : !readiness.isProfileComplete
         ? !dismissedIncomplete
-        : catalogProOnly && !readiness.hasPro && !dismissedNeedPro)
+        : catalogProOnly && !readiness.hasPro
+        ? !dismissedNeedPro
+        : readiness.isCatalogRejected
+        ? true
+        : readiness.isAwaitingReview && !dismissedReview)
   );
 
   useEffect(() => {
@@ -207,6 +219,99 @@ export const BloggerCatalogBanner: React.FC<BloggerCatalogBannerProps> = ({
               className="absolute top-2 right-2 sm:static min-w-[44px] min-h-[44px] p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors cursor-pointer flex items-center justify-center"
             >
               <X className="w-4.5 h-4.5" />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // State 4: Profil tayyor, admin tekshiruvini kutmoqda
+  if (readiness.isAwaitingReview) {
+    return (
+      <div className={wrapperClass}>
+        <div
+          id="blogger-awaiting-review-banner"
+          className="relative rounded-2xl bg-gradient-to-r from-amber-50 via-yellow-50/80 to-indigo-50/60 dark:from-amber-950/50 dark:via-slate-900 dark:to-indigo-950/40 border border-amber-200/90 dark:border-amber-800/70 px-4 py-3 sm:px-5 shadow-xs flex items-center justify-between gap-3"
+        >
+          <div className="flex items-start sm:items-center gap-2.5 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0">
+              <Clock className="w-4.5 h-4.5" />
+            </div>
+            <p className="text-[15px] sm:text-sm font-heading font-bold text-slate-900 dark:text-slate-100 leading-snug break-words">
+              ⏳ Profilingiz admin tekshiruvida. Tasdiqlangach katalogda brendlarga koʻrinasiz.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setDismissedReview(true)}
+            aria-label="Yopish"
+            className="min-w-[44px] min-h-[44px] p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0 flex items-center justify-center"
+          >
+            <X className="w-4.5 h-4.5" />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // State 5: Admin katalogga qabul qilmagan
+  if (readiness.isCatalogRejected) {
+    const handleResubmit = async () => {
+      if (!user?.uid || resubmitting) return;
+      setResubmitting(true);
+      setResubmitError('');
+      try {
+        await resubmitCatalogReview(user.uid);
+      } catch {
+        setResubmitError('Yuborilmadi. Qayta urinib koʻring.');
+      } finally {
+        setResubmitting(false);
+      }
+    };
+
+    return (
+      <div className={wrapperClass}>
+        <div
+          id="blogger-review-rejected-banner"
+          className="relative rounded-2xl bg-gradient-to-r from-rose-50 via-orange-50/70 to-slate-50 dark:from-rose-950/50 dark:via-slate-900 dark:to-slate-900 border border-rose-200/90 dark:border-rose-800/70 px-4 py-3.5 sm:px-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+        >
+          <div className="flex items-start gap-2.5 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-rose-100 dark:bg-rose-900/60 text-rose-700 dark:text-rose-300 flex items-center justify-center shrink-0">
+              <AlertCircle className="w-4.5 h-4.5" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[15px] sm:text-sm font-heading font-bold text-slate-900 dark:text-slate-100 leading-snug break-words">
+                Profilingiz katalogga qabul qilinmadi
+              </p>
+              {user.catalogRejectReason ? (
+                <p className="text-sm text-rose-700 dark:text-rose-300 mt-0.5 break-words">
+                  Sabab: {user.catalogRejectReason}
+                </p>
+              ) : null}
+              <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+                Profilni tuzating va qayta tekshiruvga yuboring.
+              </p>
+              {resubmitError ? <p className="text-xs text-rose-600 mt-1">{resubmitError}</p> : null}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={onFillProfile}
+              className="min-h-[44px] py-2.5 px-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 text-sm sm:text-xs font-heading font-bold transition-all cursor-pointer"
+            >
+              Tahrirlash
+            </button>
+            <button
+              type="button"
+              onClick={handleResubmit}
+              disabled={resubmitting}
+              className="min-h-[44px] py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm sm:text-xs font-heading font-bold shadow-xs transition-all cursor-pointer inline-flex items-center justify-center gap-1.5"
+            >
+              <Send className="w-4 h-4 shrink-0" />
+              <span>{resubmitting ? 'Yuborilmoqda...' : 'Qayta yuborish'}</span>
             </button>
           </div>
         </div>

@@ -127,6 +127,7 @@ export default function App() {
   const [authUid, setAuthUid] = useState<string | null>(null);
   const [isAuthReady, setIsAuthReady] = useState<boolean>(false);
   const [catalogProOnly, setCatalogProOnly] = useState<boolean>(true);
+  const [catalogReviewRequired, setCatalogReviewRequired] = useState<boolean>(false);
 
   useEffect(() => {
     const unsubscribe = onFirebaseAuthReady((uid) => {
@@ -139,6 +140,7 @@ export default function App() {
   useEffect(() => {
     const unsubscribe = subscribeToCatalogSettings((settings) => {
       setCatalogProOnly(settings.catalogProOnly);
+      setCatalogReviewRequired(settings.catalogReviewRequired);
     });
     return () => unsubscribe();
   }, []);
@@ -655,6 +657,7 @@ export default function App() {
           <BloggerCatalogBanner
             user={currentUser}
             catalogProOnly={catalogProOnly}
+            catalogReviewRequired={catalogReviewRequired}
             currentPage={currentPage}
             onFillProfile={handleOpenEditProfile}
             onOpenProModal={() => setIsProModalOpen(true)}
@@ -667,6 +670,7 @@ export default function App() {
           <EditProfilePage
             user={currentUser}
             catalogProOnly={catalogProOnly}
+            catalogReviewRequired={catalogReviewRequired}
             onOpenProModal={() => setIsProModalOpen(true)}
             onSave={(updated) => {
               handleUpdateUser(updated);

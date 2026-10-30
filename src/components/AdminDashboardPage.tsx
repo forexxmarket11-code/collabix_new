@@ -51,6 +51,8 @@ import { AdminCancellationReasons } from './AdminCancellationReasons';
 import { AdminAgencyApplications } from './AdminAgencyApplications';
 import { AdminBriefs } from './AdminBriefs';
 import { AdminReferralPayouts } from './AdminReferralPayouts';
+import { AdminCatalogReview } from './AdminCatalogReview';
+import { ShieldCheck } from 'lucide-react';
 import { Gift as GiftIcon } from 'lucide-react';
 import { FileText as FileTextIcon } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
@@ -63,7 +65,7 @@ interface AdminDashboardPageProps {
 }
 
 export function AdminDashboardPage({ onLogout, onGoToSite, onUnauthorized }: AdminDashboardPageProps) {
-  const [activeTab, setActiveTab] = useState<'approvals' | 'payment_requests' | 'briefs' | 'referral_payouts' | 'reports' | 'cancellations' | 'agency_applications'>('approvals');
+  const [activeTab, setActiveTab] = useState<'approvals' | 'catalog_review' | 'payment_requests' | 'briefs' | 'referral_payouts' | 'reports' | 'cancellations' | 'agency_applications'>('approvals');
   const [briefsCount, setBriefsCount] = useState<number>(0);
   const [payoutsCount, setPayoutsCount] = useState<number>(0);
   const [pendingCount, setPendingCount] = useState<number>(0);
@@ -77,6 +79,8 @@ export function AdminDashboardPage({ onLogout, onGoToSite, onUnauthorized }: Adm
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [catalogProOnly, setCatalogProOnly] = useState<boolean>(true);
+  const [catalogReviewRequired, setCatalogReviewRequired] = useState<boolean>(false);
+  const [catalogReviewCount, setCatalogReviewCount] = useState<number>(0);
   const [isSavingCatalogSetting, setIsSavingCatalogSetting] = useState<boolean>(false);
 
   const handleUnauthorized = useCallback(() => {
@@ -107,6 +111,7 @@ export function AdminDashboardPage({ onLogout, onGoToSite, onUnauthorized }: Adm
   useEffect(() => {
     const unsub = subscribeToCatalogSettings((settings) => {
       setCatalogProOnly(settings.catalogProOnly);
+      setCatalogReviewRequired(settings.catalogReviewRequired);
     });
     return () => unsub();
   }, []);
@@ -228,6 +233,8 @@ export function AdminDashboardPage({ onLogout, onGoToSite, onUnauthorized }: Adm
             <h1 className="text-xl sm:text-2xl font-heading font-extrabold text-slate-900 dark:text-white tracking-tight">
               {activeTab === 'approvals'
                 ? 'Barcha foydalanuvchilar'
+                : activeTab === 'catalog_review'
+                ? 'Katalog soʻrovlari'
                 : activeTab === 'payment_requests'
                 ? 'Toʻlov soʻrovlari (Pro rejim)'
                 : activeTab === 'briefs'
@@ -243,6 +250,8 @@ export function AdminDashboardPage({ onLogout, onGoToSite, onUnauthorized }: Adm
             <p className="text-xs sm:text-sm font-body text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
               {activeTab === 'approvals'
                 ? 'Platformada roʻyxatdan oʻtgan barcha bloger va brendlar roʻyxati hamda hisoblarni boshqarish.'
+                : activeTab === 'catalog_review'
+                ? 'Profilini toʻldirgan blogerlarning barcha maʼlumotlarini tekshirib, katalogga tasdiqlash yoki rad etish.'
                 : activeTab === 'payment_requests'
                 ? 'Bank kartasi orqali yuborilgan toʻlov cheklari va screenshotlarini tekshirish hamda Pro rejimni faollashtirish.'
                 : activeTab === 'referral_payouts'
@@ -273,6 +282,25 @@ export function AdminDashboardPage({ onLogout, onGoToSite, onUnauthorized }: Adm
               {pendingCount > 0 && (
                 <span className="px-1.5 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-mono font-bold leading-none">
                   {pendingCount}
+                </span>
+              )}
+            </button>
+
+            <button
+              type="button"
+              id="tab-btn-catalog-review"
+              onClick={() => setActiveTab('catalog_review')}
+              className={`min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-heading font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 whitespace-nowrap ${
+                activeTab === 'catalog_review'
+                  ? 'bg-white dark:bg-[#1A1A24] text-slate-900 dark:text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/50'
+              }`}
+            >
+              <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <span>Katalog soʻrovlari</span>
+              {catalogReviewCount > 0 && (
+                <span className="px-1.5 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-mono font-bold leading-none animate-pulse">
+                  {catalogReviewCount}
                 </span>
               )}
             </button>
@@ -461,10 +489,21 @@ export function AdminDashboardPage({ onLogout, onGoToSite, onUnauthorized }: Adm
         {activeTab === 'approvals' && (
           <AdminUserApprovals
             catalogProOnly={catalogProOnly}
+            catalogReviewRequired={catalogReviewRequired}
             onPendingCountChange={setPendingCount}
             onUnauthorized={handleUnauthorized}
           />
         )}
+
+        {/* Tab: Katalog tekshiruvi (doim yuklanadi — badge soni uchun, faqat aktiv tabda koʻrinadi) */}
+        <div className={activeTab === 'catalog_review' ? '' : 'hidden'}>
+          <AdminCatalogReview
+            catalogProOnly={catalogProOnly}
+            catalogReviewRequired={catalogReviewRequired}
+            onPendingCountChange={setCatalogReviewCount}
+            onUnauthorized={handleUnauthorized}
+          />
+        </div>
 
         {/* Tab: Manual Payment Requests */}
         {activeTab === 'payment_requests' && (

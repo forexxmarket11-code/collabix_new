@@ -30,12 +30,14 @@ import { getBloggerCatalogReadiness, isUserPro } from '../utils/subscription';
 
 interface AdminUserApprovalsProps {
   catalogProOnly?: boolean;
+  catalogReviewRequired?: boolean;
   onPendingCountChange?: (count: number) => void;
   onUnauthorized?: () => void;
 }
 
 export const AdminUserApprovals: React.FC<AdminUserApprovalsProps> = ({
   catalogProOnly = true,
+  catalogReviewRequired = false,
   onPendingCountChange,
   onUnauthorized,
 }) => {
@@ -331,7 +333,7 @@ export const AdminUserApprovals: React.FC<AdminUserApprovalsProps> = ({
                   const isBlocked = u.accountStatus === 'rejected';
                   const isBlogger = u.role !== 'brend';
                   const bloggerReadiness = isBlogger
-                    ? getBloggerCatalogReadiness(u, catalogProOnly)
+                    ? getBloggerCatalogReadiness(u, catalogProOnly, catalogReviewRequired)
                     : null;
                   const completionPercent =
                     typeof u.profileCompletion === 'number'
@@ -379,6 +381,10 @@ export const AdminUserApprovals: React.FC<AdminUserApprovalsProps> = ({
                                     ? 'Katalogda ✅'
                                     : bloggerReadiness.adminStatus === 'no_pro'
                                     ? 'Pro yoʻq 💳'
+                                    : bloggerReadiness.adminStatus === 'pending_review'
+                                    ? 'Tekshiruvda ⏳'
+                                    : bloggerReadiness.adminStatus === 'review_rejected'
+                                    ? 'Katalogga qabul qilinmagan ❌'
                                     : 'Toʻliq emas ⚠️'}
                                 </span>
                               )}
@@ -573,7 +579,7 @@ export const AdminUserApprovals: React.FC<AdminUserApprovalsProps> = ({
                     </span>
                   )}
                   {selectedUser.role !== 'brend' && (() => {
-                    const r = getBloggerCatalogReadiness(selectedUser, catalogProOnly);
+                    const r = getBloggerCatalogReadiness(selectedUser, catalogProOnly, catalogReviewRequired);
                     return (
                       <span
                         className={`font-bold px-2 py-0.5 rounded-md ${
@@ -588,6 +594,10 @@ export const AdminUserApprovals: React.FC<AdminUserApprovalsProps> = ({
                           ? 'Katalogda ✅'
                           : r.adminStatus === 'no_pro'
                           ? 'Pro yoʻq 💳'
+                          : r.adminStatus === 'pending_review'
+                          ? 'Tekshiruvda ⏳'
+                          : r.adminStatus === 'review_rejected'
+                          ? 'Katalogga qabul qilinmagan ❌'
                           : 'Toʻliq emas ⚠️'}
                       </span>
                     );
