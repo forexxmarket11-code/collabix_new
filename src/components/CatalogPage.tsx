@@ -345,6 +345,7 @@ export const CatalogPage: React.FC<CatalogPageProps> = ({
             <div
               key={creator.id}
               id={`creator-card-${creator.id}`}
+              data-creator-card
               onClick={() => {
                 if (onViewCreatorProfile) {
                   onViewCreatorProfile(creator);
