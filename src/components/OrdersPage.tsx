@@ -25,6 +25,7 @@ import {
   Phone,
   PhoneCall,
   Copy,
+  Lock,
 } from 'lucide-react';
 import { BriefData, BriefApplication, BriefCreatorStatus, UserSession } from '../types';
 import {
@@ -36,6 +37,7 @@ import {
   fetchUserProfile,
 } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import { isUserPro } from '../utils/subscription';
 
 interface OrdersPageProps {
   onOpenCatalog: () => void;
@@ -48,6 +50,8 @@ interface OrdersPageProps {
   onOpenChat?: (targetUser?: { uid: string; name: string; avatar?: string; handle?: string; role?: string }) => void;
   initialBriefId?: string | null;
   onClearInitialBriefId?: () => void;
+  /** Pro'si yo'q kreator ochiq brifga ariza yubormoqchi bo'lganda Pro taklif oynasini ochadi */
+  onOpenProUpgrade?: () => void;
 }
 
 const CATEGORIES_LIST = [
@@ -276,10 +280,13 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
   onOpenChat,
   initialBriefId,
   onClearInitialBriefId,
+  onOpenProUpgrade,
 }) => {
   const roleRaw = String(currentUser?.role || '').toLowerCase().trim();
   const isCreator = roleRaw === 'bloger' || roleRaw === 'kreator' || roleRaw === 'creator';
   const isBrand = roleRaw === 'brend' || roleRaw === 'brand' || roleRaw === 'biznes' || roleRaw === 'business' || (!isCreator && Boolean(currentUser) && roleRaw !== 'admin');
+  // Ochiq briflarga ariza yuborish faqat Pro rejimdagi kreatorlar uchun
+  const canApplyToOpenBriefs = isUserPro(currentUser);
   const showCreateBriefButton = Boolean(onOpenCreateBrief) && !isCreator;
 
   // Main Tab: 'open' ("Ochiq e'lonlar") vs 'direct' ("Menga yuborilgan" / "Shaxsiy briflar")
@@ -555,6 +562,10 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
   const handleOpenApplyModal = (brief: BriefData) => {
     if (!isLoggedIn) {
       onOpenRegister();
+      return;
+    }
+    if (!canApplyToOpenBriefs) {
+      onOpenProUpgrade?.();
       return;
     }
     setApplyingBrief(brief);
@@ -1954,8 +1965,18 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                     }}
                     className="min-h-[44px] px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-heading font-bold shadow-xs transition-all cursor-pointer flex items-center justify-center gap-1.5"
                   >
-                    <Send className="w-3.5 h-3.5" />
-                    <span>Ariza yuborish</span>
+                    {isLoggedIn && !canApplyToOpenBriefs ? (
+                      <>
+                        <Lock className="w-3.5 h-3.5" />
+                        <span>Ariza yuborish</span>
+                        <span className="ml-0.5 px-1.5 py-0.5 rounded-md bg-amber-400 text-slate-900 text-[10px] font-extrabold uppercase tracking-wide">Pro</span>
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-3.5 h-3.5" />
+                        <span>Ariza yuborish</span>
+                      </>
+                    )}
                   </button>
                 )}
             </div>

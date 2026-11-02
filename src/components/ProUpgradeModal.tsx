@@ -32,6 +32,8 @@ interface ProUpgradeModalProps {
   currentUser: UserSession | null;
   onUpdateUser: (user: UserSession) => void;
   onOpenRegisterModal?: () => void;
+  /** Oyna nima sababdan ochilganini tushuntiruvchi qisqa izoh (ixtiyoriy) */
+  reasonText?: string | null;
 }
 
 export const ProUpgradeModal: React.FC<ProUpgradeModalProps> = ({
@@ -40,6 +42,7 @@ export const ProUpgradeModal: React.FC<ProUpgradeModalProps> = ({
   currentUser,
   onUpdateUser,
   onOpenRegisterModal,
+  reasonText,
 }) => {
   const [step, setStep] = useState<'details' | 'payment' | 'submitted'>('details');
   const [selectedProvider, setSelectedProvider] = useState<'card' | 'click' | 'payme'>('card');
@@ -260,6 +263,13 @@ export const ProUpgradeModal: React.FC<ProUpgradeModalProps> = ({
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        {reasonText && step === 'details' && (
+          <div className="shrink-0 mx-5 sm:mx-8 mt-3 px-4 py-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/60 text-amber-800 dark:text-amber-200 text-sm font-semibold flex items-start gap-2">
+            <Sparkles className="w-4 h-4 mt-0.5 shrink-0 text-amber-500" />
+            <span>{reasonText}</span>
+          </div>
+        )}
 
         {/* Scrollable Content Body */}
         <div className="flex-1 overflow-y-auto overscroll-contain pb-[max(24px,calc(env(safe-area-inset-bottom,0px)+16px))] sm:pb-0">

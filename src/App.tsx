@@ -48,6 +48,7 @@ import { checkProUserAndProceed, isUserPro } from './utils/subscription';
 export default function App() {
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [isProModalOpen, setIsProModalOpen] = useState(false);
+  const [proModalReason, setProModalReason] = useState<string | null>(null);
   const [userBriefs, setUserBriefs] = useState<BriefData[]>([]);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [targetBriefIdForOrders, setTargetBriefIdForOrders] = useState<string | null>(null);
@@ -769,6 +770,10 @@ export default function App() {
             }}
             initialBriefId={targetBriefIdForOrders}
             onClearInitialBriefId={() => setTargetBriefIdForOrders(null)}
+            onOpenProUpgrade={() => {
+              setProModalReason("Ochiq briflarga ariza yuborish uchun Pro rejim kerak");
+              setIsProModalOpen(true);
+            }}
           />
         )}
 
@@ -891,7 +896,11 @@ export default function App() {
       {/* Pro Upgrade Modal */}
       <ProUpgradeModal
         isOpen={isProModalOpen}
-        onClose={() => setIsProModalOpen(false)}
+        onClose={() => {
+          setIsProModalOpen(false);
+          setProModalReason(null);
+        }}
+        reasonText={proModalReason}
         currentUser={currentUser}
         onUpdateUser={handleUpdateUser}
         onOpenRegisterModal={() => {

@@ -165,6 +165,13 @@ service cloud.firestore {
         && (d.get('proExpiresAtMillis', 0) == 0 || timestamp.value(d.get('proExpiresAtMillis', 0)) > request.time);
     }
 
+    // Faol Pro rejimdagi foydalanuvchi (rolidan qat'i nazar)
+    function isActivePro() {
+      let d = get(userPath(request.auth.uid)).data;
+      return d.get('subscriptionStatus', '') in ['trial', 'active']
+        && (d.get('proExpiresAtMillis', 0) == 0 || timestamp.value(d.get('proExpiresAtMillis', 0)) > request.time);
+    }
+
     function hasValidUnlock(ownerId) {
       let p = /databases/$(database)/documents/users/$(request.auth.uid)/unlocks/$(ownerId);
       return exists(p) && get(p).data.expiresAt > request.time;
@@ -332,6 +339,7 @@ service cloud.firestore {
           ) ||
           // Signed-in creator submitting an application to an open brief
           (resource.data.recipientType == 'open'
+            && isActivePro()
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['applications', 'updatedAt'])
             && request.resource.data.applications is list
             && request.resource.data.applications.size() <= 200
