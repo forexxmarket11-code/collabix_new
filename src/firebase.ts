@@ -2605,12 +2605,35 @@ export async function applyToBriefInFirestore(
   const data = snap.data() as BriefData;
   const existingApps = Array.isArray(data.applications) ? [...data.applications] : [];
 
-  // Check if creator already applied
+  // Bitta kreator bitta brifga faqat bir marta ariza beradi.
+  // Faqat oldingi arizasi rad etilgan boʻlsa, qayta yuborishi mumkin.
   const existingIndex = existingApps.findIndex((a) => a.creatorId === application.creatorId);
   if (existingIndex >= 0) {
+    const prev = existingApps[existingIndex];
+    const prevRejected = prev.status === 'rejected' || prev.creatorStatus === 'rad_etildi';
+    if (!prevRejected) {
+      throw new Error("ALREADY_APPLIED");
+    }
     existingApps[existingIndex] = application;
   } else {
     existingApps.push(application);
+  }
+
+  // Ariza uchun profil 100% toʻldirilgan boʻlishi shart.
+  // Hisoblangan qiymat users hujjatiga yoziladi, shunda Firestore qoidasi ham tekshira oladi.
+  if (auth.currentUser?.uid === application.creatorId) {
+    const freshProfile = await fetchUserProfile(application.creatorId);
+    const completion = freshProfile ? calculateProfileCompletion(freshProfile) : 0;
+    if (completion < 100) {
+      throw new Error("PROFILE_INCOMPLETE");
+    }
+    if (freshProfile?.profileCompletion !== 100) {
+      try {
+        await updateDoc(doc(db, 'users', application.creatorId), { profileCompletion: 100 });
+      } catch (err) {
+        console.warn("profileCompletion yangilanmadi:", err);
+      }
+    }
   }
 
   await updateDoc(docRef, {

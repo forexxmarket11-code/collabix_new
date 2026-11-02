@@ -172,6 +172,11 @@ service cloud.firestore {
         && (d.get('proExpiresAtMillis', 0) == 0 || timestamp.value(d.get('proExpiresAtMillis', 0)) > request.time);
     }
 
+    // Ochiq brifga ariza: profil 100% toʻldirilgan boʻlishi shart
+    function hasCompleteProfile() {
+      return get(userPath(request.auth.uid)).data.get('profileCompletion', 0) >= 100;
+    }
+
     function hasValidUnlock(ownerId) {
       let p = /databases/$(database)/documents/users/$(request.auth.uid)/unlocks/$(ownerId);
       return exists(p) && get(p).data.expiresAt > request.time;
@@ -340,6 +345,7 @@ service cloud.firestore {
           // Signed-in creator submitting an application to an open brief
           (resource.data.recipientType == 'open'
             && isActivePro()
+            && hasCompleteProfile()
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['applications', 'updatedAt'])
             && request.resource.data.applications is list
             && request.resource.data.applications.size() <= 200

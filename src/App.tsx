@@ -467,8 +467,12 @@ export default function App() {
     try {
       await applyToBriefInFirestore(briefId, application);
       return true;
-    } catch (err) {
+    } catch (err: any) {
       console.error("Firestore ga ariza yozishda xatolik:", err);
+      // Maxsus holatlarni (takroriy ariza, toʻliq boʻlmagan profil) OrdersPage oʻzi koʻrsatadi
+      if (err?.message === 'ALREADY_APPLIED' || err?.message === 'PROFILE_INCOMPLETE') {
+        throw err;
+      }
       return false;
     }
   };

@@ -35,6 +35,7 @@ import {
   checkBriefGuaranteeStatus,
   getOrCreateConversation,
   fetchUserProfile,
+  calculateProfileCompletion,
 } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { isUserPro } from '../utils/subscription';
@@ -269,6 +270,9 @@ export const AcceptedContactBlock: React.FC<AcceptedContactBlockProps> = ({
   );
 };
 
+const AUTO_REJECT_REASON =
+  "Ochiq brifga ariza yuborish uchun Pro rejim va 100% toʻldirilgan profil kerak. Pro rejimni yoqing, profilingizni toʻldiring va qayta yuboring.";
+
 export const OrdersPage: React.FC<OrdersPageProps> = ({
   onOpenCatalog,
   onOpenRegister,
@@ -314,6 +318,13 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
   const [proposedPrice, setProposedPrice] = useState('');
   const [applicationError, setApplicationError] = useState('');
   const [applicationSuccess, setApplicationSuccess] = useState(false);
+  const [isSubmittingApplication, setIsSubmittingApplication] = useState(false);
+  // Profil 100% boʻlmaganda koʻrsatiladigan ogohlantirish (foiz bilan)
+  const [profileIncompleteNotice, setProfileIncompleteNotice] = useState<number | null>(null);
+  // Arizachilarning Pro / profil holati (brend arizalar oynasida koʻradi)
+  const [applicantEligibility, setApplicantEligibility] = useState<
+    Record<string, { isPro: boolean; completion: number }>
+  >({});
 
   // Action status / feedback
   const [isSubmittingResponse, setIsSubmittingResponse] = useState(false);
@@ -343,7 +354,11 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
       } else {
         setActiveMainTab('open');
       }
-      setViewingDetailsBrief(target);
+      if (target.recipientType === 'open' && isOwnBrief(target)) {
+        setViewingApplicationsBrief(target);
+      } else {
+        setViewingDetailsBrief(target);
+      }
       if (onClearInitialBriefId) {
         onClearInitialBriefId();
       }
@@ -358,7 +373,11 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
             } else {
               setActiveMainTab('open');
             }
-            setViewingDetailsBrief(data);
+            if (data.recipientType === 'open' && isOwnBrief(data)) {
+              setViewingApplicationsBrief(data);
+            } else {
+              setViewingDetailsBrief(data);
+            }
             if (onClearInitialBriefId) {
               onClearInitialBriefId();
             }
@@ -553,10 +572,24 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
   const hasUserApplied = (brief: BriefData) => {
     if (!brief.applications || brief.applications.length === 0) return false;
     if (currentUser?.uid) {
-      return brief.applications.some((app) => app.creatorId === currentUser.uid);
+      // Rad etilgan ariza "yuborilmagan" hisoblanadi: kreator talablarni bajarib qayta yuborishi mumkin
+      return brief.applications.some(
+        (app) =>
+          app.creatorId === currentUser.uid &&
+          app.status !== 'rejected' &&
+          app.creatorStatus !== 'rad_etildi'
+      );
     }
     return false;
   };
+
+  // Brif joriy foydalanuvchiga tegishlimi (brif egasi)
+  const isOwnBrief = (brief: BriefData | null | undefined) =>
+    Boolean(
+      brief &&
+        currentUser?.uid &&
+        ((brief as any).brandId === currentUser.uid || (brief as any).ownerId === currentUser.uid)
+    );
 
   // Submit Application Handler for open brief
   const handleOpenApplyModal = (brief: BriefData) => {
@@ -566,6 +599,11 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
     }
     if (!canApplyToOpenBriefs) {
       onOpenProUpgrade?.();
+      return;
+    }
+    const myCompletion = currentUser ? calculateProfileCompletion(currentUser) : 0;
+    if (myCompletion < 100) {
+      setProfileIncompleteNotice(myCompletion);
       return;
     }
     setApplyingBrief(brief);
@@ -582,7 +620,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
       return;
     }
 
-    if (!applyingBrief) return;
+    if (!applyingBrief || isSubmittingApplication) return;
 
     const cPhone =
       currentUser?.phoneNumber ||
@@ -612,6 +650,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
 
     const targetBrief = applyingBrief;
     setApplicationError('');
+    setIsSubmittingApplication(true);
     Promise.resolve(onApplyToBrief ? onApplyToBrief(targetBrief.id, newApplication) : true)
       .then((ok) => {
         if (ok === false) {
@@ -626,9 +665,17 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
           setApplicationSuccess(false);
         }, 1500);
       })
-      .catch(() => {
-        setApplicationError("Arizani yuborib boʻlmadi. Internetni tekshirib, qayta urinib koʻring.");
-      });
+      .catch((err: any) => {
+        if (err?.message === 'ALREADY_APPLIED') {
+          setApplicationError("Siz bu brifga allaqachon ariza yuborgansiz. Brend javobini kuting.");
+        } else if (err?.message === 'PROFILE_INCOMPLETE') {
+          setApplyingBrief(null);
+          setProfileIncompleteNotice(currentUser ? calculateProfileCompletion(currentUser) : 0);
+        } else {
+          setApplicationError("Arizani yuborib boʻlmadi. Internetni tekshirib, qayta urinib koʻring.");
+        }
+      })
+      .finally(() => setIsSubmittingApplication(false));
   };
 
   // =========================================================================
@@ -852,6 +899,91 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
       console.error("Arizaga javob berishda xatolik:", e);
     }
   };
+
+  // =========================================================================
+  // TALABGA JAVOB BERMAYDIGAN ARIZALARNI AVTOMATIK RAD ETISH
+  // Ochiq brifga ariza: faol Pro rejim + 100% toʻldirilgan profil talab qilinadi.
+  // Brend arizalar oynasini ochganda kutilayotgan arizalar tekshiriladi.
+  // =========================================================================
+  useEffect(() => {
+    const brief = viewingApplicationsBrief;
+    if (!brief || !currentUser?.uid || !isOwnBrief(brief)) return;
+
+    const pending = (brief.applications || []).filter(
+      (a) =>
+        a.status !== 'accepted' &&
+        a.status !== 'rejected' &&
+        a.creatorStatus !== 'qabul_qilindi' &&
+        a.creatorStatus !== 'rad_etildi'
+    );
+    if (pending.length === 0) return;
+
+    let cancelled = false;
+    (async () => {
+      const results: Record<string, { isPro: boolean; completion: number }> = {};
+      for (const app of pending) {
+        if (!app.creatorId || results[app.creatorId]) continue;
+        const profile = await fetchUserProfile(app.creatorId);
+        if (!profile) continue; // Profil oʻqilmasa — avtomatik rad etmaymiz
+        const stored = typeof profile.profileCompletion === 'number' ? profile.profileCompletion : 0;
+        results[app.creatorId] = {
+          isPro: isUserPro(profile),
+          completion: Math.max(calculateProfileCompletion(profile), stored),
+        };
+      }
+      if (cancelled) return;
+      setApplicantEligibility((prev) => ({ ...prev, ...results }));
+
+      const toReject = pending.filter((a) => {
+        const r = results[a.creatorId];
+        return r && (!r.isPro || r.completion < 100);
+      });
+      if (toReject.length === 0) return;
+
+      const rejectedIds = new Set<string>();
+      for (const app of toReject) {
+        try {
+          await respondToBriefApplicationInFirestore(
+            brief.id,
+            app.id,
+            'rad_etildi',
+            {
+              uid: currentUser.uid,
+              name: currentUser.name || 'Brend',
+              avatar: currentUser.avatar,
+            },
+            AUTO_REJECT_REASON
+          );
+          rejectedIds.add(app.id);
+        } catch (e) {
+          console.error("Arizani avtomatik rad etishda xatolik:", e);
+        }
+      }
+      if (cancelled || rejectedIds.size === 0) return;
+      setViewingApplicationsBrief((cur) =>
+        cur && cur.id === brief.id
+          ? {
+              ...cur,
+              applications: (cur.applications || []).map((a) =>
+                rejectedIds.has(a.id)
+                  ? {
+                      ...a,
+                      status: 'rejected' as const,
+                      creatorStatus: 'rad_etildi' as const,
+                      rejectionReason: AUTO_REJECT_REASON,
+                    }
+                  : a
+              ),
+            }
+          : cur
+      );
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewingApplicationsBrief?.id, currentUser?.uid]);
 
   return (
     <div className="min-h-screen pb-28 pt-6 sm:pt-12 px-4 sm:px-6 max-w-5xl mx-auto">
@@ -1438,7 +1570,17 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                     })()}
 
                     {/* 5. Pastda FAQAT BITTA tugma: "Batafsil" */}
-                    <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-end">
+                    <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2">
+                      {isOwnBrief(brief) && (
+                        <button
+                          type="button"
+                          onClick={() => setViewingApplicationsBrief(brief)}
+                          className="w-full sm:w-auto min-h-[44px] px-5 py-2.5 rounded-xl border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 text-xs sm:text-sm font-heading font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                          <Users className="w-4 h-4" />
+                          <span>Arizalar ({brief.applications?.length || 0})</span>
+                        </button>
+                      )}
                       <button
                         type="button"
                         id={`btn-view-brief-${brief.id}`}
@@ -1604,14 +1746,67 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                     </button>
                     <button
                       type="submit"
-                      className="flex-1 sm:flex-none min-h-[48px] px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs sm:text-sm font-heading font-bold shadow-xs transition-all cursor-pointer flex items-center justify-center gap-2"
+                      disabled={isSubmittingApplication}
+                      className="flex-1 sm:flex-none min-h-[48px] px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-60 disabled:cursor-not-allowed text-white text-xs sm:text-sm font-heading font-bold shadow-xs transition-all cursor-pointer flex items-center justify-center gap-2"
                     >
                       <Send className="w-3.5 h-3.5" />
-                      <span>Arizani yuborish</span>
+                      <span>{isSubmittingApplication ? 'Yuborilmoqda...' : 'Arizani yuborish'}</span>
                     </button>
                   </div>
                 </form>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* PROFIL 100% EMAS: ariza yuborishdan oldin ogohlantirish */}
+      {/* ========================================================= */}
+      {profileIncompleteNotice !== null && (
+        <div
+          className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-4"
+          onClick={() => setProfileIncompleteNotice(null)}
+        >
+          <div
+            className="w-full max-w-sm bg-white dark:bg-[#1A1A24] rounded-2xl border border-slate-200 dark:border-slate-800 p-6 space-y-4 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+              <Lock className="w-6 h-6" />
+            </div>
+            <div className="space-y-1.5">
+              <h3 className="font-heading font-bold text-base text-slate-900 dark:text-white">
+                Profilingiz {profileIncompleteNotice}% toʻldirilgan
+              </h3>
+              <p className="text-sm text-slate-600 dark:text-slate-300 font-body leading-relaxed">
+                Ochiq brifga ariza yuborish uchun profil 100% toʻldirilgan boʻlishi kerak: rasm, bio, kategoriya, ijtimoiy tarmoq va narx.
+              </p>
+            </div>
+            <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-indigo-500 to-pink-500"
+                style={{ width: `${profileIncompleteNotice}%` }}
+              />
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setProfileIncompleteNotice(null)}
+                className="min-h-[44px] px-4 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm font-heading font-semibold cursor-pointer"
+              >
+                Keyinroq
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setProfileIncompleteNotice(null);
+                  window.location.hash = '#edit-profile';
+                }}
+                className="flex-1 min-h-[44px] px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-heading font-bold cursor-pointer"
+              >
+                Profilni toʻldirish
+              </button>
             </div>
           </div>
         </div>
@@ -1697,10 +1892,25 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
               </div>
 
               {viewingDetailsBrief.recipientType === 'open' && (
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-900/60 text-xs font-heading font-bold text-indigo-700 dark:text-indigo-300">
-                  <Users className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-                  <span>Kelgan arizalar ({viewingDetailsBrief.applications?.length || 0})</span>
-                </div>
+                isOwnBrief(viewingDetailsBrief) ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const b = viewingDetailsBrief;
+                      setViewingDetailsBrief(null);
+                      setViewingApplicationsBrief(b);
+                    }}
+                    className="min-h-[44px] flex items-center gap-1.5 px-4 py-2 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-heading font-bold transition-colors cursor-pointer"
+                  >
+                    <Users className="w-3.5 h-3.5" />
+                    <span>Kelgan arizalar ({viewingDetailsBrief.applications?.length || 0}) — koʻrish</span>
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-900/60 text-xs font-heading font-bold text-indigo-700 dark:text-indigo-300">
+                    <Users className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                    <span>Kelgan arizalar ({viewingDetailsBrief.applications?.length || 0})</span>
+                  </div>
+                )
               )}
             </div>
 
@@ -2206,6 +2416,18 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                             </span>
                           )}
 
+                          {(() => {
+                            const elig = applicantEligibility[app.creatorId];
+                            if (!elig || (elig.isPro && elig.completion >= 100)) return null;
+                            return (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-heading font-bold bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300">
+                                {!elig.isPro ? 'Pro yoʻq' : ''}
+                                {!elig.isPro && elig.completion < 100 ? ' · ' : ''}
+                                {elig.completion < 100 ? `Profil ${elig.completion}%` : ''}
+                              </span>
+                            );
+                          })()}
+
                           {isAppPending && (
                             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-heading font-bold bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300">
                               <Clock className="w-3 h-3" />
@@ -2227,6 +2449,12 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                       <p className="text-[15px] sm:text-xs text-slate-700 dark:text-slate-300 font-body bg-white dark:bg-[#1A1A24] p-3 rounded-xl border border-slate-100 dark:border-slate-800 leading-relaxed break-words">
                         {app.message}
                       </p>
+
+                      {(app.creatorStatus === 'rad_etildi' || app.status === 'rejected') && app.rejectionReason && (
+                        <p className="text-[12px] text-rose-600 dark:text-rose-400 font-body">
+                          Rad etish sababi: {app.rejectionReason}
+                        </p>
+                      )}
 
                       {/* BOGʻLANISH MAʼLUMOTLARI: Brend qabul qilingan kreator kontaktlarini koʻradi */}
                       {isAppAccepted && (
