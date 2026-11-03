@@ -492,6 +492,16 @@ export async function registerUser(
     try {
       const realName = fullName.trim() || "Noma'lum foydalanuvchi";
       const realRole = role === 'brend' ? 'brend' : 'bloger';
+      // Kim taklif qilganini adminga ko'rsatish uchun (bo'lmasa — bo'sh qator, "yo'q" deb chiqadi)
+      let referrerLabel = '';
+      if (newUserProfile.referredBy) {
+        referrerLabel = `ID ${newUserProfile.referredBy.slice(0, 8)}…`;
+        try {
+          const refSnap = await getDoc(doc(db, 'users', newUserProfile.referredBy));
+          const refName = refSnap.exists() ? String((refSnap.data() as any)?.name || '').trim() : '';
+          if (refName) referrerLabel = refName;
+        } catch {}
+      }
 
       await fetch('/api/telegram', {
         method: 'POST',
@@ -501,6 +511,7 @@ export async function registerUser(
           data: {
             name: realName,
             role: realRole,
+            referrer: referrerLabel,
           },
         }),
       });

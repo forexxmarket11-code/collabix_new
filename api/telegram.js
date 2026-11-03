@@ -21,7 +21,12 @@ function buildTelegramMessage(type, data) {
   if (type === 'new_user') {
     const name = data.name || data.userName || "Noma'lum foydalanuvchi";
     const role = data.role === 'brend' ? 'brend' : 'bloger';
-    return `👤 Yangi foydalanuvchi ro'yxatdan o'tdi!\nIsm: ${name}\nTuri: ${role}`;
+    const base = `👤 Yangi foydalanuvchi ro'yxatdan o'tdi!\nIsm: ${name}\nTuri: ${role}`;
+    // Referal: kim taklif qilgani (faqat ro'yxatdan o'tish formasidan keladi)
+    if (typeof data.referrer === 'string') {
+      return `${base}\n🎁 Taklif qilgan: ${data.referrer || "yo'q"}`;
+    }
+    return base;
   }
 
   if (type === 'payment_request') {
@@ -67,9 +72,13 @@ export default async function handler(req, res) {
   }
 
   const token = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_ID;
+  // Bir nechta qabul qiluvchi: TELEGRAM_CHAT_ID="111111,222222" (vergul yoki bo'sh joy bilan)
+  const chatIds = String(process.env.TELEGRAM_CHAT_ID || '')
+    .split(/[\s,;]+/)
+    .map((v) => v.trim())
+    .filter((v) => v.length > 0);
 
-  if (!token || !chatId) {
+  if (!token || chatIds.length === 0) {
     return res.status(500).json({ error: 'Server configuration error' });
   }
 
@@ -77,23 +86,27 @@ export default async function handler(req, res) {
   const text = buildTelegramMessage(type, cleanData);
 
   try {
-    const tgResponse = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text,
-      }),
-    });
+    const results = await Promise.allSettled(
+      chatIds.map(async (chatId) => {
+        const tgResponse = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text,
+          }),
+        });
+        if (!tgResponse.ok) throw new Error('send failed');
+        const tgPayload = await tgResponse.json().catch(() => null);
+        if (tgPayload && tgPayload.ok === false) throw new Error('send failed');
+        return true;
+      })
+    );
 
-    if (!tgResponse.ok) {
-      return res.status(500).json({ error: 'Failed to send notification' });
-    }
-
-    const tgPayload = await tgResponse.json().catch(() => null);
-    if (tgPayload && tgPayload.ok === false) {
+    // Kamida bittasiga yetib borsa — muvaffaqiyatli
+    if (!results.some((r) => r.status === 'fulfilled')) {
       return res.status(500).json({ error: 'Failed to send notification' });
     }
 
