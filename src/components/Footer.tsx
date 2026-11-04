@@ -79,7 +79,7 @@ export const Footer: React.FC<FooterProps> = ({ onCatalogClick, onNavigate, onRe
                     onClick={onReferralClick}
                     className="min-h-[44px] py-2 inline-flex items-center gap-1.5 text-left text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-bold transition-colors cursor-pointer"
                   >
-                    <span>Doʻstlarni taklif qilish (+29 000 soʻm)</span>
+                    <span>Doʻstlarni taklif qilish (75 000 soʻmgacha)</span>
                   </button>
                 </li>
               )}

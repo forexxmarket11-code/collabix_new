@@ -54,8 +54,8 @@ export const ReferralPage: React.FC<ReferralPageProps> = ({
     },
     {
       num: '03',
-      title: 'Siz 29 000 soʻm mukofot olasiz',
-      desc: 'Doʻstingiz toʻlagan summaning deyarli yarmi — 29 000 soʻm balansingizga tushadi va uni kartangizga yechib olasiz.',
+      title: 'Siz 29 000 yoki 75 000 soʻm mukofot olasiz',
+      desc: 'Bloger olib kelsangiz — 29 000 soʻm, brend olib kelsangiz — 75 000 soʻm balansingizga tushadi va uni kartangizga yechib olasiz.',
       icon: Coins,
       badge: '3-qadam',
       color: 'from-pink-500 to-rose-500',
@@ -69,11 +69,11 @@ export const ReferralPage: React.FC<ReferralPageProps> = ({
     },
     {
       title: 'Takliflar sonida cheklov bormi?',
-      desc: 'Yoʻq, mutlaqo cheklovsiz! 10 nafar doʻstingiz obuna boʻlsa — 290 000 soʻm, 50 nafar boʻlsa — 1 450 000 soʻm daromad olasiz.',
+      desc: 'Yoʻq, mutlaqo cheklovsiz! Masalan, 10 ta bloger olib kelsangiz — 290 000 soʻm, 10 ta brend olib kelsangiz — 750 000 soʻm daromad olasiz.',
     },
     {
       title: 'Mukofot qachon va qanday toʻlanadi?',
-      desc: 'Doʻstingizning birinchi Pro toʻlovi tasdiqlangach, 29 000 soʻm balansingizga qoʻshiladi (har bir doʻst uchun bir marta). Balansni kartangizga yechib olish soʻrovini yuborasiz — pul 1–3 ish kuni ichida oʻtkaziladi.',
+      desc: 'Doʻstingizning birinchi Pro toʻlovi tasdiqlangach, bloger uchun 29 000 soʻm, brend uchun 75 000 soʻm balansingizga qoʻshiladi (har biri uchun bir marta). Balansni kartangizga yechib olish soʻrovini yuborasiz — pul 1–3 ish kuni ichida oʻtkaziladi.',
     },
   ];
 
@@ -106,7 +106,7 @@ export const ReferralPage: React.FC<ReferralPageProps> = ({
           <h1 className="font-heading font-extrabold text-2xl sm:text-4xl md:text-5xl text-white tracking-tight leading-tight">
             Doʻstlaringizni taklif qiling —{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-purple-300 to-indigo-300">
-              har bir obunadan 29 000 soʻm
+              brend uchun 75 000, bloger uchun 29 000 soʻm
             </span>{' '}
             mukofot oling
           </h1>
@@ -230,9 +230,9 @@ export const ReferralPage: React.FC<ReferralPageProps> = ({
                 Siz oladigan naqd mukofot
               </span>
               <div className="font-mono font-extrabold text-2xl sm:text-3xl text-emerald-400 mt-1">
-                +29 000 soʻm
+                +75 000 / +29 000
               </div>
-              <p className="text-xs text-indigo-200 mt-1">Har bir faollashgan obunachidan</p>
+              <p className="text-xs text-indigo-200 mt-1">Brend / bloger uchun, har biridan bir marta</p>
             </div>
           </div>
 

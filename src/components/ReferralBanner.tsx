@@ -63,10 +63,10 @@ export const ReferralBanner: React.FC<ReferralBannerProps> = ({ onLearnMore }) =
                 Sizning daromadingiz
               </span>
               <div className="font-mono font-extrabold text-2xl sm:text-3xl lg:text-4xl text-emerald-400 drop-shadow-sm">
-                +29 000 soʻm
+                +75 000 soʻm
               </div>
               <span className="block text-xs text-indigo-200 mt-1 font-body">
-                har bir doʻstingiz obunasidan (~50%)
+                har bir brend uchun · bloger uchun 29 000
               </span>
             </div>
 

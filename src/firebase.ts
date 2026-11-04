@@ -71,7 +71,7 @@ import {
   isFilledSocialValue,
   isFilledPriceValue,
 } from './utils/subscription';
-import { getProPrice } from './utils/pricing';
+import { getProPrice, formatSom } from './utils/pricing';
 
 // Provided Firebase Configuration
 export const firebaseConfig = {
@@ -2243,8 +2243,9 @@ export async function fetchReferralStatistics(): Promise<ReferralStatistics> {
       count: number;
     }>();
 
+    const earnedByUid = new Map<string, number>();
     docs.forEach((docSnap) => {
-      const data = docSnap.data() as UserSession & { referredBy?: string; referralCount?: number };
+      const data = docSnap.data() as UserSession & { referredBy?: string; referralCount?: number; referralEarnedTotal?: number };
       const uid = docSnap.id;
 
       if (data.referredBy) {
@@ -2278,6 +2279,9 @@ export async function fetchReferralStatistics(): Promise<ReferralStatistics> {
           });
         }
       }
+      if (typeof data.referralEarnedTotal === 'number' && data.referralEarnedTotal > 0) {
+        earnedByUid.set(uid, data.referralEarnedTotal);
+      }
     });
 
     // Resolve referrer names from the docs list
@@ -2300,7 +2304,7 @@ export async function fetchReferralStatistics(): Promise<ReferralStatistics> {
         handle: r.handle.startsWith('@') ? r.handle : `@${r.handle}`,
         role: r.role,
         referralCount: r.count,
-        rewardAmount: `${(r.count * 29000).toLocaleString('uz-UZ')} soʻm`,
+        rewardAmount: `${(earnedByUid.get(r.uid) ?? r.count * 29000).toLocaleString('uz-UZ')} soʻm`,
         status: 'Toʻlangan',
       }));
 
@@ -4112,6 +4116,11 @@ export async function deleteBriefAdmin(briefId: string): Promise<void> {
  * ========================================================================= */
 
 export const REFERRAL_REWARD = 29000;
+/** Brend olib kelganga mukofot (brend Pro 99 000 so'm) */
+export const REFERRAL_REWARD_BRAND = 75000;
+export function getReferralReward(referredRole?: string | null): number {
+  return referredRole === 'brend' ? REFERRAL_REWARD_BRAND : REFERRAL_REWARD;
+}
 export const REFERRAL_MIN_WITHDRAWAL = 29000;
 const REFERRAL_STORAGE_KEY = 'collabix_ref';
 const REFERRAL_TTL_MS = 30 * 24 * 60 * 60 * 1000;
@@ -4182,11 +4191,13 @@ async function grantReferralRewardIfEligible(referredUid: string): Promise<boole
     return false;
   }
 
+  // Brend olib kelgan — 75 000, bloger olib kelgan — 29 000
+  const reward = getReferralReward(referred.role);
   await setDoc(
     referrerRef,
     {
-      referralBalance: increment(REFERRAL_REWARD),
-      referralEarnedTotal: increment(REFERRAL_REWARD),
+      referralBalance: increment(reward),
+      referralEarnedTotal: increment(reward),
       referralCount: increment(1),
       updatedAt: serverTimestamp(),
     },
@@ -4198,7 +4209,7 @@ async function grantReferralRewardIfEligible(referredUid: string): Promise<boole
       userId: referrerUid,
       type: 'tizim',
       title: 'Referal mukofoti 🎉',
-      message: `${referred.name || 'Doʻstingiz'} Pro rejimni faollashtirdi. Balansingizga 29 000 soʻm qoʻshildi!`,
+      message: `${referred.name || 'Doʻstingiz'} Pro rejimni faollashtirdi. Balansingizga ${formatSom(reward)} soʻm qoʻshildi!`,
       read: false,
       createdAt: new Date().toISOString(),
       createdAtMillis: Date.now(),
