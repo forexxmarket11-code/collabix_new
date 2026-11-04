@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { UserSession } from '../types';
 import { submitPaymentRequest } from '../firebase';
+import { getProPrice, formatSom } from '../utils/pricing';
 
 interface ProUpgradeModalProps {
   isOpen: boolean;
@@ -44,6 +45,9 @@ export const ProUpgradeModal: React.FC<ProUpgradeModalProps> = ({
   onOpenRegisterModal,
   reasonText,
 }) => {
+  // Narx rolga qarab: bloger 59 000, brend 99 000
+  const proPrice = getProPrice(currentUser?.role);
+  const proPriceText = formatSom(proPrice);
   const [step, setStep] = useState<'details' | 'payment' | 'submitted'>('details');
   const [selectedProvider, setSelectedProvider] = useState<'card' | 'click' | 'payme'>('card');
   const [lockedNotice, setLockedNotice] = useState<string | null>(null);
@@ -185,6 +189,7 @@ export const ProUpgradeModal: React.FC<ProUpgradeModalProps> = ({
           userPhone,
           userEmail,
           userRole,
+          amount: getProPrice(userRole),
           screenshotFile: receiptFile,
           screenshotDataUrl: receiptPreview && receiptPreview !== 'pdf_selected' ? receiptPreview : undefined,
         }),
@@ -413,13 +418,13 @@ export const ProUpgradeModal: React.FC<ProUpgradeModalProps> = ({
                   className="w-full sm:w-auto sm:min-w-[320px] min-h-[52px] py-3.5 sm:py-4 px-5 sm:px-8 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-heading font-extrabold text-[15px] sm:text-lg tracking-tight shadow-lg shadow-indigo-600/25 hover:shadow-indigo-600/35 active:scale-98 transition-all cursor-pointer inline-flex items-center justify-center gap-2"
                 >
                   <Sparkles className="w-5 h-5 text-amber-300 fill-amber-300/30 shrink-0" />
-                  <span>Pro rejimga oʻtish — 59 000 soʻm/oy</span>
+                  <span>Pro rejimga oʻtish — {proPriceText} soʻm/oy</span>
                   <ArrowRight className="w-4 h-4 stroke-[2.5] shrink-0" />
                 </button>
 
                 {/* Informational reassurance notice */}
                 <p className="text-xs text-slate-500 dark:text-slate-400 font-body mt-2.5 max-w-md mx-auto leading-relaxed">
-                  30 kun ichida birorta ham kreator javob bermasa, 59 000 soʻm toʻliq qaytariladi. Istalgan vaqt bekor qilish mumkin.
+                  30 kun ichida birorta ham kreator javob bermasa, {proPriceText} soʻm toʻliq qaytariladi. Istalgan vaqt bekor qilish mumkin.
                 </p>
 
                 {/* Supported Payment Badges */}
@@ -465,7 +470,7 @@ export const ProUpgradeModal: React.FC<ProUpgradeModalProps> = ({
                 </div>
                 <div className="text-right shrink-0">
                   <span className="font-heading font-black text-lg sm:text-xl text-indigo-950 dark:text-indigo-200 whitespace-nowrap">
-                    59 000 soʻm
+                    {proPriceText} soʻm
                   </span>
                   <span className="text-xs block text-indigo-600/80 dark:text-indigo-400 font-body">/ oy</span>
                 </div>
@@ -563,7 +568,7 @@ export const ProUpgradeModal: React.FC<ProUpgradeModalProps> = ({
                     Uzcard / Humo oʻtkazmasi
                   </span>
                   <span className="text-xs px-2 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 font-mono font-bold shrink-0">
-                    59 000 UZS
+                    {proPriceText} UZS
                   </span>
                 </div>
 
@@ -603,7 +608,7 @@ export const ProUpgradeModal: React.FC<ProUpgradeModalProps> = ({
                   </div>
                   <div className="text-right">
                     <span className="text-[11px] text-slate-400 block">Toʻlov miqdori:</span>
-                    <span className="font-heading font-bold text-amber-300 text-sm">59 000 soʻm</span>
+                    <span className="font-heading font-bold text-amber-300 text-sm">{proPriceText} soʻm</span>
                   </div>
                 </div>
               </div>
@@ -613,7 +618,7 @@ export const ProUpgradeModal: React.FC<ProUpgradeModalProps> = ({
                 <span className="text-base shrink-0">💡</span>
                 <p className="font-body leading-relaxed">
                   <strong className="font-heading font-bold text-slate-900 dark:text-white">Koʻrsatma: </strong>
-                  Yuqoridagi kartaga 59,000 soʻm oʻtkazing, soʻngra screenshot/chek yuklang va &quot;Toʻlov qildim&quot; tugmasini bosing.
+                  Yuqoridagi kartaga {proPriceText} soʻm oʻtkazing, soʻngra screenshot/chek yuklang va &quot;Toʻlov qildim&quot; tugmasini bosing.
                 </p>
               </div>
 
@@ -758,7 +763,7 @@ export const ProUpgradeModal: React.FC<ProUpgradeModalProps> = ({
               </div>
 
               <p className="text-xs text-center text-slate-500 dark:text-slate-400 mt-3 font-body">
-                Oylik obuna — 59 000 soʻm, istalgan vaqt bekor qilishingiz mumkin
+                Oylik obuna — {proPriceText} soʻm, istalgan vaqt bekor qilishingiz mumkin
               </p>
             </div>
           )}
@@ -790,7 +795,7 @@ export const ProUpgradeModal: React.FC<ProUpgradeModalProps> = ({
               <div className="mt-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-sm sm:text-xs text-left max-w-md mx-auto space-y-2">
                 <div className="flex justify-between gap-2">
                   <span className="text-slate-500 dark:text-slate-400">Summa:</span>
-                  <span className="font-heading font-bold text-slate-900 dark:text-white">59 000 soʻm</span>
+                  <span className="font-heading font-bold text-slate-900 dark:text-white">{proPriceText} soʻm</span>
                 </div>
                 <div className="flex justify-between gap-2">
                   <span className="text-slate-500 dark:text-slate-400">Karta raqami:</span>

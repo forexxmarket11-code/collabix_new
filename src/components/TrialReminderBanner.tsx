@@ -2,6 +2,7 @@ import React from 'react';
 import { Clock, AlertCircle, X, ChevronRight, Ban } from 'lucide-react';
 import { UserSession } from '../types';
 import { formatUzbekDate, getDaysRemainingInTrial } from '../firebase';
+import { getProPrice, formatSom } from '../utils/pricing';
 
 interface TrialReminderBannerProps {
   user: UserSession | null;
@@ -33,7 +34,7 @@ export const TrialReminderBanner: React.FC<TrialReminderBannerProps> = ({
 
   const daysRemaining = getDaysRemainingInTrial(user.trialEndDate!);
   const formattedEndDate = formatUzbekDate(user.trialEndDate!);
-  const mainPrice = (user.subscriptionPlanPrice || 59000).toLocaleString('uz-UZ');
+  const mainPrice = formatSom(user.subscriptionPlanPrice || getProPrice(user.role));
 
   return (
     <div

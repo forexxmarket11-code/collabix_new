@@ -43,6 +43,7 @@ import {
   deleteMyAccount,
 } from '../firebase';
 import { isUserPro } from '../utils/subscription';
+import { getProPrice, formatSom } from '../utils/pricing';
 
 interface ProfilePageProps {
   user: UserSession | null;
@@ -163,7 +164,8 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   const trialEndDate = user.trialEndDate;
   const formattedEndDate = formatUzbekDate(trialEndDate) || 'Aniqlanmagan';
   const daysRemaining = trialEndDate ? getDaysRemainingInTrial(trialEndDate) : 30;
-  const planPrice = (user.subscriptionPlanPrice || 59000).toLocaleString('uz-UZ');
+  const rolePrice = getProPrice(user.role);
+  const planPrice = formatSom(user.subscriptionPlanPrice || rolePrice);
 
   const handleReactivateSubscription = async () => {
     if (!user.uid) return;
@@ -502,7 +504,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
             <span className="font-heading font-bold text-slate-900 dark:text-slate-100 text-right">
               {isFree && 'Standart (Bepul)'}
               {isCancelled && 'Bekor qilingan'}
-              {isPro && 'Pro rejim (59 000 soʻm/oy)'}
+              {isPro && `Pro rejim (${planPrice} soʻm/oy)`}
             </span>
           </div>
           <div className="flex items-center justify-between gap-2 py-2">
@@ -514,7 +516,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           <div className="flex items-center justify-between gap-2 py-2 last:pb-0">
             <span className="text-slate-500 dark:text-slate-400 font-medium shrink-0">Keyingi toʻlov</span>
             <span className="font-mono font-bold text-slate-900 dark:text-slate-100 text-right">
-              {isFree ? '59 000 soʻm' : isCancelled ? '0 soʻm' : `${planPrice} soʻm`}
+              {isFree ? `${formatSom(rolePrice)} soʻm` : isCancelled ? '0 soʻm' : `${planPrice} soʻm`}
             </span>
           </div>
         </div>
@@ -530,7 +532,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           </p>
           <p className="text-emerald-700 dark:text-emerald-400 font-medium flex items-center gap-1.5">
             <span>🛡️</span>
-            <span>30 kun ichida birorta ham kreator javob bermasa, 59 000 soʻm toʻliq qaytariladi.</span>
+            <span>30 kun ichida birorta ham kreator javob bermasa, {isFree ? formatSom(rolePrice) : planPrice} soʻm toʻliq qaytariladi.</span>
           </p>
         </div>
       </div>

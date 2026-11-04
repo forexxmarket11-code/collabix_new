@@ -71,6 +71,7 @@ import {
   isFilledSocialValue,
   isFilledPriceValue,
 } from './utils/subscription';
+import { getProPrice } from './utils/pricing';
 
 // Provided Firebase Configuration
 export const firebaseConfig = {
@@ -1330,7 +1331,7 @@ export async function fetchCancellationRecords(): Promise<CancellationRecord[]> 
 }
 
 /**
- * Activate Pro mode with 59 000 so'm monthly subscription (Admin only)
+ * Activate Pro mode (bloger 59 000 / brend 99 000 so'm monthly, Admin only)
  */
 export async function activateProSubscription(
   uid: string
@@ -1341,7 +1342,11 @@ export async function activateProSubscription(
   const proEndMs = now.getTime() + 30 * 24 * 60 * 60 * 1000;
   const trialEndDate = new Date(proEndMs).toISOString();
   const subscriptionStatus: SubscriptionStatus = 'active';
-  const subscriptionPlanPrice = 59000;
+  let subscriptionPlanPrice = getProPrice('bloger');
+  try {
+    const roleSnap = await getDoc(doc(db, 'users', uid));
+    subscriptionPlanPrice = getProPrice(roleSnap.exists() ? (roleSnap.data() as any)?.role : 'bloger');
+  } catch {}
 
   const docRef = doc(db, 'users', uid);
   await setDoc(
@@ -2145,7 +2150,7 @@ export async function fetchRevenueStatistics(): Promise<RevenueStatistics> {
       if (isSubscribed && !(data as any).proGifted) {
         const planPrice = typeof data.subscriptionPlanPrice === 'number' && data.subscriptionPlanPrice > 0
           ? data.subscriptionPlanPrice
-          : 59000;
+          : getProPrice(data.role);
 
         totalRevenue += planPrice;
 
@@ -3711,7 +3716,7 @@ export async function submitPaymentRequest(params: {
   purposeLabel?: string;
 }): Promise<string> {
   const purpose: PaymentPurpose = params.purpose || 'pro';
-  const amount = typeof params.amount === 'number' && params.amount > 0 ? Math.round(params.amount) : 59000;
+  const amount = typeof params.amount === 'number' && params.amount > 0 ? Math.round(params.amount) : getProPrice(params.userRole);
   const purposeLabel = params.purposeLabel || (purpose === 'pro' ? 'Pro rejim — 1 oy' : purpose === 'contacts' ? 'Kontakt paketi' : 'TOP joylashuv');
   if (typeof navigator !== 'undefined' && navigator.onLine === false) {
     throw new Error("Internet aloqasi yo'q. Iltimos, internetingizni tekshirib qayta urinib ko'ring.");
@@ -3975,7 +3980,10 @@ export async function approvePaymentRequest(
           trialStartDate,
           trialEndDate,
           proExpiresAtMillis: endMs,
-          subscriptionPlanPrice: 59000,
+          subscriptionPlanPrice:
+            typeof reqData.amount === 'number' && reqData.amount > 0
+              ? Math.round(reqData.amount)
+              : getProPrice(reqData.userRole),
           proGifted: false,
           reminderSent: false,
           updatedAt: serverTimestamp(),

@@ -288,7 +288,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             </div>
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-indigo-500 shrink-0" />
-              <span className="font-medium text-slate-700 dark:text-slate-300">Pro rejim oyiga 59 000 soʻm</span>
+              <span className="font-medium text-slate-700 dark:text-slate-300">Pro: blogerlar 59 000 · brendlar 99 000 soʻm/oy</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-orange-500 shrink-0" />

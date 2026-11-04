@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { getProPrice, formatSom } from '../utils/pricing';
 import {
   ArrowLeft,
   CheckCircle2,
@@ -306,7 +307,7 @@ const ContactUnlockSection: React.FC<ContactUnlockSectionProps> = ({
 
           {/* 4. Tugma ostida kichik matn: Pro narxi */}
           <div className="text-center text-xs text-slate-500 dark:text-slate-400 font-body">
-            Pro rejim — oyiga 59 000 soʻm · barcha kreatorlar kontaktlari ochiq
+            Pro rejim — oyiga {formatSom(getProPrice(currentUser?.role))} soʻm · barcha kreatorlar kontaktlari ochiq
           </div>
 
           {/* 5. Pastroqda: "Har bir profil tekshirilgan. Xavfsiz to'lov: Payme, Click." degan ishonch matni */}
@@ -1459,7 +1460,7 @@ export const CreatorPublicProfilePage: React.FC<CreatorPublicProfilePageProps> =
               <div className="flex items-start sm:items-center gap-2 text-slate-600 dark:text-slate-300">
                 <Lock className="w-4 h-4 text-amber-500 shrink-0 mt-0.5 sm:mt-0" />
                 <span>
-                  Kreatorning kontaktlari qulflangan. <strong>Pro rejim</strong> (oyiga 59 000 soʻm) bilan barcha kreatorlar kontaktlarini cheksiz koʻring.
+                  Kreatorning kontaktlari qulflangan. <strong>Pro rejim</strong> (oyiga {formatSom(getProPrice(currentUser?.role))} soʻm) bilan barcha kreatorlar kontaktlarini cheksiz koʻring.
                 </span>
               </div>
               <button

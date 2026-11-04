@@ -47,7 +47,7 @@ export const ReferralPage: React.FC<ReferralPageProps> = ({
     {
       num: '02',
       title: 'U roʻyxatdan oʻtib, obuna boʻladi',
-      desc: 'Doʻstingiz havolangiz orqali hisob ochadi va 59 000 soʻmlik Pro rejimni birinchi marta faollashtiradi.',
+      desc: 'Doʻstingiz havolangiz orqali hisob ochadi va Pro rejimni birinchi marta faollashtiradi.',
       icon: CheckCircle2,
       badge: '2-qadam',
       color: 'from-purple-500 to-purple-600',
@@ -219,9 +219,9 @@ export const ReferralPage: React.FC<ReferralPageProps> = ({
                 Doʻstingiz uchun obuna narxi
               </span>
               <div className="font-mono font-extrabold text-2xl sm:text-3xl text-slate-900 dark:text-white mt-1">
-                59 000 soʻm
+                59 000 / 99 000 soʻm
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">1 oylik toʻliq platforma kirishi</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">bloger / brend uchun, 1 oy</p>
             </div>
 
             {/* Referrer payout */}

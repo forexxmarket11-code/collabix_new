@@ -38,7 +38,7 @@ export const ReferralBanner: React.FC<ReferralBannerProps> = ({ onLearnMore }) =
             {/* Explanation paragraph */}
             <p className="mt-3 text-[15px] sm:text-base text-slate-200 sm:text-slate-300 font-body leading-relaxed">
               Platformamizda bloger ham, brend ham oʻz doʻstlarini taklif qilib qoʻshimcha daromad topishi mumkin.
-              Taklifingiz orqali roʻyxatdan oʻtib, <strong>59 000 soʻm</strong>lik obunani faollashtirgan har bir
+              Taklifingiz orqali roʻyxatdan oʻtib, <strong>Pro</strong> obunani faollashtirgan har bir
               foydalanuvchi uchun sizga darhol mukofot hisoblanadi.
             </p>
 

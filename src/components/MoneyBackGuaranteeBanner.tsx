@@ -55,7 +55,7 @@ export const MoneyBackGuaranteeBanner: React.FC<MoneyBackGuaranteeBannerProps> =
             </h3>
 
             <p className="mt-2 text-[15px] sm:text-base text-slate-600 dark:text-slate-300 font-body leading-relaxed max-w-3xl">
-              30 kun ichida birorta ham kreator javob bermasa, 59 000 soʻm toʻliq qaytariladi. Kreator koʻrib chiqib javob bersa (qabul qilsa yoki rad etsa), kafolat talabi qanoatlantirilgan hisoblanadi.
+              30 kun ichida birorta ham kreator javob bermasa, Pro toʻlovi toʻliq qaytariladi. Kreator koʻrib chiqib javob bersa (qabul qilsa yoki rad etsa), kafolat talabi qanoatlantirilgan hisoblanadi.
             </p>
 
             {/* Small 'Batafsil' link (not a sales button) */}
