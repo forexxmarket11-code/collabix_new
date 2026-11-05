@@ -216,7 +216,7 @@ export const V2Home: React.FC<Props> = ({ briefs, loading, currentUser }) => {
       <section id="elonlar" className="max-w-[1240px] mx-auto px-4 sm:px-6 pt-2 md:pt-10 pb-6 scroll-mt-24">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <div className="text-[13px] font-bold tracking-[2px] text-[#5B3DF5]">OCHIQ E'LONLAR</div>
+            <div className="text-[10px] md:text-[13px] font-bold tracking-[1px] md:tracking-[2px] text-[#5B3DF5]">OCHIQ E'LONLAR</div>
             <h2 className="v2-display mt-2 mb-0 font-extrabold text-[32px] sm:text-[44px] tracking-[-1.5px] leading-[1.05]">Brendlar hozir bloger qidirmoqda</h2>
           </div>
           <div className="hidden md:flex gap-1.5 p-1.5 rounded-2xl bg-[#ECEAE4]">
@@ -262,7 +262,7 @@ export const V2Home: React.FC<Props> = ({ briefs, loading, currentUser }) => {
 
       {/* BRANDS */}
       <section id="brendlar" className="max-w-[1240px] mx-auto px-4 sm:px-6 pt-14 pb-6 scroll-mt-24">
-        <div className="text-[13px] font-bold tracking-[2px] text-[#5B3DF5]">BRENDLAR</div>
+        <div className="text-[10px] md:text-[13px] font-bold tracking-[1px] md:tracking-[2px] text-[#5B3DF5]">BRENDLAR</div>
         <h2 className="v2-display mt-2 mb-0 font-extrabold text-[32px] sm:text-[44px] tracking-[-1.5px] leading-[1.05]">Collabix'dagi brendlar</h2>
         {brands.length === 0 ? (
           <p className="mt-4 text-[#5E5A6B]">Brendlar e'lon joylagach shu yerda ko'rinadi.</p>
@@ -285,7 +285,7 @@ export const V2Home: React.FC<Props> = ({ briefs, loading, currentUser }) => {
       {/* HOW IT WORKS */}
       <section id="qanday" className="max-w-[1240px] mx-auto px-4 sm:px-6 pt-16 pb-6">
         <div className="rounded-[36px] bg-[#14121C] text-white px-6 sm:px-12 py-12 sm:py-14">
-          <div className="text-[13px] font-bold tracking-[2px] text-[#C8F169]">QANDAY ISHLAYDI</div>
+          <div className="text-[10px] md:text-[13px] font-bold tracking-[1px] md:tracking-[2px] text-[#C8F169]">QANDAY ISHLAYDI</div>
           <h2 className="v2-display mt-2 mb-0 max-w-[720px] font-extrabold text-[32px] sm:text-[44px] tracking-[-1.5px] leading-[1.05]">3 qadam — va brendlar bilan ishlay boshlaysiz</h2>
           <div className="mt-10 grid gap-4 grid-cols-[repeat(auto-fit,minmax(240px,1fr))]">
             {[
@@ -304,28 +304,30 @@ export const V2Home: React.FC<Props> = ({ briefs, loading, currentUser }) => {
       </section>
 
       {/* PRICING */}
-      <section id="narxlar" className="max-w-[1240px] mx-auto px-4 sm:px-6 pt-16 pb-4 grid gap-5 grid-cols-[repeat(auto-fit,minmax(300px,1fr))] scroll-mt-24">
-        <div className="rounded-[32px] bg-white border border-[#E6E3DC] p-8 sm:p-10">
-          <div className="text-[13px] font-bold tracking-[2px] text-[#5E5A6B]">BLOGERLAR UCHUN</div>
-          <div className="v2-display mt-3 font-extrabold text-[30px] sm:text-[34px] tracking-[-1px] leading-[1.1]">E'lonlarga ariza yuboring</div>
-          <div className="v2-display mt-5 font-extrabold text-[44px] tracking-[-1.5px]">59 000 <span className="text-[20px] font-bold text-[#5E5A6B]">so'm / oy</span></div>
-          <ul className="mt-5 p-0 list-none flex flex-col gap-2.5 text-[15px]">
+      <section id="narxlar" className="max-w-[1240px] mx-auto px-4 sm:px-6 pt-10 md:pt-16 pb-4 grid gap-3 md:gap-5 grid-cols-2 scroll-mt-24">
+        <div className="min-w-0 flex flex-col rounded-[22px] md:rounded-[32px] bg-white border border-[#E6E3DC] p-4 md:p-10">
+          <div className="text-[10px] md:text-[13px] font-bold tracking-[1px] md:tracking-[2px] text-[#5E5A6B]">BLOGERLAR UCHUN</div>
+          <div className="v2-display mt-2 md:mt-3 font-extrabold text-[16px] md:text-[34px] tracking-[-0.3px] md:tracking-[-1px] leading-[1.15]">E'lonlarga ariza yuboring</div>
+          <div className="v2-display mt-3 md:mt-5 font-extrabold text-[26px] md:text-[44px] tracking-[-1px] md:tracking-[-1.5px] leading-none">59 000 <span className="block md:inline text-[12px] md:text-[20px] font-bold text-[#5E5A6B]">so'm / oy</span></div>
+          <ul className="mt-3 md:mt-5 mb-0 p-0 list-none flex flex-col gap-1.5 md:gap-2.5 text-[12px] md:text-[15px] leading-snug">
             {['Barcha ochiq e\'lonlarga ariza', 'Ariza holatini kuzatish', "Do'st taklif qilib 29 000 so'm ishlang"].map((t) => (
-              <li key={t} className="flex gap-2.5 items-center"><span className="text-[#15803D]">{Icon.check(18)}</span>{t}</li>
+              <li key={t} className="flex gap-1.5 md:gap-2.5 items-start md:items-center"><span className="text-[#15803D]">{Icon.check(14)}</span>{t}</li>
             ))}
           </ul>
-          <a href={currentUser ? '#arizalarim' : '#royxat'} className={`${btn.dark} mt-7 w-full min-h-[52px]`}>Bloger sifatida boshlash</a>
+          <div className="h-4 md:h-7 shrink-0" />
+          <a href={currentUser ? '#arizalarim' : '#royxat'} className={`${btn.dark} mt-auto w-full min-h-[44px] md:min-h-[52px] !text-[13px] md:!text-[15px] !px-2`}>Bloger sifatida boshlash</a>
         </div>
-        <div className="rounded-[32px] bg-[#5B3DF5] text-white p-8 sm:p-10">
-          <div className="text-[13px] font-bold tracking-[2px] text-[#E4DEFF]">BRENDLAR UCHUN</div>
-          <div className="v2-display mt-3 font-extrabold text-[30px] sm:text-[34px] tracking-[-1px] leading-[1.1]">E'lon joylang — blogerlar o'zi keladi</div>
-          <div className="v2-display mt-5 font-extrabold text-[44px] tracking-[-1.5px]">Bepul <span className="text-[20px] font-bold text-[#E4DEFF]">obunasiz</span></div>
-          <ul className="mt-5 p-0 list-none flex flex-col gap-2.5 text-[15px]">
+        <div className="min-w-0 flex flex-col rounded-[22px] md:rounded-[32px] bg-[#5B3DF5] text-white p-4 md:p-10">
+          <div className="text-[10px] md:text-[13px] font-bold tracking-[1px] md:tracking-[2px] text-[#E4DEFF]">BRENDLAR UCHUN</div>
+          <div className="v2-display mt-2 md:mt-3 font-extrabold text-[16px] md:text-[34px] tracking-[-0.3px] md:tracking-[-1px] leading-[1.15]">E'lon joylang — blogerlar o'zi keladi</div>
+          <div className="v2-display mt-3 md:mt-5 font-extrabold text-[26px] md:text-[44px] tracking-[-1px] md:tracking-[-1.5px] leading-none">Bepul <span className="block md:inline text-[12px] md:text-[20px] font-bold text-[#E4DEFF]">obunasiz</span></div>
+          <ul className="mt-3 md:mt-5 mb-0 p-0 list-none flex flex-col gap-1.5 md:gap-2.5 text-[12px] md:text-[15px] leading-snug">
             {["Ochiq e'lonlar joylash", 'Arizalarni qabul qilish yoki rad etish', 'Faqat admin tekshirgan blogerlar'].map((t) => (
-              <li key={t} className="flex gap-2.5 items-center"><span className="text-[#C8F169]">{Icon.check(18)}</span>{t}</li>
+              <li key={t} className="flex gap-1.5 md:gap-2.5 items-start md:items-center"><span className="text-[#C8F169]">{Icon.check(14)}</span>{t}</li>
             ))}
           </ul>
-          <button type="button" onClick={() => go(currentUser ? (currentUser.role === 'brend' ? 'yangi-elon' : '') : 'royxat')} className="mt-7 w-full min-h-[52px] rounded-xl bg-white text-[#14121C] font-bold cursor-pointer hover:bg-[#F6F5F1]">
+          <div className="h-4 md:h-7 shrink-0" />
+          <button type="button" onClick={() => go(currentUser ? (currentUser.role === 'brend' ? 'yangi-elon' : '') : 'royxat')} className="mt-auto w-full min-h-[44px] md:min-h-[52px] rounded-xl bg-white text-[#14121C] text-[13px] md:text-[15px] px-2 font-bold cursor-pointer hover:bg-[#F6F5F1]">
             Brend sifatida boshlash
           </button>
         </div>
