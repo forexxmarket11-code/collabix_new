@@ -177,3 +177,9 @@
     will-change: auto !important;
   }
 }
+
+
+/* ===== Collabix v2 (yangi sayt) ===== */
+.v2 { font-family: 'Inter', system-ui, sans-serif; color: #14121C; background: #F6F5F1; }
+.v2-display { font-family: 'Bricolage Grotesque', 'Inter', sans-serif; }
+.v2-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

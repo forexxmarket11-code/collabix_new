@@ -44,6 +44,19 @@ import {
   recordSubscriptionCancellation,
 } from './firebase';
 import { checkProUserAndProceed, isUserPro } from './utils/subscription';
+import { V2Navbar, V2BottomNav, V2Footer } from './v2/V2Shell';
+import { V2Home } from './v2/V2Home';
+import { V2BriefPage, V2BrandPage } from './v2/V2BriefPage';
+import { V2Register } from './v2/V2Register';
+import { V2Applications } from './v2/V2Applications';
+import { V2Cabinet, V2NewBrief } from './v2/V2Cabinet';
+import { parseV2Hash, go } from './v2/ui';
+import {
+  subscribeToOpenBriefsPublic,
+  respondToBriefApplicationInFirestore,
+  resubmitCatalogReview,
+  closeBriefInFirestore,
+} from './firebase';
 
 export default function App() {
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
@@ -126,6 +139,29 @@ export default function App() {
   });
 
   const [authUid, setAuthUid] = useState<string | null>(null);
+  // ===== Yangi sayt (v2) holati =====
+  const [v2Hash, setV2Hash] = useState<string>(() => (typeof window !== 'undefined' ? window.location.hash : ''));
+  const [publicBriefs, setPublicBriefs] = useState<BriefData[]>([]);
+  const [publicBriefsLoading, setPublicBriefsLoading] = useState(true);
+  useEffect(() => {
+    const onHash = () => setV2Hash(window.location.hash);
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+  useEffect(() => {
+    const unsub = subscribeToOpenBriefsPublic((list) => {
+      setPublicBriefs(list);
+      setPublicBriefsLoading(false);
+    });
+    return () => unsub();
+  }, [authUid]);
+  useEffect(() => {
+    const h = v2Hash.replace(/^#/, '');
+    if (['brendlar', 'narxlar', 'elonlar', 'qanday'].includes(h)) {
+      const t = setTimeout(() => document.getElementById(h)?.scrollIntoView({ behavior: 'smooth' }), 120);
+      return () => clearTimeout(t);
+    }
+  }, [v2Hash]);
   const [isAuthReady, setIsAuthReady] = useState<boolean>(false);
   const [catalogProOnly, setCatalogProOnly] = useState<boolean>(true);
   const [catalogReviewRequired, setCatalogReviewRequired] = useState<boolean>(false);
@@ -319,7 +355,7 @@ export default function App() {
         }
 
         if (hash === '#katalog' || hash === '#catalog') {
-          target = 'catalog';
+          target = 'home';
         } else if (hash === '#create-brief' || hash === '#brif' || hash === '#brief') {
           if (currentUser?.role !== 'bloger' && !isUserPro(currentUser)) {
             setIsProModalOpen(true);
@@ -338,7 +374,7 @@ export default function App() {
           if (saved) {
             target = 'profile';
           } else {
-            setIsRegisterModalOpen(true);
+            handleStart();
             return;
           }
         } else if (hash === '#edit-profile' || hash === '#tahrirlash') {
@@ -346,7 +382,7 @@ export default function App() {
           if (saved) {
             target = 'edit-profile';
           } else {
-            setIsRegisterModalOpen(true);
+            handleStart();
             return;
           }
         } else if (hash.startsWith('#kreator-') || hash.startsWith('#creator-') || hash === '#creator-profile') {
@@ -380,7 +416,7 @@ export default function App() {
     }
 
     if (page === 'profile' && !currentUser) {
-      setIsRegisterModalOpen(true);
+      handleStart();
       return;
     }
 
@@ -514,7 +550,9 @@ export default function App() {
   };
 
   const handleStart = () => {
-    setIsRegisterModalOpen(true);
+    setIsRegisterModalOpen(false);
+    setCurrentPage('home');
+    go('royxat');
   };
 
   const handleUserRegisterSuccess = (user: UserSession, isNewRegistration?: boolean) => {
@@ -575,6 +613,148 @@ export default function App() {
     }
   };
 
+  /* ======================= Yangi sayt (v2) handlerlari ======================= */
+  const v2Route = parseV2Hash(v2Hash);
+  const allBriefs: BriefData[] = (() => {
+    const map = new Map<string, BriefData>();
+    publicBriefs.forEach((b) => map.set(b.id, b));
+    userBriefs.forEach((b) => { if (!map.has(b.id) && b.recipientType === 'open') map.set(b.id, b); });
+    return Array.from(map.values()).sort((a, b) => (Number(b.createdAtMillis) || 0) - (Number(a.createdAtMillis) || 0));
+  })();
+
+  const v2Apply = async (brief: BriefData, message: string, price: string) => {
+    if (!currentUser?.uid) throw new Error('AUTH');
+    const application: BriefApplication = {
+      id: `app-${Date.now()}`,
+      briefId: brief.id,
+      creatorId: currentUser.uid,
+      creatorName: currentUser.name || 'Bloger',
+      creatorHandle: currentUser.instagramHandle || currentUser.socialLinks?.instagram || currentUser.handle || '',
+      creatorAvatar: currentUser.avatar || undefined,
+      message: message.trim(),
+      proposedPrice: price.trim() || undefined,
+      appliedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      status: 'pending',
+      creatorStatus: 'yangi',
+    };
+    await applyToBriefInFirestore(brief.id, application);
+  };
+
+  const v2Respond = async (brief: BriefData, app: BriefApplication, status: 'qabul_qilindi' | 'rad_etildi', reason?: string) => {
+    if (!currentUser?.uid) return;
+    await respondToBriefApplicationInFirestore(
+      brief.id,
+      app.id,
+      status,
+      { uid: currentUser.uid, name: currentUser.name, avatar: currentUser.avatar, phoneNumber: currentUser.phoneNumber, telegramUsername: currentUser.telegramUsername },
+      reason
+    );
+  };
+
+  const v2OpenChatWith = async (target: { uid: string; name: string; avatar?: string; handle?: string; role: string }) => {
+    if (currentUser && target.uid) {
+      try {
+        await getOrCreateConversation(currentUser, target as any);
+      } catch (e) {
+        console.error('Suhbatni ochishda xatolik:', e);
+      }
+    }
+    handlePageChange('messages');
+  };
+
+  const v2Resubmit = async () => {
+    if (!currentUser?.uid) return;
+    const at = await resubmitCatalogReview(currentUser.uid);
+    handleUpdateUser({ ...currentUser, catalogResubmittedAtMillis: at });
+  };
+
+  const v2CreateBrief = async (brief: BriefData): Promise<string | null> => {
+    try {
+      const id = await createBriefInFirestore(brief);
+      return id || null;
+    } catch (err) {
+      console.error("E'lon yaratishda xato:", err);
+      return null;
+    }
+  };
+
+  const v2Active =
+    currentPage === 'home'
+      ? v2Route?.name === 'applications' ? 'applications'
+        : v2Route?.name === 'cabinet' || v2Route?.name === 'new-brief' ? 'cabinet'
+        : v2Hash === '#brendlar' || v2Route?.name === 'brand' ? 'brands'
+        : v2Hash === '#narxlar' ? 'pricing'
+        : 'home'
+      : currentPage === 'profile' || currentPage === 'edit-profile' ? 'profile' : '';
+
+  const renderV2 = () => {
+    const r = v2Route;
+    if (!r) return <V2Home briefs={allBriefs} loading={publicBriefsLoading} currentUser={currentUser} />;
+    if (r.name === 'brief') {
+      return (
+        <V2BriefPage
+          brief={allBriefs.find((b) => b.id === r.id) || null}
+          loading={publicBriefsLoading}
+          currentUser={currentUser}
+          onApply={v2Apply}
+          onOpenPro={() => { setProModalReason("Ochiq e'lonlarga ariza yuborish uchun Pro rejim kerak"); setIsProModalOpen(true); }}
+          onOpenEditProfile={handleOpenEditProfile}
+        />
+      );
+    }
+    if (r.name === 'brand') return <V2BrandPage brandId={r.id} briefs={allBriefs} />;
+    if (r.name === 'register') {
+      return (
+        <V2Register
+          mode={r.mode}
+          onDone={(u) => {
+            handleUpdateUser(u);
+          }}
+        />
+      );
+    }
+    if (!currentUser) return <V2Register mode="login" onDone={(u) => handleUpdateUser(u)} />;
+    if (r.name === 'applications') {
+      if (currentUser.role === 'brend') {
+        return <V2Cabinet currentUser={currentUser} briefs={allBriefs} onRespond={v2Respond} onContactCreator={(a) => v2OpenChatWith({ uid: a.creatorId, name: a.creatorName, avatar: a.creatorAvatar, handle: a.creatorHandle, role: 'Bloger' })} onOpenCreator={(id) => { window.location.hash = `#kreator-${id}`; }} onOpenPro={() => setIsProModalOpen(true)} onOpenEditProfile={handleOpenEditProfile} onResubmit={v2Resubmit} onCloseBrief={async (b) => { try { await closeBriefInFirestore(b.id); } catch (e) { console.error(e); } }} />;
+      }
+      return (
+        <V2Applications
+          currentUser={currentUser}
+          briefs={allBriefs}
+          onOpenEditProfile={handleOpenEditProfile}
+          onOpenPro={() => setIsProModalOpen(true)}
+          onContactBrand={(b) => v2OpenChatWith({ uid: b.brandId || b.ownerId || '', name: b.brandName || 'Brend', avatar: b.brandAvatar, handle: '', role: 'Brend' })}
+          onResubmit={v2Resubmit}
+        />
+      );
+    }
+    if (r.name === 'cabinet') {
+      if (currentUser.role !== 'brend') {
+        return <V2Applications currentUser={currentUser} briefs={allBriefs} onOpenEditProfile={handleOpenEditProfile} onOpenPro={() => setIsProModalOpen(true)} onContactBrand={(b) => v2OpenChatWith({ uid: b.brandId || b.ownerId || '', name: b.brandName || 'Brend', avatar: b.brandAvatar, handle: '', role: 'Brend' })} onResubmit={v2Resubmit} />;
+      }
+      return (
+        <V2Cabinet
+          currentUser={currentUser}
+          briefs={allBriefs}
+          onRespond={v2Respond}
+          onContactCreator={(a) => v2OpenChatWith({ uid: a.creatorId, name: a.creatorName, avatar: a.creatorAvatar, handle: a.creatorHandle, role: 'Bloger' })}
+          onOpenCreator={(id) => { window.location.hash = `#kreator-${id}`; }}
+          onOpenPro={() => { setProModalReason("E'lon joylash uchun Brend Pro kerak"); setIsProModalOpen(true); }}
+          onOpenEditProfile={handleOpenEditProfile}
+          onResubmit={v2Resubmit}
+          onCloseBrief={async (b) => { try { await closeBriefInFirestore(b.id); } catch (e) { console.error(e); } }}
+        />
+      );
+    }
+    if (r.name === 'new-brief') {
+      if (currentUser.role !== 'brend') return <V2Home briefs={allBriefs} loading={publicBriefsLoading} currentUser={currentUser} />;
+      return <V2NewBrief currentUser={currentUser} onCreate={v2CreateBrief} onOpenPro={() => { setProModalReason("E'lon joylash uchun Brend Pro kerak"); setIsProModalOpen(true); }} />;
+    }
+    return <V2Home briefs={allBriefs} loading={publicBriefsLoading} currentUser={currentUser} />;
+  };
+
   // Completely isolated Admin Portal - strictly requires Firebase Auth UID === ADMIN_UID
   if (currentPage === 'admin') {
     return (
@@ -621,28 +801,22 @@ export default function App() {
 
   return (
     <div
-      className={`min-h-screen w-full max-w-full overflow-x-clip bg-[#F8FAFD] dark:bg-[#0B0F19] text-slate-900 dark:text-slate-100 flex flex-col antialiased selection:bg-indigo-600 selection:text-white transition-colors duration-300 ${
+      className={`v2 min-h-screen w-full max-w-full overflow-x-clip bg-[#F6F5F1] text-[#14121C] flex flex-col antialiased selection:bg-[#5B3DF5] selection:text-white ${
         isBottomNavVisible && currentPage !== 'messages'
           ? isPwaBannerVisibleOnMobile
-            ? 'pb-[calc(168px+env(safe-area-inset-bottom,0px))] sm:pb-28'
-            : 'pb-[calc(92px+env(safe-area-inset-bottom,0px))] sm:pb-28'
+            ? 'pb-[calc(168px+env(safe-area-inset-bottom,0px))] md:pb-0'
+            : 'pb-[calc(92px+env(safe-area-inset-bottom,0px))] md:pb-0'
           : ''
       }`}
     >
-      {/* Top Navigation */}
-      <Navbar
-        onStartClick={handleStart}
-        onCatalogClick={handleOpenCatalog}
-        onNavigate={handleNavigate}
-        currentPage={currentPage}
-        onHomeClick={handleGoHome}
-        onCreateBriefClick={handleOpenCreateBrief}
+      {/* Top Navigation (yangi sayt) */}
+      <V2Navbar
         currentUser={currentUser}
+        unreadCount={unreadNotificationsCount}
+        onOpenMessages={() => handlePageChange('messages')}
+        onOpenProfile={() => handlePageChange(isUserRestricted ? 'edit-profile' : 'profile')}
         onLogout={handleLogout}
-        onProfileClick={() => handlePageChange(isUserRestricted ? 'edit-profile' : 'profile')}
-        onOpenProModal={() => setIsProModalOpen(true)}
-        notifications={notifications}
-        onSelectBrief={handleSelectBriefFromNotification}
+        active={v2Active}
       />
 
       {/* Main Content Areas */}
@@ -657,19 +831,6 @@ export default function App() {
           />
         )}
 
-        {/* Dismissible Catalog & Pro Reminder Banner for Bloggers (suppressed on mobile if TrialReminderBanner is already showing) */}
-        {!isUserRestricted && currentPage !== 'messages' && (
-          <BloggerCatalogBanner
-            user={currentUser}
-            catalogProOnly={catalogProOnly}
-            catalogReviewRequired={catalogReviewRequired}
-            currentPage={currentPage}
-            onFillProfile={handleOpenEditProfile}
-            onOpenProModal={() => setIsProModalOpen(true)}
-            suppressOnMobile={isTrialBannerActive}
-            onVisibilityChange={setIsBloggerBannerActive}
-          />
-        )}
 
         {currentPage === 'edit-profile' && (
           <EditProfilePage
@@ -718,7 +879,7 @@ export default function App() {
             onOpenProModal={() => setIsProModalOpen(true)}
             onOpenChat={async (creator) => {
               if (!currentUser) {
-                setIsRegisterModalOpen(true);
+                handleStart();
               } else {
                 if (creator?.id && currentUser.uid) {
                   try {
@@ -825,58 +986,13 @@ export default function App() {
           />
         )}
 
-        {!isUserRestricted && currentPage === 'home' && (
-          <>
-            {/* Hero Section */}
-            <HeroSection
-              onStartClick={handleStart}
-              onCatalogClick={handleOpenCatalog}
-            />
-
-            {/* 100% Pul qaytarish kafolati (Money-Back Guarantee Trust Banner) */}
-            <MoneyBackGuaranteeBanner
-              onLearnMore={() => {
-                handlePageChange('profile');
-              }}
-            />
-
-            {/* Referral Program Announcement Banner */}
-            <ReferralBanner onLearnMore={handleOpenReferral} />
-
-            {/* Marketing Agency Partnership Banner - Vaqtincha yashirilgan */}
-            {/* <AgencyBanner onLearnMore={handleOpenAgency} /> */}
-
-            {/* Why Collabix Section (3 Feature Cards) */}
-            <WhyCollabixSection onExploreClick={handleOpenCatalog} />
-
-            {/* How It Works Section (3 Steps) */}
-            <HowItWorksSection onStartStep1={handleOpenCatalog} />
-          </>
-        )}
+        {!isUserRestricted && currentPage === 'home' && renderV2()}
       </main>
 
-      {/* Minimal Footer - strictly hidden on chat (messages), edit-profile, create-brief, or when restricted */}
-      {!isUserRestricted && currentPage !== 'messages' && currentPage !== 'create-brief' && currentPage !== 'edit-profile' && (
-        <Footer
-          onCatalogClick={handleOpenCatalog}
-          onNavigate={handleNavigate}
-          onReferralClick={handleOpenReferral}
-          onAgencyClick={handleOpenAgency}
-          onAdminClick={() => handlePageChange('admin')}
-          onCreateBriefClick={handleOpenCreateBrief}
-        />
-      )}
+      {!isUserRestricted && currentPage !== 'messages' && currentPage !== 'edit-profile' && !(currentPage === 'home' && (v2Route?.name === 'register' || v2Route?.name === 'cabinet')) && <V2Footer />}
 
-      {/* Bottom Navigation Bar (Floating Pill Capsule Dock - hidden on edit-profile, create-brief, creator-profile, or when restricted) */}
-      {!isUserRestricted && currentPage !== 'edit-profile' && currentPage !== 'create-brief' && currentPage !== 'creator-profile' && (
-        <BottomNav
-          currentPage={currentPage}
-          onNavigate={handlePageChange}
-          isLoggedIn={!!currentUser}
-          currentUser={currentUser}
-          onOpenRegister={handleStart}
-          unreadNotificationsCount={unreadNotificationsCount}
-        />
+      {!isUserRestricted && currentPage !== 'edit-profile' && currentPage !== 'create-brief' && !(currentPage === 'home' && v2Route?.name === 'register') && (
+        <V2BottomNav currentUser={currentUser} active={v2Active} onOpenProfile={() => handlePageChange('profile')} />
       )}
 
       {/* Registration & Login Modal */}
@@ -909,7 +1025,7 @@ export default function App() {
         onUpdateUser={handleUpdateUser}
         onOpenRegisterModal={() => {
           setIsProModalOpen(false);
-          setIsRegisterModalOpen(true);
+          handleStart();
         }}
       />
 

@@ -234,7 +234,7 @@ export function AdminDashboardPage({ onLogout, onGoToSite, onUnauthorized }: Adm
               {activeTab === 'approvals'
                 ? 'Barcha foydalanuvchilar'
                 : activeTab === 'catalog_review'
-                ? 'Katalog soʻrovlari'
+                ? 'Profil tekshiruvi'
                 : activeTab === 'payment_requests'
                 ? 'Toʻlov soʻrovlari (Pro rejim)'
                 : activeTab === 'briefs'
@@ -251,7 +251,7 @@ export function AdminDashboardPage({ onLogout, onGoToSite, onUnauthorized }: Adm
               {activeTab === 'approvals'
                 ? 'Platformada roʻyxatdan oʻtgan barcha bloger va brendlar roʻyxati hamda hisoblarni boshqarish.'
                 : activeTab === 'catalog_review'
-                ? 'Profilini toʻldirgan blogerlarning barcha maʼlumotlarini tekshirib, katalogga tasdiqlash yoki rad etish.'
+                ? 'Yangi roʻyxatdan oʻtgan bloger va brendlarning barcha maʼlumotlarini tekshirib, tasdiqlash yoki rad etish.'
                 : activeTab === 'payment_requests'
                 ? 'Bank kartasi orqali yuborilgan toʻlov cheklari va screenshotlarini tekshirish hamda Pro rejimni faollashtirish.'
                 : activeTab === 'referral_payouts'
@@ -297,7 +297,7 @@ export function AdminDashboardPage({ onLogout, onGoToSite, onUnauthorized }: Adm
               }`}
             >
               <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-              <span>Katalog soʻrovlari</span>
+              <span>Profil tekshiruvi</span>
               {catalogReviewCount > 0 && (
                 <span className="px-1.5 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-mono font-bold leading-none animate-pulse">
                   {catalogReviewCount}

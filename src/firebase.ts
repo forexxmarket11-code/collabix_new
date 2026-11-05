@@ -4458,7 +4458,7 @@ export async function approveCreatorForCatalogAdmin(uid: string): Promise<void> 
       userId: uid,
       type: 'tizim',
       title: 'Profilingiz tasdiqlandi ✅',
-      message: 'Tabriklaymiz! Profilingiz admin tomonidan tasdiqlandi va endi katalogda brendlarga koʻrinadi.',
+      message: 'Tabriklaymiz! Profilingiz admin tomonidan tasdiqlandi. Endi bloger boʻlsangiz eʼlonlarga ariza yubora olasiz, brend boʻlsangiz eʼlon joylay olasiz.',
       read: false,
       createdAt: new Date().toISOString(),
       createdAtMillis: Date.now(),
@@ -4479,7 +4479,7 @@ export async function rejectCreatorForCatalogAdmin(uid: string, reason: string):
     await createNotificationInFirestore({
       userId: uid,
       type: 'tizim',
-      title: 'Profilingiz katalogga qabul qilinmadi',
+      title: 'Profilingiz tasdiqlanmadi',
       message: cleanReason
         ? `Sabab: ${cleanReason}. Profilingizni tuzatib, qayta tekshiruvga yuboring.`
         : 'Profilingizni tuzatib, qayta tekshiruvga yuboring.',
@@ -4502,4 +4502,54 @@ export async function resubmitCatalogReview(uid: string): Promise<number> {
     { merge: true }
   );
   return now;
+}
+
+
+/* ------------------------------------------------------------------ */
+/* Yangi sayt (v2): ochiq e'lonlar hamma uchun (mehmonlar ham ko'radi)  */
+/* ------------------------------------------------------------------ */
+export function subscribeToOpenBriefsPublic(
+  callback: (briefs: BriefData[]) => void,
+  onError?: (err: any) => void
+): () => void {
+  const q = query(collection(db, 'briefs'), where('recipientType', '==', 'open'));
+  return onSnapshot(
+    q,
+    (snap) => {
+      const list: BriefData[] = [];
+      snap.forEach((d) => {
+        const data = d.data() as BriefData;
+        if (!data || !(data.taskTitle || '').trim()) return;
+        if (data.status === 'cancelled') return;
+        list.push({ ...data, id: d.id });
+      });
+      list.sort((a, b) => (Number(b.createdAtMillis) || 0) - (Number(a.createdAtMillis) || 0));
+      callback(list);
+    },
+    (err) => {
+      onError?.(err);
+      callback([]);
+    }
+  );
+}
+
+/** Admin: hozirgi barcha foydalanuvchilarni bir martada tasdiqlash (yangi saytga o'tishda) */
+export async function approveAllExistingProfilesAdmin(uids: string[]): Promise<number> {
+  requireAdminAuth();
+  const now = Date.now();
+  const list = Array.from(new Set(uids.filter(Boolean)));
+  for (let i = 0; i < list.length; i += 400) {
+    const batch = writeBatch(db);
+    list.slice(i, i + 400).forEach((uid) => {
+      batch.set(doc(db, 'users', uid), { catalogApproved: true, catalogRejectReason: '', catalogReviewedAtMillis: now }, { merge: true });
+    });
+    await batch.commit();
+  }
+  return list.length;
+}
+
+/** Brend o'z e'lonini yopadi (yangi arizalar qabul qilinmaydi) */
+export async function closeBriefInFirestore(briefId: string): Promise<void> {
+  if (!auth.currentUser) throw new Error('Avval tizimga kiring');
+  await updateDoc(doc(db, 'briefs', briefId), { status: 'completed', updatedAt: serverTimestamp() });
 }

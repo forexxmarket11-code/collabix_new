@@ -21,6 +21,8 @@ import {
   approveCreatorForCatalogAdmin,
   rejectCreatorForCatalogAdmin,
   enableCatalogReviewAdmin,
+  approveAllExistingProfilesAdmin,
+  ADMIN_UID,
   disableCatalogReviewAdmin,
 } from '../firebase';
 import { getBloggerCatalogReadiness, isUserPro } from '../utils/subscription';
@@ -99,7 +101,8 @@ export const AdminCatalogReview: React.FC<AdminCatalogReviewProps> = ({
   }, []);
 
   const creators = useMemo(
-    () => users.filter((u) => u.role !== 'brend' && u.accountStatus !== 'rejected'),
+    // Yangi sayt: bloger ham, brend ham admin tekshiruvidan o'tadi
+    () => users.filter((u) => u.uid !== ADMIN_UID && u.accountStatus !== 'rejected'),
     [users]
   );
 
@@ -109,12 +112,14 @@ export const AdminCatalogReview: React.FC<AdminCatalogReviewProps> = ({
     const rejected: UserSession[] = [];
     const currentlyVisible: string[] = [];
     creators.forEach((u) => {
-      const now = getBloggerCatalogReadiness(u, catalogProOnly, false);
-      if (now.isVisibleInCatalog && u.uid) currentlyVisible.push(u.uid);
-      const r = getBloggerCatalogReadiness(u, catalogProOnly, true);
-      if (r.isCatalogRejected) rejected.push(u);
-      else if (r.isAwaitingReview) pending.push(u);
-      else if (r.isCatalogApproved && r.isProfileComplete) approved.push(u);
+      const reviewed = Number(u.catalogReviewedAtMillis || 0);
+      const resub = Number(u.catalogResubmittedAtMillis || 0);
+      if (u.catalogApproved === true) approved.push(u);
+      else if (u.catalogApproved === false && !(resub > reviewed)) rejected.push(u);
+      else {
+        pending.push(u);
+        if (u.uid) currentlyVisible.push(u.uid);
+      }
     });
     const byNewest = (a: UserSession, b: UserSession) =>
       Number(b.catalogResubmittedAtMillis || 0) - Number(a.catalogResubmittedAtMillis || 0);
@@ -123,8 +128,8 @@ export const AdminCatalogReview: React.FC<AdminCatalogReviewProps> = ({
   }, [creators, catalogProOnly]);
 
   useEffect(() => {
-    onPendingCountChange?.(catalogReviewRequired ? groups.pending.length : 0);
-  }, [groups.pending.length, catalogReviewRequired, onPendingCountChange]);
+    onPendingCountChange?.(groups.pending.length);
+  }, [groups.pending.length, onPendingCountChange]);
 
   const list = useMemo(() => {
     const base = groups[filter];
@@ -178,7 +183,7 @@ export const AdminCatalogReview: React.FC<AdminCatalogReviewProps> = ({
     setToggleBusy(true);
     setError('');
     try {
-      await enableCatalogReviewAdmin(groups.currentlyVisible);
+      await approveAllExistingProfilesAdmin(groups.currentlyVisible);
       setConfirmEnable(false);
     } catch (e) {
       handleErr(e);
@@ -210,69 +215,31 @@ export const AdminCatalogReview: React.FC<AdminCatalogReviewProps> = ({
 
   return (
     <div className="space-y-5">
-      {/* Tekshiruv holati */}
-      {!catalogReviewRequired ? (
-        <div className="rounded-2xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-4 sm:p-5 space-y-3">
-          <div className="flex items-start gap-3">
-            <ShieldCheck className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-            <div className="text-sm text-slate-800 dark:text-slate-200 space-y-1">
-              <p className="font-heading font-bold">Admin tekshiruvi hali yoqilmagan</p>
-              <p>
-                Hozir profili toʻliq blogerlar avtomatik katalogga chiqyapti. Tekshiruvni yoqsangiz, hozir katalogda turgan{' '}
-                <b>{groups.currentlyVisible.length} ta</b> bloger avtomatik tasdiqlanadi va katalogda qoladi. Yangi blogerlar esa faqat siz
-                tasdiqlagandan keyin chiqadi.
-              </p>
-            </div>
+      {/* Yangi sayt: profil tekshiruvi */}
+      <div className="rounded-2xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40 p-4 sm:p-5 space-y-3">
+        <div className="flex items-start gap-3">
+          <ShieldCheck className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
+          <div className="text-sm text-slate-800 dark:text-slate-200 space-y-1">
+            <p className="font-heading font-bold">Har bir yangi profil (bloger va brend) shu yerda tekshiriladi</p>
+            <p>Tasdiqlanmaguncha bloger ariza yubora olmaydi, brend esa e'lon joylay olmaydi. Hozir kutayotganlar: <b>{groups.pending.length} ta</b>.</p>
           </div>
-          {!confirmEnable ? (
-            <button
-              type="button"
-              onClick={() => setConfirmEnable(true)}
-              className="min-h-[44px] px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-heading font-bold cursor-pointer"
-            >
-              Tekshiruvni yoqish
+        </div>
+        {groups.pending.length > 0 && (
+          !confirmEnable ? (
+            <button type="button" onClick={() => setConfirmEnable(true)} className="min-h-[44px] px-4 rounded-xl border border-indigo-300 dark:border-indigo-700 bg-white dark:bg-slate-900 text-indigo-700 dark:text-indigo-300 text-sm font-heading font-bold cursor-pointer">
+              Kutayotgan hammasini tasdiqlash ({groups.pending.length})
             </button>
           ) : (
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm font-heading font-semibold text-slate-800 dark:text-slate-200">Ishonchingiz komilmi?</span>
-              <button
-                type="button"
-                onClick={enableReview}
-                disabled={toggleBusy}
-                className="min-h-[44px] px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-sm font-heading font-bold cursor-pointer inline-flex items-center gap-2"
-              >
-                {toggleBusy && <Loader2 className="w-4 h-4 animate-spin" />}
-                Ha, yoqish
+              <span className="text-sm font-heading font-semibold text-slate-800 dark:text-slate-200">Rostdan ham {groups.pending.length} ta profilni birdaniga tasdiqlaysizmi? (Yangi saytga o'tishda eski foydalanuvchilar uchun)</span>
+              <button type="button" onClick={enableReview} disabled={toggleBusy} className="min-h-[44px] px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white text-sm font-heading font-bold cursor-pointer inline-flex items-center gap-2">
+                {toggleBusy && <Loader2 className="w-4 h-4 animate-spin" />}Ha, hammasini tasdiqlash
               </button>
-              <button
-                type="button"
-                onClick={() => setConfirmEnable(false)}
-                disabled={toggleBusy}
-                className="min-h-[44px] px-4 rounded-xl border border-slate-300 dark:border-slate-700 text-sm font-heading font-bold text-slate-700 dark:text-slate-200 cursor-pointer"
-              >
-                Bekor qilish
-              </button>
+              <button type="button" onClick={() => setConfirmEnable(false)} disabled={toggleBusy} className="min-h-[44px] px-4 rounded-xl border border-slate-300 dark:border-slate-700 text-sm font-heading font-bold text-slate-700 dark:text-slate-200 cursor-pointer">Bekor qilish</button>
             </div>
-          )}
-        </div>
-      ) : (
-        <div className="rounded-2xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5 text-sm text-emerald-900 dark:text-emerald-200">
-            <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0" />
-            <span className="font-heading font-bold">
-              Tekshiruv yoqilgan: yangi blogerlar faqat tasdiqdan keyin katalogga chiqadi.
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={disableReview}
-            disabled={toggleBusy}
-            className="min-h-[40px] px-3 rounded-xl border border-emerald-300 dark:border-emerald-700 text-xs font-heading font-bold text-emerald-800 dark:text-emerald-200 cursor-pointer shrink-0 disabled:opacity-60"
-          >
-            Tekshiruvni oʻchirish
-          </button>
-        </div>
-      )}
+          )
+        )}
+      </div>
 
       {error && (
         <div className="rounded-xl border border-rose-200 bg-rose-50 dark:bg-rose-950/40 dark:border-rose-800 px-4 py-2.5 text-sm text-rose-700 dark:text-rose-300">
@@ -348,6 +315,7 @@ export const AdminCatalogReview: React.FC<AdminCatalogReviewProps> = ({
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-heading font-extrabold text-slate-900 dark:text-white truncate">{u.name || 'Ismsiz'}</span>
+                        <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${u.role === 'brend' ? 'bg-emerald-100 text-emerald-800' : 'bg-indigo-100 text-indigo-800'}`}>{u.role === 'brend' ? 'Brend' : 'Bloger'}</span>
                         {pro && (
                           <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300 text-[10px] font-bold">
                             <Crown className="w-3 h-3" /> Pro
