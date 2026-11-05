@@ -161,7 +161,7 @@ export const ReferralDashboard: React.FC<ReferralDashboardProps> = ({
     return (
       <LockedCard
         title="Referal dasturi faqat Pro foydalanuvchilar uchun"
-        text="Pro rejimni faollashtiring — shaxsiy havolangiz ochiladi va har bir Pro olgan bloger uchun 29 000, brend uchun 75 000 soʻm mukofot olasiz."
+        text="Pro rejimni faollashtiring — shaxsiy havolangiz ochiladi va har bir Pro olgan bloger uchun 29 000 soʻm mukofot olasiz."
         buttonLabel="Pro rejimga oʻtish"
         onClick={onOpenProModal}
       />
@@ -210,7 +210,7 @@ export const ReferralDashboard: React.FC<ReferralDashboardProps> = ({
           </div>
         </div>
         <p className="mt-2 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-          Doʻstingiz shu havola orqali roʻyxatdan oʻtib, birinchi marta Pro rejimni olsa — balansingizga bloger uchun 29 000, brend uchun 75 000 soʻm qoʻshiladi.
+          Doʻstingiz shu havola orqali roʻyxatdan oʻtib, birinchi marta Pro rejimni olsa — balansingizga 29 000 soʻm qoʻshiladi.
         </p>
       </div>
 

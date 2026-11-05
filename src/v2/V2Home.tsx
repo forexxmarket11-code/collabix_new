@@ -319,7 +319,7 @@ export const V2Home: React.FC<Props> = ({ briefs, loading, currentUser }) => {
         <div className="rounded-[32px] bg-[#5B3DF5] text-white p-8 sm:p-10">
           <div className="text-[13px] font-bold tracking-[2px] text-[#E4DEFF]">BRENDLAR UCHUN</div>
           <div className="v2-display mt-3 font-extrabold text-[30px] sm:text-[34px] tracking-[-1px] leading-[1.1]">E'lon joylang — blogerlar o'zi keladi</div>
-          <div className="v2-display mt-5 font-extrabold text-[44px] tracking-[-1.5px]">99 000 <span className="text-[20px] font-bold text-[#E4DEFF]">so'm / oy</span></div>
+          <div className="v2-display mt-5 font-extrabold text-[44px] tracking-[-1.5px]">Bepul <span className="text-[20px] font-bold text-[#E4DEFF]">obunasiz</span></div>
           <ul className="mt-5 p-0 list-none flex flex-col gap-2.5 text-[15px]">
             {["Ochiq e'lonlar joylash", 'Arizalarni qabul qilish yoki rad etish', 'Faqat admin tekshirgan blogerlar'].map((t) => (
               <li key={t} className="flex gap-2.5 items-center"><span className="text-[#C8F169]">{Icon.check(18)}</span>{t}</li>

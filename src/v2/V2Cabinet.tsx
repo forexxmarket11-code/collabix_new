@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from 'react';
 import { BriefData, BriefApplication, UserSession } from '../types';
-import { isUserPro } from '../utils/subscription';
 import { Avatar, Pill, Icon, budgetText, btn, appStatus, isBriefOpen, reviewState, timeAgo, go } from './ui';
 import { ReviewBanner } from './V2Applications';
 import { CATEGORY_LIST } from './V2Home';
@@ -30,7 +29,6 @@ export const V2Cabinet: React.FC<CabinetProps> = ({ currentUser, briefs, onRespo
   const allApps = mine.flatMap((b) => b.applications || []);
   const newApps = allApps.filter((a) => appStatus(a) === 'wait').length;
   const okApps = allApps.filter((a) => appStatus(a) === 'ok').length;
-  const pro = isUserPro(currentUser);
   const approved = reviewState(currentUser) === 'approved';
 
   const apps = (selected?.applications || []).filter((a) => appStatus(a) === filter);
@@ -69,10 +67,9 @@ export const V2Cabinet: React.FC<CabinetProps> = ({ currentUser, briefs, onRespo
         {nav('Yangi arizalar', false, () => setFilter('wait'), newApps)}
         {nav('Brend profili', false, onOpenEditProfile)}
         {nav('Xabarlar', false, () => go('xabarlar'))}
-        <div className={`mt-5 rounded-2xl p-4 ${pro ? 'bg-[#5B3DF5]' : 'bg-[#2A2636]'}`}>
-          <div className="font-extrabold text-[15px]">{pro ? 'Brend Pro faol' : 'Brend Pro yoqilmagan'}</div>
-          <div className="mt-0.5 text-[13px] text-[#E4DEFF]">{pro && currentUser.trialEndDate ? `${new Date(currentUser.trialEndDate).toLocaleDateString('ru-RU')} gacha · 99 000 so'm/oy` : "99 000 so'm/oy — e'lon joylash uchun"}</div>
-          {!pro && <button type="button" onClick={onOpenPro} className={`${btn.lime} mt-3 w-full`}>Pro'ni yoqish</button>}
+        <div className="mt-5 rounded-2xl p-4 bg-[#5B3DF5]">
+          <div className="font-extrabold text-[15px]">Brendlar uchun bepul</div>
+          <div className="mt-0.5 text-[13px] text-[#E4DEFF]">E'lon joylash va arizalarni ko'rish — obunasiz</div>
         </div>
       </aside>
 
@@ -223,21 +220,13 @@ export const V2NewBrief: React.FC<NewBriefProps> = ({ currentUser, onCreate, onO
   const [error, setError] = useState('');
 
   const approved = reviewState(currentUser) === 'approved';
-  const pro = isUserPro(currentUser);
   const toggle = (list: string[], set: (v: string[]) => void, v: string) => set(list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
 
-  if (!approved || !pro) {
+  if (!approved) {
     return (
       <main className="max-w-[720px] mx-auto px-4 sm:px-6 py-16 text-center">
         <h1 className="v2-display m-0 font-extrabold text-[34px] tracking-[-1.2px]">E'lon joylash</h1>
-        {!approved ? (
-          <p className="mt-3 text-[#5E5A6B]">Profilingiz admin tomonidan tasdiqlangach e'lon joylay olasiz. Odatda bir necha soat ichida.</p>
-        ) : (
-          <>
-            <p className="mt-3 text-[#5E5A6B]">E'lon joylash uchun Brend Pro kerak — 99 000 so'm/oy.</p>
-            <button type="button" onClick={onOpenPro} className={`${btn.violet} mt-3`}>Pro'ni yoqish</button>
-          </>
-        )}
+        <p className="mt-3 text-[#5E5A6B]">Profilingiz admin tomonidan tasdiqlangach e'lon joylay olasiz. Odatda bir necha soat ichida.</p>
         <div className="mt-6"><a href="#kabinet" className={btn.ghost}>Kabinetga qaytish</a></div>
       </main>
     );

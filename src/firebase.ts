@@ -4116,8 +4116,8 @@ export async function deleteBriefAdmin(briefId: string): Promise<void> {
  * ========================================================================= */
 
 export const REFERRAL_REWARD = 29000;
-/** Brend olib kelganga mukofot (brend Pro 99 000 so'm) */
-export const REFERRAL_REWARD_BRAND = 75000;
+/** Brendlar uchun obuna yo'q (bepul) — brend olib kelganga mukofot berilmaydi */
+export const REFERRAL_REWARD_BRAND = 0;
 export function getReferralReward(referredRole?: string | null): number {
   return referredRole === 'brend' ? REFERRAL_REWARD_BRAND : REFERRAL_REWARD;
 }
@@ -4191,8 +4191,9 @@ async function grantReferralRewardIfEligible(referredUid: string): Promise<boole
     return false;
   }
 
-  // Brend olib kelgan — 75 000, bloger olib kelgan — 29 000
+  // Bloger olib kelgan — 29 000; brendlar bepul, ular uchun mukofot yo'q
   const reward = getReferralReward(referred.role);
+  if (reward <= 0) return false;
   await setDoc(
     referrerRef,
     {

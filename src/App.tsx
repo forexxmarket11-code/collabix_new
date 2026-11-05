@@ -357,12 +357,7 @@ export default function App() {
         if (hash === '#katalog' || hash === '#catalog') {
           target = 'home';
         } else if (hash === '#create-brief' || hash === '#brif' || hash === '#brief') {
-          if (currentUser?.role !== 'bloger' && !isUserPro(currentUser)) {
-            setIsProModalOpen(true);
-            target = 'catalog';
-          } else {
-            target = 'create-brief';
-          }
+          target = 'create-brief';
         } else if (hash === '#orders' || hash === '#buyurtmalar' || hash === '#briflar') {
           target = 'orders';
         } else if (hash === '#messages' || hash === '#xabarlar' || hash === '#chat' || path === '/chat') {
@@ -418,13 +413,6 @@ export default function App() {
     if (page === 'profile' && !currentUser) {
       handleStart();
       return;
-    }
-
-    if (page === 'create-brief') {
-      if (currentUser?.role !== 'bloger' && !isUserPro(currentUser)) {
-        setIsProModalOpen(true);
-        return;
-      }
     }
 
     setCurrentPage(page);

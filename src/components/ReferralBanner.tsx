@@ -37,7 +37,7 @@ export const ReferralBanner: React.FC<ReferralBannerProps> = ({ onLearnMore }) =
 
             {/* Explanation paragraph */}
             <p className="mt-3 text-[15px] sm:text-base text-slate-200 sm:text-slate-300 font-body leading-relaxed">
-              Platformamizda bloger ham, brend ham oʻz doʻstlarini taklif qilib qoʻshimcha daromad topishi mumkin.
+              Pro blogerlar oʻz doʻstlarini taklif qilib qoʻshimcha daromad topishi mumkin.
               Taklifingiz orqali roʻyxatdan oʻtib, <strong>Pro</strong> obunani faollashtirgan har bir
               foydalanuvchi uchun sizga darhol mukofot hisoblanadi.
             </p>
@@ -63,10 +63,10 @@ export const ReferralBanner: React.FC<ReferralBannerProps> = ({ onLearnMore }) =
                 Sizning daromadingiz
               </span>
               <div className="font-mono font-extrabold text-2xl sm:text-3xl lg:text-4xl text-emerald-400 drop-shadow-sm">
-                +75 000 soʻm
+                +29 000 soʻm
               </div>
               <span className="block text-xs text-indigo-200 mt-1 font-body">
-                har bir brend uchun · bloger uchun 29 000
+                Pro olgan har bir bloger uchun
               </span>
             </div>
 
