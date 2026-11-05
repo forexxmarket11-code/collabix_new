@@ -129,7 +129,7 @@ export const V2Home: React.FC<Props> = ({ briefs, loading, currentUser }) => {
               e.preventDefault();
               document.getElementById('elonlar')?.scrollIntoView({ behavior: 'smooth' });
             }}
-            className="mt-8 max-w-[640px] flex flex-wrap gap-2 p-2 rounded-[20px] bg-white border border-[#E6E3DC] shadow-[0_20px_50px_-24px_rgba(20,18,28,0.25)]"
+            className="hidden md:flex mt-8 max-w-[640px] flex-wrap gap-2 p-2 rounded-[20px] bg-white border border-[#E6E3DC] shadow-[0_20px_50px_-24px_rgba(20,18,28,0.25)]"
           >
             <label className="flex-[999_1_240px] min-w-0 flex items-center gap-2.5 px-3.5 min-h-[52px] text-[#5E5A6B]">
               {Icon.search(20)}
@@ -195,7 +195,7 @@ export const V2Home: React.FC<Props> = ({ briefs, loading, currentUser }) => {
       </section>
 
       {/* CATEGORIES */}
-      <section aria-label="Kategoriyalar" className="max-w-[1240px] mx-auto px-4 sm:px-6">
+      <section aria-label="Kategoriyalar" className="hidden md:block max-w-[1240px] mx-auto px-4 sm:px-6">
         <div className="flex gap-2.5 overflow-x-auto pb-1 -mx-1 px-1">
           {['Hammasi', ...CATEGORY_LIST].map((c) => (
             <button
@@ -213,13 +213,13 @@ export const V2Home: React.FC<Props> = ({ briefs, loading, currentUser }) => {
       </section>
 
       {/* OPEN BRIEFS */}
-      <section id="elonlar" className="max-w-[1240px] mx-auto px-4 sm:px-6 pt-10 pb-6 scroll-mt-24">
+      <section id="elonlar" className="max-w-[1240px] mx-auto px-4 sm:px-6 pt-2 md:pt-10 pb-6 scroll-mt-24">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <div className="text-[13px] font-bold tracking-[2px] text-[#5B3DF5]">OCHIQ E'LONLAR</div>
             <h2 className="v2-display mt-2 mb-0 font-extrabold text-[32px] sm:text-[44px] tracking-[-1.5px] leading-[1.05]">Brendlar hozir bloger qidirmoqda</h2>
           </div>
-          <div className="flex gap-1.5 p-1.5 rounded-2xl bg-[#ECEAE4]">
+          <div className="hidden md:flex gap-1.5 p-1.5 rounded-2xl bg-[#ECEAE4]">
             {([['new', 'Yangi'], ['budget', "Byudjet bo'yicha"], ['apps', 'Kam arizali']] as const).map(([id, label]) => (
               <button
                 key={id}
