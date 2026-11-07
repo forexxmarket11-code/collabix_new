@@ -198,7 +198,8 @@ export type V2Route =
   | { name: 'register'; mode: 'signup' | 'login' }
   | { name: 'applications' }
   | { name: 'cabinet' }
-  | { name: 'new-brief' };
+  | { name: 'new-brief' }
+  | { name: 'for-brands' };
 
 export function parseV2Hash(hash: string): V2Route | null {
   const h = (hash || '').replace(/^#\/?/, '');
@@ -209,6 +210,7 @@ export function parseV2Hash(hash: string): V2Route | null {
   if (h === 'arizalarim') return { name: 'applications' };
   if (h === 'kabinet') return { name: 'cabinet' };
   if (h === 'yangi-elon') return { name: 'new-brief' };
+  if (h === 'brendlar-uchun' || h === 'for-brands') return { name: 'for-brands' };
   return null;
 }
 

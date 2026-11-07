@@ -149,7 +149,7 @@ export const V2Home: React.FC<Props> = ({ briefs, loading, currentUser }) => {
           {!currentUser && (
             <div className="mt-5 flex flex-wrap gap-2.5">
               <a href="#royxat" className={btn.dark}>Bloger sifatida boshlash {Icon.arrow(15)}</a>
-              <a href="#royxat" className={btn.ghost}>Men brendman</a>
+              <a href="#brendlar-uchun" className={btn.ghost}>Men brendman</a>
             </div>
           )}
         </div>

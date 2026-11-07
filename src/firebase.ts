@@ -4554,3 +4554,53 @@ export async function closeBriefInFirestore(briefId: string): Promise<void> {
   if (!auth.currentUser) throw new Error('Avval tizimga kiring');
   await updateDoc(doc(db, 'briefs', briefId), { status: 'completed', updatedAt: serverTimestamp() });
 }
+
+/* =========================================================================
+ * Brendlar sahifasi: bloger bazasi statistikasi (faqat umumiy raqamlar)
+ * ========================================================================= */
+export interface CreatorPoolStats {
+  total: number;
+  categories: [string, number][];
+  cities: [string, number][];
+  followers: [string, number][];
+  women: number;
+  men: number;
+}
+
+function parseFollowersApprox(raw: unknown): number {
+  const s = String(raw ?? '').toLowerCase().replace(/\s+/g, ' ').trim();
+  if (!s) return 0;
+  const m = s.match(/(\d+(?:[.,]\d+)?)/);
+  if (!m) return 0;
+  let n = parseFloat(m[1].replace(',', '.'));
+  if (/ming|k\b|тыс/.test(s)) n *= 1000;
+  else if (/mln|m\b|млн/.test(s)) n *= 1000000;
+  return Math.round(n);
+}
+
+export async function fetchCreatorPoolStats(): Promise<CreatorPoolStats> {
+  const snap = await getDocs(collection(db, 'users'));
+  const cat = new Map<string, number>();
+  const city = new Map<string, number>();
+  const buckets: [string, number][] = [['10 mingdan kam', 0], ['10–50 ming', 0], ['50–100 ming', 0], ['100 ming+', 0]];
+  let total = 0, women = 0, men = 0;
+  const norm = (v: string) => v.trim().replace(/\s+/g, ' ').replace(/^./, (c) => c.toUpperCase());
+  snap.forEach((d) => {
+    const u = d.data() as UserSession;
+    if ((u.role || 'bloger') !== 'bloger') return;
+    if (u.accountStatus === 'rejected' || u.catalogApproved === false) return;
+    if (d.id === ADMIN_UID) return;
+    total += 1;
+    (u.categories || []).slice(0, 3).forEach((c) => { if (c) cat.set(norm(c), (cat.get(norm(c)) || 0) + 1); });
+    if (u.city) city.set(norm(u.city), (city.get(norm(u.city)) || 0) + 1);
+    const f = parseFollowersApprox((u as any).socialLinks?.instagramFollowers ?? (u as any).followers);
+    if (f > 0) {
+      const i = f < 10000 ? 0 : f < 50000 ? 1 : f < 100000 ? 2 : 3;
+      buckets[i][1] += 1;
+    }
+    if (u.gender === 'ayol') women += 1;
+    else if (u.gender === 'erkak') men += 1;
+  });
+  const top = (m: Map<string, number>) => Array.from(m.entries()).sort((a, b) => b[1] - a[1]);
+  return { total, categories: top(cat), cities: top(city), followers: buckets, women, men };
+}

@@ -45,6 +45,7 @@ import {
 } from './firebase';
 import { checkProUserAndProceed, isUserPro } from './utils/subscription';
 import { V2Navbar, V2BottomNav, V2Footer } from './v2/V2Shell';
+import { V2ForBrands } from './v2/V2ForBrands';
 import { V2Home } from './v2/V2Home';
 import { V2BriefPage, V2BrandPage } from './v2/V2BriefPage';
 import { V2Register } from './v2/V2Register';
@@ -673,6 +674,7 @@ export default function App() {
         : v2Route?.name === 'cabinet' || v2Route?.name === 'new-brief' ? 'cabinet'
         : v2Hash === '#brendlar' || v2Route?.name === 'brand' ? 'brands'
         : v2Hash === '#narxlar' ? 'pricing'
+        : v2Route?.name === 'for-brands' ? 'forBrands'
         : 'home'
       : currentPage === 'profile' || currentPage === 'edit-profile' ? 'profile' : '';
 
@@ -692,6 +694,7 @@ export default function App() {
       );
     }
     if (r.name === 'brand') return <V2BrandPage brandId={r.id} briefs={allBriefs} />;
+    if (r.name === 'for-brands') return <V2ForBrands currentUser={currentUser} />;
     if (r.name === 'register') {
       return (
         <V2Register

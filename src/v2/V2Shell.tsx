@@ -33,6 +33,7 @@ export const V2Navbar: React.FC<NavProps> = ({ currentUser, unreadCount, onOpenM
         <nav aria-label="Asosiy menyu" className="hidden md:flex items-center gap-7">
           {link('home', "E'lonlar", '#')}
           {link('brands', 'Brendlar', '#brendlar')}
+          {currentUser?.role !== 'bloger' && link('forBrands', 'Brendlar uchun', '#brendlar-uchun')}
           {currentUser && !isBrand && link('applications', 'Mening arizalarim', '#arizalarim')}
           {currentUser && isBrand && link('cabinet', 'Kabinet', '#kabinet')}
           {link('pricing', 'Narxlar', '#narxlar')}
@@ -132,6 +133,7 @@ export const V2Footer: React.FC = () => (
     <nav aria-label="Footer" className="flex flex-wrap gap-5 font-semibold">
       <a href="#" className="hover:text-[#5B3DF5]">E'lonlar</a>
       <a href="#brendlar" className="hover:text-[#5B3DF5]">Brendlar</a>
+      <a href="#brendlar-uchun" className="hover:text-[#5B3DF5]">Brendlar uchun</a>
       <a href="#narxlar" className="hover:text-[#5B3DF5]">Narxlar</a>
       <a href="#referral" className="hover:text-[#5B3DF5]">Do'stlarni taklif qilish</a>
       <a href="/privacy.html" className="hover:text-[#5B3DF5]">Maxfiylik siyosati</a>
