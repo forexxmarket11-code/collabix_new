@@ -32,6 +32,8 @@ import {
   deleteDoc,
   deleteField,
   Timestamp,
+  runTransaction,
+  arrayUnion,
 } from 'firebase/firestore';
 import {
   getStorage,
@@ -49,6 +51,7 @@ import {
   CreatorCategory,
   BriefData,
   BriefApplication,
+  AppWorkflow,
   BriefCreatorStatus,
   RevenueStatistics,
   ReferralStatistics,
@@ -2891,6 +2894,7 @@ export async function respondToBriefApplicationInFirestore(
 
   if (status === 'qabul_qilindi') {
     briefUpdates.selectedApplicationId = applicationId;
+    if (targetApp.creatorId) briefUpdates.acceptedCreatorIds = arrayUnion(targetApp.creatorId);
   }
 
   await updateDoc(docRef, briefUpdates);
@@ -4603,4 +4607,126 @@ export async function fetchCreatorPoolStats(): Promise<CreatorPoolStats> {
   });
   const top = (m: Map<string, number>) => Array.from(m.entries()).sort((a, b) => b[1] - a[1]);
   return { total, categories: top(cat), cities: top(city), followers: buckets, women, men };
+}
+
+/* =========================================================================
+ * Ish bosqichlari (ssenariy → draft → Reels) — qabul qilingan arizalar uchun
+ * ========================================================================= */
+export type WorkflowAction =
+  | { kind: 'script_send'; text: string }
+  | { kind: 'script_ok' }
+  | { kind: 'script_no'; note: string }
+  | { kind: 'draft_send'; url: string; comment?: string }
+  | { kind: 'draft_ok' }
+  | { kind: 'draft_no'; note: string }
+  | { kind: 'reels_send'; url: string; views?: number }
+  | { kind: 'views_update'; views: number };
+
+const isAcceptedApp = (a: BriefApplication) => a.status === 'accepted' || a.creatorStatus === 'qabul_qilindi' || a.status === 'qabul_qilindi';
+
+export async function updateApplicationWorkflowInFirestore(briefId: string, applicationId: string, action: WorkflowAction): Promise<void> {
+  const me = auth.currentUser?.uid;
+  if (!me) throw new Error('AUTH');
+  const ref = doc(db, 'briefs', briefId);
+  let notify: { userId: string; title: string; message: string; briefTitle: string } | null = null;
+
+  await runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists()) throw new Error("E'lon topilmadi");
+    const data = snap.data() as BriefData;
+    const apps = Array.isArray(data.applications) ? [...data.applications] : [];
+    const i = apps.findIndex((a) => a.id === applicationId);
+    if (i < 0) throw new Error('Ariza topilmadi');
+    const app = { ...apps[i] };
+    if (!isAcceptedApp(app)) throw new Error('Ariza qabul qilinmagan');
+    const brandId = data.brandId || data.ownerId || '';
+    const isBrand = me === brandId;
+    const isCreator = me === app.creatorId;
+    const creatorActs = ['script_send', 'draft_send', 'reels_send', 'views_update'];
+    if (creatorActs.includes(action.kind) ? !isCreator : !isBrand) throw new Error('RUXSAT_YOQ');
+
+    const now = new Date().toISOString();
+    const w: AppWorkflow = { ...(app.workflow || {}) };
+    const title = data.taskTitle || "E'lon";
+    const toBrand = (t: string, m: string) => { notify = { userId: brandId, title: t, message: m, briefTitle: title }; };
+    const toCreator = (t: string, m: string) => { notify = { userId: app.creatorId, title: t, message: m, briefTitle: title }; };
+    const who = app.creatorName || 'Bloger';
+
+    switch (action.kind) {
+      case 'script_send':
+        w.script = { text: action.text.trim().slice(0, 3000), at: now, status: 'wait' };
+        toBrand('Yangi ssenariy', `${who} "${title}" uchun ssenariy yubordi — tasdig'ingizni kutmoqda`);
+        break;
+      case 'script_ok':
+        if (!w.script) throw new Error('Ssenariy yo\'q');
+        w.script = { ...w.script, status: 'ok', note: '' };
+        toCreator('Ssenariy tasdiqlandi', `"${title}" ssenariyingiz tasdiqlandi. Endi videoni tayyorlab, draft yuboring.`);
+        break;
+      case 'script_no':
+        if (!w.script) throw new Error('Ssenariy yo\'q');
+        w.script = { ...w.script, status: 'no', note: action.note.trim().slice(0, 500) };
+        toCreator('Ssenariyga tuzatish kerak', `"${title}": ${w.script.note || 'brend tuzatish so\'radi'}`);
+        break;
+      case 'draft_send':
+        w.draft = { url: action.url.trim().slice(0, 500), comment: (action.comment || '').trim().slice(0, 500), at: now, status: 'wait' };
+        toBrand('Yangi draft', `${who} "${title}" uchun video draft yubordi — tasdig'ingizni kutmoqda`);
+        break;
+      case 'draft_ok':
+        if (!w.draft) throw new Error('Draft yo\'q');
+        w.draft = { ...w.draft, status: 'ok', note: '' };
+        toCreator('Draft tasdiqlandi', `"${title}" videongiz tasdiqlandi. Joylab, Reels havolasini yuboring.`);
+        break;
+      case 'draft_no':
+        if (!w.draft) throw new Error('Draft yo\'q');
+        w.draft = { ...w.draft, status: 'no', note: action.note.trim().slice(0, 500) };
+        toCreator('Videoga tuzatish kerak', `"${title}": ${w.draft.note || 'brend tuzatish so\'radi'}`);
+        break;
+      case 'reels_send':
+        w.reels = { url: action.url.trim().slice(0, 500), views: Math.max(0, Math.round(action.views || 0)), at: now, viewsAt: now };
+        toBrand('Reels joylandi', `${who} "${title}" bo'yicha Reels'ni joyladi`);
+        break;
+      case 'views_update':
+        if (!w.reels) throw new Error('Reels yo\'q');
+        w.reels = { ...w.reels, views: Math.max(0, Math.round(action.views)), viewsAt: now };
+        break;
+    }
+    app.workflow = JSON.parse(JSON.stringify(w));
+    apps[i] = app;
+    const upd: Record<string, any> = { applications: apps, updatedAt: serverTimestamp() };
+    if (isBrand && app.creatorId && !(data.acceptedCreatorIds || []).includes(app.creatorId)) {
+      upd.acceptedCreatorIds = arrayUnion(app.creatorId);
+    }
+    tx.update(ref, upd);
+  });
+
+  const n = notify as { userId: string; title: string; message: string; briefTitle: string } | null;
+  if (n && n.userId && n.userId !== me) {
+    try {
+      await createNotificationInFirestore({
+        userId: n.userId,
+        type: 'ish_bosqichi',
+        title: n.title,
+        briefTitle: n.briefTitle,
+        briefId,
+        senderId: me,
+        message: n.message.slice(0, 590),
+        read: false,
+        createdAt: new Date().toISOString(),
+        createdAtMillis: Date.now(),
+      });
+    } catch (err) {
+      console.warn('Bildirishnoma yuborilmadi:', err);
+    }
+  }
+}
+
+/** Brend kabineti ochilganda: avval qabul qilingan blogerlarni acceptedCreatorIds ro'yxatiga qo'shadi */
+export async function backfillAcceptedCreatorIds(brief: BriefData): Promise<void> {
+  const me = auth.currentUser?.uid;
+  if (!me || (brief.brandId || brief.ownerId) !== me) return;
+  const ids = (brief.applications || []).filter(isAcceptedApp).map((a) => a.creatorId).filter(Boolean);
+  const have = new Set(brief.acceptedCreatorIds || []);
+  const missing = ids.filter((id) => !have.has(id));
+  if (missing.length === 0) return;
+  await updateDoc(doc(db, 'briefs', brief.id), { acceptedCreatorIds: arrayUnion(...missing) });
 }

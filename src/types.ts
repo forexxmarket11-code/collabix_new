@@ -106,6 +106,13 @@ export interface AgencyApplication {
 
 export type BriefCreatorStatus = 'yangi' | 'qabul_qilindi' | 'rad_etildi';
 
+/** Qabul qilingan bloger ishining bosqichlari: ssenariy → draft → Reels */
+export interface AppWorkflow {
+  script?: { text: string; at: string; status: 'wait' | 'ok' | 'no'; note?: string };
+  draft?: { url: string; comment?: string; at: string; status: 'wait' | 'ok' | 'no'; note?: string };
+  reels?: { url: string; views?: number; at: string; viewsAt?: string };
+}
+
 export interface BriefApplication {
   id: string;
   briefId: string;
@@ -125,6 +132,7 @@ export interface BriefApplication {
   creatorStatus?: BriefCreatorStatus;
   rejectionReason?: string;
   respondedAt?: string;
+  workflow?: AppWorkflow;
 }
 
 export interface BriefData {
@@ -142,6 +150,10 @@ export interface BriefData {
   budgetMin?: string;
   budgetMax?: string;
   paymentType?: 'money' | 'barter';
+  /** Narx butun ish uchunmi yoki har bir Reels uchunmi */
+  priceUnit?: 'total' | 'per_reels';
+  /** Ishga qabul qilingan blogerlar (Firestore qoidasi uchun) */
+  acceptedCreatorIds?: string[];
   barterDescription?: string;
   barterEstimatedValue?: string;
   deadline?: string;

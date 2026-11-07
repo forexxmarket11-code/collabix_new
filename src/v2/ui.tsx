@@ -135,8 +135,9 @@ export function budgetText(b: BriefData): string {
   if (b.paymentType === 'barter') return 'Barter';
   const min = fmtNum(b.budgetMin);
   const max = fmtNum(b.budgetMax);
-  if (min && max && min !== max) return `${min} – ${max} so'm`;
-  if (min || max) return `${min || max} so'm`;
+  const unit = b.priceUnit === 'per_reels' ? ' / Reels' : '';
+  if (min && max && min !== max) return `${min} – ${max} so'm${unit}`;
+  if (min || max) return `${min || max} so'm${unit}`;
   return 'Kelishiladi';
 }
 

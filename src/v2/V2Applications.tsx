@@ -1,5 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { BriefData, UserSession } from '../types';
+import { BriefData, BriefApplication, UserSession } from '../types';
+import type { WorkflowAction } from '../firebase';
+import { WorkflowPanel } from './Workflow';
 import { isUserPro } from '../utils/subscription';
 import { Avatar, Pill, Icon, budgetText, btn, appStatus, reviewState } from './ui';
 
@@ -10,6 +12,7 @@ interface Props {
   onOpenPro: () => void;
   onContactBrand: (brief: BriefData) => void;
   onResubmit: () => Promise<void>;
+  onWorkflow: (brief: BriefData, app: BriefApplication, action: WorkflowAction) => Promise<void>;
 }
 
 export const ReviewBanner: React.FC<{ user: UserSession; onEdit: () => void; onResubmit: () => Promise<void> }> = ({ user, onEdit, onResubmit }) => {
@@ -49,17 +52,17 @@ export const ReviewBanner: React.FC<{ user: UserSession; onEdit: () => void; onR
   );
 };
 
-export const V2Applications: React.FC<Props> = ({ currentUser, briefs, onOpenEditProfile, onOpenPro, onContactBrand, onResubmit }) => {
+export const V2Applications: React.FC<Props> = ({ currentUser, briefs, onOpenEditProfile, onOpenPro, onContactBrand, onResubmit, onWorkflow }) => {
   const [tab, setTab] = useState<'all' | 'wait' | 'ok' | 'no'>('all');
   const uid = currentUser.uid;
 
   const mine = useMemo(() => {
-    const rows: { brief: BriefData; status: 'ok' | 'no' | 'wait'; reason?: string; ms: number }[] = [];
+    const rows: { brief: BriefData; app: BriefApplication; status: 'ok' | 'no' | 'wait'; reason?: string; ms: number }[] = [];
     briefs.forEach((b) => {
       const a = (b.applications || []).find((x) => x.creatorId === uid);
       if (!a) return;
       const ms = Date.parse(a.appliedAt || a.respondedAt || '') || Number(b.createdAtMillis) || 0;
-      rows.push({ brief: b, status: appStatus(a), reason: a.rejectionReason, ms });
+      rows.push({ brief: b, app: a, status: appStatus(a), reason: a.rejectionReason, ms });
     });
     return rows.sort((x, y) => y.ms - x.ms);
   }, [briefs, uid]);
@@ -120,7 +123,7 @@ export const V2Applications: React.FC<Props> = ({ currentUser, briefs, onOpenEdi
               <a href="#" className={btn.dark}>E'lonlarni ko'rish</a>
             </div>
           ) : (
-            rows.map(({ brief, status, reason }) => (
+            rows.map(({ brief, app, status, reason }) => (
               <article key={brief.id} className="rounded-3xl bg-white border border-[#E6E3DC] px-5 py-5 flex flex-wrap gap-4 items-center">
                 <Avatar name={brief.brandName} src={brief.brandAvatar} size={52} />
                 <div className="flex-[999_1_240px] min-w-0">
@@ -135,6 +138,11 @@ export const V2Applications: React.FC<Props> = ({ currentUser, briefs, onOpenEdi
                     <button type="button" onClick={() => onContactBrand(brief)} className={btn.dark}>{Icon.chat(16)} Brendga yozish</button>
                   )}
                 </div>
+                {status === 'ok' && (
+                  <div className="basis-full min-w-0">
+                    <WorkflowPanel app={app} role="creator" onAction={(act) => onWorkflow(brief, app, act)} />
+                  </div>
+                )}
               </article>
             ))
           )}

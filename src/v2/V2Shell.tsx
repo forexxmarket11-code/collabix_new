@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
-import { UserSession } from '../types';
+import { UserSession, NotificationItem } from '../types';
+import { NotificationDropdown } from '../components/NotificationDropdown';
 import { Logo, Avatar, btn, go, Icon } from './ui';
 
 interface NavProps {
   currentUser: UserSession | null;
   unreadCount: number;
+  notifications: NotificationItem[];
   onOpenMessages: () => void;
   onOpenProfile: () => void;
   onLogout: () => void;
   active?: string;
 }
 
-export const V2Navbar: React.FC<NavProps> = ({ currentUser, unreadCount, onOpenMessages, onOpenProfile, onLogout, active }) => {
+export const V2Navbar: React.FC<NavProps> = ({ currentUser, unreadCount, notifications, onOpenMessages, onOpenProfile, onLogout, active }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const isBrand = currentUser?.role === 'brend';
   const link = (id: string, label: string, hash: string) => (
@@ -46,18 +48,18 @@ export const V2Navbar: React.FC<NavProps> = ({ currentUser, unreadCount, onOpenM
                   {Icon.plus(16)} E'lon joylash
                 </a>
               )}
+              <NotificationDropdown
+                notifications={notifications}
+                currentUserId={currentUser.uid}
+                onSelectBrief={() => go(isBrand ? 'kabinet' : 'arizalarim')}
+              />
               <button
                 type="button"
                 onClick={onOpenMessages}
-                aria-label="Xabarlar va bildirishnomalar"
+                aria-label="Xabarlar"
                 className="relative w-11 h-11 rounded-xl border border-[#E6E3DC] bg-white flex items-center justify-center cursor-pointer"
               >
                 {Icon.chat(19)}
-                {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-[#5B3DF5] text-white text-[11px] font-bold flex items-center justify-center">
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </span>
-                )}
               </button>
               <div className="relative">
                 <button

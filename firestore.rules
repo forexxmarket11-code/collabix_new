@@ -342,6 +342,12 @@ service cloud.firestore {
               'rejectionReason'
             ])
           ) ||
+          // Qabul qilingan bloger o'z ishi bosqichlarini yuboradi (ssenariy, draft, Reels)
+          (request.auth.uid in resource.data.get('acceptedCreatorIds', [])
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['applications', 'updatedAt'])
+            && request.resource.data.applications is list
+            && request.resource.data.applications.size() == resource.data.applications.size()
+          ) ||
           // Signed-in creator submitting an application to an open brief
           (resource.data.recipientType == 'open'
             && isActivePro()

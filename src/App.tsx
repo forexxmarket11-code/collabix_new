@@ -42,7 +42,9 @@ import {
   subscribeToUserNotifications,
   showBrowserPushNotification,
   recordSubscriptionCancellation,
+  updateApplicationWorkflowInFirestore,
 } from './firebase';
+import type { WorkflowAction } from './firebase';
 import { checkProUserAndProceed, isUserPro } from './utils/subscription';
 import { V2Navbar, V2BottomNav, V2Footer } from './v2/V2Shell';
 import { V2ForBrands } from './v2/V2ForBrands';
@@ -611,6 +613,10 @@ export default function App() {
     return Array.from(map.values()).sort((a, b) => (Number(b.createdAtMillis) || 0) - (Number(a.createdAtMillis) || 0));
   })();
 
+  const v2Workflow = async (brief: BriefData, app: BriefApplication, action: WorkflowAction) => {
+    await updateApplicationWorkflowInFirestore(brief.id, app.id, action);
+  };
+
   const v2Apply = async (brief: BriefData, message: string, price: string) => {
     if (!currentUser?.uid) throw new Error('AUTH');
     const application: BriefApplication = {
@@ -708,7 +714,7 @@ export default function App() {
     if (!currentUser) return <V2Register mode="login" onDone={(u) => handleUpdateUser(u)} />;
     if (r.name === 'applications') {
       if (currentUser.role === 'brend') {
-        return <V2Cabinet currentUser={currentUser} briefs={allBriefs} onRespond={v2Respond} onContactCreator={(a) => v2OpenChatWith({ uid: a.creatorId, name: a.creatorName, avatar: a.creatorAvatar, handle: a.creatorHandle, role: 'Bloger' })} onOpenCreator={(id) => { window.location.hash = `#kreator-${id}`; }} onOpenPro={() => setIsProModalOpen(true)} onOpenEditProfile={handleOpenEditProfile} onResubmit={v2Resubmit} onCloseBrief={async (b) => { try { await closeBriefInFirestore(b.id); } catch (e) { console.error(e); } }} />;
+        return <V2Cabinet currentUser={currentUser} briefs={allBriefs} onRespond={v2Respond} onContactCreator={(a) => v2OpenChatWith({ uid: a.creatorId, name: a.creatorName, avatar: a.creatorAvatar, handle: a.creatorHandle, role: 'Bloger' })} onOpenCreator={(id) => { window.location.hash = `#kreator-${id}`; }} onWorkflow={v2Workflow} notifications={notifications} onOpenPro={() => setIsProModalOpen(true)} onOpenEditProfile={handleOpenEditProfile} onResubmit={v2Resubmit} onCloseBrief={async (b) => { try { await closeBriefInFirestore(b.id); } catch (e) { console.error(e); } }} />;
       }
       return (
         <V2Applications
@@ -718,12 +724,13 @@ export default function App() {
           onOpenPro={() => setIsProModalOpen(true)}
           onContactBrand={(b) => v2OpenChatWith({ uid: b.brandId || b.ownerId || '', name: b.brandName || 'Brend', avatar: b.brandAvatar, handle: '', role: 'Brend' })}
           onResubmit={v2Resubmit}
+          onWorkflow={v2Workflow}
         />
       );
     }
     if (r.name === 'cabinet') {
       if (currentUser.role !== 'brend') {
-        return <V2Applications currentUser={currentUser} briefs={allBriefs} onOpenEditProfile={handleOpenEditProfile} onOpenPro={() => setIsProModalOpen(true)} onContactBrand={(b) => v2OpenChatWith({ uid: b.brandId || b.ownerId || '', name: b.brandName || 'Brend', avatar: b.brandAvatar, handle: '', role: 'Brend' })} onResubmit={v2Resubmit} />;
+        return <V2Applications currentUser={currentUser} briefs={allBriefs} onOpenEditProfile={handleOpenEditProfile} onOpenPro={() => setIsProModalOpen(true)} onContactBrand={(b) => v2OpenChatWith({ uid: b.brandId || b.ownerId || '', name: b.brandName || 'Brend', avatar: b.brandAvatar, handle: '', role: 'Brend' })} onResubmit={v2Resubmit} onWorkflow={v2Workflow} />;
       }
       return (
         <V2Cabinet
@@ -732,6 +739,8 @@ export default function App() {
           onRespond={v2Respond}
           onContactCreator={(a) => v2OpenChatWith({ uid: a.creatorId, name: a.creatorName, avatar: a.creatorAvatar, handle: a.creatorHandle, role: 'Bloger' })}
           onOpenCreator={(id) => { window.location.hash = `#kreator-${id}`; }}
+          onWorkflow={v2Workflow}
+          notifications={notifications}
           onOpenPro={() => { setProModalReason("E'lon joylash uchun Brend Pro kerak"); setIsProModalOpen(true); }}
           onOpenEditProfile={handleOpenEditProfile}
           onResubmit={v2Resubmit}
@@ -804,6 +813,7 @@ export default function App() {
       <V2Navbar
         currentUser={currentUser}
         unreadCount={unreadNotificationsCount}
+        notifications={notifications}
         onOpenMessages={() => handlePageChange('messages')}
         onOpenProfile={() => handlePageChange(isUserRestricted ? 'edit-profile' : 'profile')}
         onLogout={handleLogout}
