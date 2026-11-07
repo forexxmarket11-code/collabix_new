@@ -91,8 +91,11 @@ export const V2Home: React.FC<Props> = ({ briefs, loading, currentUser }) => {
   const [showcase, setShowcase] = useState<{ count: number; creators: ShowcaseCreator[] }>({ count: 0, creators: [] });
   useEffect(() => {
     let alive = true;
-    fetchHomeShowcase().then((r) => alive && setShowcase(r)).catch(() => {});
-    return () => { alive = false; };
+    // E'lonlar birinchi chiqsin — blogerlar vitrinasi biroz keyin yuklanadi
+    const t = setTimeout(() => {
+      fetchHomeShowcase().then((r) => alive && setShowcase(r)).catch(() => {});
+    }, 1200);
+    return () => { alive = false; clearTimeout(t); };
   }, []);
 
   const openBriefs = useMemo(() => briefs.filter(isBriefOpen), [briefs]);

@@ -5,25 +5,13 @@ import { RegisterModal } from './components/RegisterModal';
 import { WhyCollabixSection } from './components/WhyCollabixSection';
 import { HowItWorksSection } from './components/HowItWorksSection';
 import { Footer } from './components/Footer';
-import { CatalogPage } from './components/CatalogPage';
 import { BottomNav } from './components/BottomNav';
-import { OrdersPage } from './components/OrdersPage';
-import { MessagesPage } from './components/MessagesPage';
-import { ProfilePage } from './components/ProfilePage';
-import { EditProfilePage } from './components/EditProfilePage';
 import { ReferralBanner } from './components/ReferralBanner';
 import { MoneyBackGuaranteeBanner } from './components/MoneyBackGuaranteeBanner';
-import { ReferralPage } from './components/ReferralPage';
 import { AgencyBanner } from './components/AgencyBanner';
-import { AgencyPage } from './components/AgencyPage';
-import { AdminLoginPage } from './components/AdminLoginPage';
-import { AdminDashboardPage } from './components/AdminDashboardPage';
-import { CreateBriefPage } from './components/CreateBriefPage';
 import { TrialReminderBanner, shouldShowTrialReminderBanner } from './components/TrialReminderBanner';
 import { CancelSubscriptionModal } from './components/CancelSubscriptionModal';
 import { ProUpgradeModal } from './components/ProUpgradeModal';
-import { CreatorPublicProfilePage } from './components/CreatorPublicProfilePage';
-import { PendingApprovalPage } from './components/PendingApprovalPage';
 import { PWAInstallPrompt } from './components/PWAInstallPrompt';
 import { BloggerCatalogBanner } from './components/BloggerCatalogBanner';
 import { PageType, UserSession, BriefData, CatalogCreator, BriefApplication, NotificationItem } from './types';
@@ -61,6 +49,25 @@ import {
   resubmitCatalogReview,
   closeBriefInFirestore,
 } from './firebase';
+
+// Og'ir sahifalar faqat kerak bo'lganda yuklanadi (sayt tezroq ochilishi uchun)
+const CatalogPage = React.lazy(() => import('./components/CatalogPage').then((m) => ({ default: m.CatalogPage })));
+const OrdersPage = React.lazy(() => import('./components/OrdersPage').then((m) => ({ default: m.OrdersPage })));
+const MessagesPage = React.lazy(() => import('./components/MessagesPage').then((m) => ({ default: m.MessagesPage })));
+const ProfilePage = React.lazy(() => import('./components/ProfilePage').then((m) => ({ default: m.ProfilePage })));
+const EditProfilePage = React.lazy(() => import('./components/EditProfilePage').then((m) => ({ default: m.EditProfilePage })));
+const ReferralPage = React.lazy(() => import('./components/ReferralPage').then((m) => ({ default: m.ReferralPage })));
+const AgencyPage = React.lazy(() => import('./components/AgencyPage').then((m) => ({ default: m.AgencyPage })));
+const AdminLoginPage = React.lazy(() => import('./components/AdminLoginPage').then((m) => ({ default: m.AdminLoginPage })));
+const AdminDashboardPage = React.lazy(() => import('./components/AdminDashboardPage').then((m) => ({ default: m.AdminDashboardPage })));
+const CreateBriefPage = React.lazy(() => import('./components/CreateBriefPage').then((m) => ({ default: m.CreateBriefPage })));
+const CreatorPublicProfilePage = React.lazy(() => import('./components/CreatorPublicProfilePage').then((m) => ({ default: m.CreatorPublicProfilePage })));
+const PendingApprovalPage = React.lazy(() => import('./components/PendingApprovalPage').then((m) => ({ default: m.PendingApprovalPage })));
+const PageSpinner = () => (
+  <div className="min-h-[50vh] flex items-center justify-center">
+    <div className="w-7 h-7 border-[3px] border-[#5B3DF5]/25 border-t-[#5B3DF5] rounded-full animate-spin" />
+  </div>
+);
 
 export default function App() {
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
@@ -146,8 +153,18 @@ export default function App() {
   // ===== Yangi sayt (v2) holati =====
   const [fullEditor, setFullEditor] = useState(false);
   const [v2Hash, setV2Hash] = useState<string>(() => (typeof window !== 'undefined' ? window.location.hash : ''));
-  const [publicBriefs, setPublicBriefs] = useState<BriefData[]>([]);
-  const [publicBriefsLoading, setPublicBriefsLoading] = useState(true);
+  // Oxirgi ko'rilgan e'lonlar darhol ko'rinadi, keyin bazadan yangilanadi
+  const [publicBriefs, setPublicBriefs] = useState<BriefData[]>(() => {
+    try {
+      const c = JSON.parse(localStorage.getItem('cbx_briefs_v1') || 'null');
+      return Array.isArray(c) ? c : [];
+    } catch {
+      return [];
+    }
+  });
+  const [publicBriefsLoading, setPublicBriefsLoading] = useState(() => {
+    try { return !localStorage.getItem('cbx_briefs_v1'); } catch { return true; }
+  });
   useEffect(() => {
     const onHash = () => setV2Hash(window.location.hash);
     window.addEventListener('hashchange', onHash);
@@ -157,6 +174,15 @@ export default function App() {
     const unsub = subscribeToOpenBriefsPublic((list) => {
       setPublicBriefs(list);
       setPublicBriefsLoading(false);
+      try {
+        // Keshga yengil nusxa: ariza rasmlarisiz
+        const lite = list.slice(0, 60).map((b) => ({
+          ...b,
+          applications: (b.applications || []).map((a) => ({ ...a, creatorAvatar: a.creatorAvatar && a.creatorAvatar.length > 300 ? undefined : a.creatorAvatar })),
+          brandAvatar: b.brandAvatar && b.brandAvatar.length > 60000 ? undefined : b.brandAvatar,
+        }));
+        localStorage.setItem('cbx_briefs_v1', JSON.stringify(lite));
+      } catch {}
     });
     return () => unsub();
   }, [authUid]);
@@ -762,6 +788,7 @@ export default function App() {
   if (currentPage === 'admin') {
     return (
       <div className="min-h-screen bg-[#F8FAFD] dark:bg-[#0B0F19] text-slate-900 dark:text-slate-100 flex flex-col antialiased selection:bg-indigo-600 selection:text-white transition-colors duration-300">
+        <React.Suspense fallback={<PageSpinner />}>
         {!isAuthReady ? (
           <div className="min-h-screen flex items-center justify-center">
             <div className="w-6 h-6 border-2 border-indigo-600/30 border-t-indigo-600 rounded-full animate-spin" />
@@ -778,6 +805,7 @@ export default function App() {
             onGoHome={handleGoHome}
           />
         )}
+        </React.Suspense>
       </div>
     );
   }
@@ -825,6 +853,7 @@ export default function App() {
 
       {/* Main Content Areas */}
       <main className={`flex-1 min-w-0 ${currentPage === 'messages' ? 'pb-[calc(88px+env(safe-area-inset-bottom,0px))] sm:pb-24 flex flex-col' : isUserRestricted ? 'pb-12' : 'pb-12 sm:pb-16'}`}>
+        <React.Suspense fallback={<PageSpinner />}>
         {/* If user is restricted (pending approval or rejected), strictly show PendingApprovalPage or EditProfilePage */}
         {isUserRestricted && currentPage !== 'edit-profile' && currentUser && (
           <PendingApprovalPage
@@ -1002,6 +1031,7 @@ export default function App() {
         )}
 
         {!isUserRestricted && currentPage === 'home' && renderV2()}
+        </React.Suspense>
       </main>
 
       {!isUserRestricted && currentPage !== 'messages' && currentPage !== 'edit-profile' && !(currentPage === 'home' && (v2Route?.name === 'register' || v2Route?.name === 'cabinet')) && <V2Footer />}

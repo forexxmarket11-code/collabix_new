@@ -36,6 +36,8 @@ import {
   arrayUnion,
   limit,
   getCountFromServer,
+  persistentLocalCache,
+  persistentMultipleTabManager,
 } from 'firebase/firestore';
 import {
   getStorage,
@@ -108,10 +110,22 @@ try {
   setLogLevel('silent');
 } catch {}
 
-export const db = initializeFirestore(app, {
-  experimentalAutoDetectLongPolling: true,
-  ignoreUndefinedProperties: true,
-});
+// Brauzerda mahalliy kesh: qayta kirilganda ma'lumotlar darhol chiqadi
+function makeDb() {
+  try {
+    return initializeFirestore(app, {
+      experimentalAutoDetectLongPolling: true,
+      ignoreUndefinedProperties: true,
+      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+    });
+  } catch {
+    return initializeFirestore(app, {
+      experimentalAutoDetectLongPolling: true,
+      ignoreUndefinedProperties: true,
+    });
+  }
+}
+export const db = makeDb();
 
 export const ADMIN_UID = 'iNS0otBw1ZalMMhyYUntV1W5ADF3';
 
@@ -4762,12 +4776,12 @@ export async function fetchHomeShowcase(): Promise<{ count: number; creators: Sh
       }));
   let creators: ShowcaseCreator[] = [];
   try {
-    const snap = await getDocs(query(usersCol, where('role', '==', 'bloger'), where('catalogApproved', '==', true), limit(60)));
+    const snap = await getDocs(query(usersCol, where('role', '==', 'bloger'), where('catalogApproved', '==', true), limit(30)));
     creators = pick(snap.docs);
   } catch {}
   if (creators.length < 8) {
     try {
-      const snap = await getDocs(query(usersCol, where('role', '==', 'bloger'), limit(100)));
+      const snap = await getDocs(query(usersCol, where('role', '==', 'bloger'), limit(50)));
       const seen = new Set(creators.map((c) => c.id));
       creators = [...creators, ...pick(snap.docs).filter((c) => !seen.has(c.id))].slice(0, 24);
     } catch {}
