@@ -1547,7 +1547,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
                     {/* BOGʻLANISH MAʼLUMOTLARI: Ochiq brifda ariza qabul qilingan holatda */}
                     {(() => {
                       if (isCreator && currentUser?.uid) {
-                        const myApp = (brief.applications || []).find((a) => a.creatorId === currentUser.uid);
+                        const myApp = [...(brief.applications || [])].reverse().find((a) => a.creatorId === currentUser.uid);
                         const isMyAccepted = myApp && (myApp.status === 'accepted' || myApp.creatorStatus === 'qabul_qilindi');
                         if (isMyAccepted && myApp) {
                           const contact = resolvePartnerContact(
@@ -2008,7 +2008,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
 
               const myApp =
                 viewingDetailsBrief.recipientType === 'open' && isCreator && currentUser?.uid
-                  ? (viewingDetailsBrief.applications || []).find((a) => a.creatorId === currentUser.uid)
+                  ? [...(viewingDetailsBrief.applications || [])].reverse().find((a) => a.creatorId === currentUser.uid)
                   : null;
               const isMyOpenAppAccepted =
                 myApp && (myApp.status === 'accepted' || myApp.creatorStatus === 'qabul_qilindi');

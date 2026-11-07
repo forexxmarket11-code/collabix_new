@@ -33,7 +33,7 @@ export const V2BriefPage: React.FC<BriefProps> = ({ brief, loading, currentUser,
   }
 
   const isOwner = !!currentUser?.uid && (brief.brandId === currentUser.uid || brief.ownerId === currentUser.uid);
-  const myApp = currentUser?.uid ? (brief.applications || []).find((a) => a.creatorId === currentUser.uid) : undefined;
+  const myApp = currentUser?.uid ? [...(brief.applications || [])].reverse().find((a) => a.creatorId === currentUser.uid) : undefined;
   const myState = myApp ? appStatus(myApp) : null;
   const gate = canApply(currentUser);
   const open = isBriefOpen(brief);

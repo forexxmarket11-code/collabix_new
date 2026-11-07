@@ -2630,6 +2630,29 @@ export async function createBriefInFirestore(brief: BriefData): Promise<string> 
 /**
  * Apply to an open Brief in Firestore
  */
+/** Katta base64 rasmni kichik (72px) eskizga aylantiradi — e'lon hujjatlari yengil bo'lishi uchun */
+export async function shrinkDataUrl(src?: string, size = 72): Promise<string | undefined> {
+  if (!src || !src.startsWith('data:image') || src.length < 6000) return src;
+  if (typeof document === 'undefined') return undefined;
+  try {
+    const img = await new Promise<HTMLImageElement>((res, rej) => {
+      const i = new Image();
+      i.onload = () => res(i);
+      i.onerror = rej;
+      i.src = src;
+    });
+    const c = document.createElement('canvas');
+    c.width = size; c.height = size;
+    const ctx = c.getContext('2d');
+    if (!ctx) return undefined;
+    const s = Math.min(img.width, img.height);
+    ctx.drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, size, size);
+    return c.toDataURL('image/jpeg', 0.7);
+  } catch {
+    return undefined;
+  }
+}
+
 export async function applyToBriefInFirestore(
   briefId: string,
   application: BriefApplication
@@ -2643,20 +2666,25 @@ export async function applyToBriefInFirestore(
 
   const data = snap.data() as BriefData;
   const existingApps = Array.isArray(data.applications) ? [...data.applications] : [];
+  if (application.creatorAvatar) {
+    const small = await shrinkDataUrl(application.creatorAvatar);
+    application = { ...application };
+    if (small) application.creatorAvatar = small; else delete (application as any).creatorAvatar;
+  }
 
   // Bitta kreator bitta brifga faqat bir marta ariza beradi.
   // Faqat oldingi arizasi rad etilgan boʻlsa, qayta yuborishi mumkin.
-  const existingIndex = existingApps.findIndex((a) => a.creatorId === application.creatorId);
+  // Xavfsizlik qoidasi faqat oxiriga qo'shishga ruxsat beradi: rad etilgan eski ariza tarixda qoladi
+  let existingIndex = -1;
+  existingApps.forEach((a, i) => { if (a.creatorId === application.creatorId) existingIndex = i; });
   if (existingIndex >= 0) {
     const prev = existingApps[existingIndex];
     const prevRejected = prev.status === 'rejected' || prev.creatorStatus === 'rad_etildi';
     if (!prevRejected) {
       throw new Error("ALREADY_APPLIED");
     }
-    existingApps[existingIndex] = application;
-  } else {
-    existingApps.push(application);
   }
+  existingApps.push(application);
 
   // Ariza uchun profil 100% toʻldirilgan boʻlishi shart.
   // Hisoblangan qiymat users hujjatiga yoziladi, shunda Firestore qoidasi ham tekshira oladi.
@@ -4744,8 +4772,49 @@ export async function backfillAcceptedCreatorIds(brief: BriefData): Promise<void
   const ids = (brief.applications || []).filter(isAcceptedApp).map((a) => a.creatorId).filter(Boolean);
   const have = new Set(brief.acceptedCreatorIds || []);
   const missing = ids.filter((id) => !have.has(id));
-  if (missing.length === 0) return;
-  await updateDoc(doc(db, 'briefs', brief.id), { acceptedCreatorIds: arrayUnion(...missing) });
+  if (missing.length > 0) {
+    await updateDoc(doc(db, 'briefs', brief.id), { acceptedCreatorIds: arrayUnion(...missing) });
+  }
+  // Eski arizalardagi katta rasmlarni kichraytirish (e'lonlar tez yuklanishi uchun)
+  await slimBriefAvatars(brief);
+}
+
+/** E'lon ichidagi arizalardagi katta rasmlarni 72px eskizga aylantiradi. O'zgargan bo'lsa true. */
+export async function slimBriefAvatars(brief: BriefData): Promise<boolean> {
+  const apps = brief.applications || [];
+  let changed = false;
+  if (apps.some((a) => a.creatorAvatar && a.creatorAvatar.length >= 6000)) {
+    const ref = doc(db, 'briefs', brief.id);
+    changed = true;
+    await runTransaction(db, async (tx) => {
+      const snap = await tx.get(ref);
+      if (!snap.exists()) return;
+      const cur = (snap.data() as BriefData).applications || [];
+      const next = await Promise.all(cur.map(async (a) => {
+        if (!a.creatorAvatar || a.creatorAvatar.length < 6000) return a;
+        const small = await shrinkDataUrl(a.creatorAvatar);
+        const copy: any = { ...a };
+        if (small) copy.creatorAvatar = small; else delete copy.creatorAvatar;
+        return copy;
+      }));
+      tx.update(ref, { applications: next });
+    });
+  }
+  return changed;
+}
+
+/** Admin: barcha e'lonlarni yengillashtirish */
+export async function slimAllBriefsAdmin(): Promise<number> {
+  const snap = await getDocs(collection(db, 'briefs'));
+  let n = 0;
+  for (const d of snap.docs) {
+    try {
+      if (await slimBriefAvatars({ ...(d.data() as BriefData), id: d.id })) n += 1;
+    } catch (e) {
+      console.warn('Yengillashtirib bo\'lmadi:', d.id, e);
+    }
+  }
+  return n;
 }
 
 /* =========================================================================

@@ -348,13 +348,17 @@ service cloud.firestore {
             && request.resource.data.applications is list
             && request.resource.data.applications.size() == resource.data.applications.size()
           ) ||
-          // Signed-in creator submitting an application to an open brief
+          // Bloger ochiq e'longa ariza yuboradi: faqat ro'yxat OXIRIGA o'z arizasini qo'sha oladi,
+          // boshqalarning arizalariga tegolmaydi
           (resource.data.recipientType == 'open'
             && isActivePro()
             && hasCompleteProfile()
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['applications', 'updatedAt'])
             && request.resource.data.applications is list
             && request.resource.data.applications.size() <= 200
+            && request.resource.data.applications.size() == resource.data.get('applications', []).size() + 1
+            && request.resource.data.applications[0:resource.data.get('applications', []).size()] == resource.data.get('applications', [])
+            && request.resource.data.applications[request.resource.data.applications.size() - 1].creatorId == request.auth.uid
           )
         )
       );

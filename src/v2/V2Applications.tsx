@@ -59,7 +59,7 @@ export const V2Applications: React.FC<Props> = ({ currentUser, briefs, onOpenEdi
   const mine = useMemo(() => {
     const rows: { brief: BriefData; app: BriefApplication; status: 'ok' | 'no' | 'wait'; reason?: string; ms: number }[] = [];
     briefs.forEach((b) => {
-      const a = (b.applications || []).find((x) => x.creatorId === uid);
+      const a = [...(b.applications || [])].reverse().find((x) => x.creatorId === uid);
       if (!a) return;
       const ms = Date.parse(a.appliedAt || a.respondedAt || '') || Number(b.createdAtMillis) || 0;
       rows.push({ brief: b, app: a, status: appStatus(a), reason: a.rejectionReason, ms });

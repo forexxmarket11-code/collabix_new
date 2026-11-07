@@ -63,6 +63,25 @@ export const ProUpgradeModal: React.FC<ProUpgradeModalProps> = ({
 
   if (!isOpen) return null;
 
+  // Brendlar uchun Collabix bepul — obuna taklif qilinmaydi
+  if (currentUser?.role === 'brend') {
+    return (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50" role="dialog" aria-modal="true" aria-labelledby="brand-free-title" onClick={onClose}>
+        <div className="w-full max-w-[440px] rounded-[28px] bg-white text-[#14121C] p-7 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div className="w-14 h-14 rounded-2xl bg-[#C8F169] flex items-center justify-center text-[28px]" aria-hidden="true">🎁</div>
+          <h2 id="brand-free-title" className="mt-4 mb-0 text-[26px] font-extrabold tracking-[-0.8px] leading-tight">Brendlar uchun bepul</h2>
+          <p className="mt-2 mb-0 text-[15px] leading-[1.6] text-[#5E5A6B]">
+            E'lon joylash, arizalarni ko'rish va blogerlar bilan ishlash — obunasiz. Blogerning arizasini qabul qilsangiz, u bilan Collabix chatida yozishasiz.
+          </p>
+          <div className="mt-6 flex flex-wrap gap-2.5">
+            <a href="#yangi-elon" onClick={onClose} className="min-h-[48px] px-5 rounded-xl bg-[#5B3DF5] text-white font-bold inline-flex items-center">E'lon joylash</a>
+            <button type="button" onClick={onClose} className="min-h-[48px] px-5 rounded-xl border-[1.5px] border-[#E6E3DC] font-bold cursor-pointer">Yopish</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const handleStartPayment = () => {
     if (!currentUser?.uid) {
       if (onOpenRegisterModal) {

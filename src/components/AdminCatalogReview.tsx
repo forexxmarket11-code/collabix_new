@@ -23,8 +23,7 @@ import {
   enableCatalogReviewAdmin,
   approveAllExistingProfilesAdmin,
   ADMIN_UID,
-  disableCatalogReviewAdmin,
-} from '../firebase';
+  disableCatalogReviewAdmin, slimAllBriefsAdmin } from '../firebase';
 import { getBloggerCatalogReadiness, isUserPro } from '../utils/subscription';
 import { isVideoLikeItem, GalleryVideoThumb } from './GalleryMedia';
 
@@ -90,6 +89,8 @@ export const AdminCatalogReview: React.FC<AdminCatalogReviewProps> = ({
   const [rejectReason, setRejectReason] = useState('');
   const [toggleBusy, setToggleBusy] = useState(false);
   const [confirmEnable, setConfirmEnable] = useState(false);
+  const [slimBusy, setSlimBusy] = useState(false);
+  const [slimMsg, setSlimMsg] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -239,6 +240,26 @@ export const AdminCatalogReview: React.FC<AdminCatalogReviewProps> = ({
             </div>
           )
         )}
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="text-sm text-slate-700 dark:text-slate-300">
+          <b>Sayt tezligi:</b> eski arizalardagi katta rasmlarni kichraytirish (e'lonlar tezroq yuklanadi).
+          {slimMsg && <span className="block mt-1 font-semibold text-emerald-700 dark:text-emerald-400">{slimMsg}</span>}
+        </div>
+        <button
+          type="button"
+          disabled={slimBusy}
+          onClick={async () => {
+            setSlimBusy(true); setSlimMsg('');
+            try { const n = await slimAllBriefsAdmin(); setSlimMsg(`Tayyor: ${n} ta e'lon yengillashtirildi.`); }
+            catch { setSlimMsg("Xatolik. Qayta urinib ko'ring."); }
+            finally { setSlimBusy(false); }
+          }}
+          className="min-h-[44px] px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-heading font-bold cursor-pointer inline-flex items-center gap-2"
+        >
+          {slimBusy && <Loader2 className="w-4 h-4 animate-spin" />}E'lonlarni yengillashtirish
+        </button>
       </div>
 
       {error && (
