@@ -83,7 +83,7 @@ export const V2Navbar: React.FC<NavProps> = ({ currentUser, unreadCount, notific
                     ) : (
                       <a href="#arizalarim" onClick={() => setMenuOpen(false)} className="flex items-center min-h-[44px] px-3 rounded-xl hover:bg-[#F6F5F1] font-semibold">Mening arizalarim</a>
                     )}
-                    <a href="#referral" onClick={() => setMenuOpen(false)} className="flex items-center min-h-[44px] px-3 rounded-xl hover:bg-[#F6F5F1] font-semibold">Do'stlarni taklif qilish</a>
+                    {!isBrand && <a href="#referral" onClick={() => setMenuOpen(false)} className="flex items-center min-h-[44px] px-3 rounded-xl hover:bg-[#F6F5F1] font-semibold">Do'stlarni taklif qilish</a>}
                     <button type="button" onClick={() => { setMenuOpen(false); onLogout(); }} className="w-full text-left min-h-[44px] px-3 rounded-xl hover:bg-[#FEF2F2] text-[#991B1B] font-semibold cursor-pointer">Chiqish</button>
                   </div>
                 )}

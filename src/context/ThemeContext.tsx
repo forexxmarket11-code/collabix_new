@@ -13,7 +13,9 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 const THEME_STORAGE_KEY = 'collabix_theme';
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Yangi dizayn faqat yorug' rejimda ishlaydi
   const [theme, setThemeState] = useState<ThemeMode>(() => {
+    return 'light';
     try {
       const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) as ThemeMode | null;
       if (savedTheme === 'light' || savedTheme === 'dark') {
@@ -46,7 +48,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Listen to system preference change if user hasn't explicitly set in storage
   useEffect(() => {
-    if (typeof window === 'undefined' || !window.matchMedia) return;
+    if (typeof window === 'undefined' || !window.matchMedia || true) return;
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     
     const handleChange = (e: MediaQueryListEvent) => {

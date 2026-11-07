@@ -37,6 +37,7 @@ import { checkProUserAndProceed, isUserPro } from './utils/subscription';
 import { V2Navbar, V2BottomNav, V2Footer } from './v2/V2Shell';
 import { V2ForBrands } from './v2/V2ForBrands';
 import { V2EditProfile } from './v2/V2EditProfile';
+import { V2Profile } from './v2/V2Profile';
 import { V2Home } from './v2/V2Home';
 import { V2BriefPage, V2BrandPage } from './v2/V2BriefPage';
 import { V2Register } from './v2/V2Register';
@@ -54,7 +55,6 @@ import {
 const CatalogPage = React.lazy(() => import('./components/CatalogPage').then((m) => ({ default: m.CatalogPage })));
 const OrdersPage = React.lazy(() => import('./components/OrdersPage').then((m) => ({ default: m.OrdersPage })));
 const MessagesPage = React.lazy(() => import('./components/MessagesPage').then((m) => ({ default: m.MessagesPage })));
-const ProfilePage = React.lazy(() => import('./components/ProfilePage').then((m) => ({ default: m.ProfilePage })));
 const EditProfilePage = React.lazy(() => import('./components/EditProfilePage').then((m) => ({ default: m.EditProfilePage })));
 const ReferralPage = React.lazy(() => import('./components/ReferralPage').then((m) => ({ default: m.ReferralPage })));
 const AgencyPage = React.lazy(() => import('./components/AgencyPage').then((m) => ({ default: m.AgencyPage })));
@@ -152,6 +152,10 @@ export default function App() {
   const [authUid, setAuthUid] = useState<string | null>(null);
   // ===== Yangi sayt (v2) holati =====
   const [fullEditor, setFullEditor] = useState(false);
+  // Yangi sayt faqat yorug' rejimda (eski sahifalar ham bir xil ko'rinsin)
+  useEffect(() => {
+    try { document.documentElement.classList.remove('dark'); } catch {}
+  }, []);
   const [v2Hash, setV2Hash] = useState<string>(() => (typeof window !== 'undefined' ? window.location.hash : ''));
   // Oxirgi ko'rilgan e'lonlar darhol ko'rinadi, keyin bazadan yangilanadi
   const [publicBriefs, setPublicBriefs] = useState<BriefData[]>(() => {
@@ -1000,15 +1004,14 @@ export default function App() {
                 onOpenCancelModal={() => setIsCancelModalOpen(true)}
               />
             )}
-            <ProfilePage
+            <V2Profile
               user={currentUser}
-              userBriefs={userBriefs}
+              briefs={allBriefs}
+              onEdit={handleOpenEditProfile}
               onLogout={handleLogout}
-              onOpenRegister={handleStart}
-              onUpdateUser={handleUpdateUser}
-              onNavigateToEdit={handleOpenEditProfile}
+              onOpenPro={() => setIsProModalOpen(true)}
               onOpenCancelModal={() => setIsCancelModalOpen(true)}
-              onOpenProModal={() => setIsProModalOpen(true)}
+              onOpenRegister={handleStart}
             />
           </>
         )}

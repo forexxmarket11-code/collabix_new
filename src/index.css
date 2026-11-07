@@ -198,3 +198,27 @@
   .v2-marquee, .v2-float { animation: none !important; }
   .v2-reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
 }
+
+/* ===== v2 terisi: eski sahifalar (xabarlar, referal, admin...) ham yangi ranglarda ===== */
+.v2 {
+  --font-heading: 'Bricolage Grotesque', 'Inter', sans-serif;
+  --bg: #F6F5F1;
+  --color-indigo-50: #F1EEFF;
+  --color-indigo-100: #E4DEFF;
+  --color-indigo-200: #CFC5FF;
+  --color-indigo-300: #B3A5FF;
+  --color-indigo-400: #8B74FF;
+  --color-indigo-500: #6D50FF;
+  --color-indigo-600: #5B3DF5;
+  --color-indigo-700: #4329D9;
+  --color-indigo-800: #3B1FB8;
+  --color-indigo-900: #2A1690;
+  --color-indigo-950: #1B0F5C;
+  --color-slate-50: #F6F5F1;
+  --color-slate-100: #F1F0EC;
+  --color-slate-200: #E6E3DC;
+  --color-slate-300: #D6D2C8;
+  --color-slate-800: #2A2636;
+  --color-slate-900: #14121C;
+  --color-slate-950: #0E0C14;
+}

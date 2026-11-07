@@ -65,7 +65,7 @@ export const ReferralPage: React.FC<ReferralPageProps> = ({
   const benefits = [
     {
       title: 'Kimlar uchun moʻljallangan?',
-      desc: 'Pro rejimi faol boʻlgan har qanday foydalanuvchi — bloger ham, brend ham. Shaxsiy havola faqat Pro foydalanuvchilarga ochiladi.',
+      desc: 'Pro rejimi faol boʻlgan blogerlar uchun. Shaxsiy havola Pro yoqilganda ochiladi.',
     },
     {
       title: 'Takliflar sonida cheklov bormi?',
@@ -91,48 +91,30 @@ export const ReferralPage: React.FC<ReferralPageProps> = ({
         </button>
       </div>
 
-      {/* Hero Header Card */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 text-white p-6 sm:p-10 md:p-12 border border-indigo-500/20 shadow-xl mb-10">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-br from-pink-500/20 via-purple-500/20 to-transparent rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-10 w-60 h-60 bg-indigo-500/15 rounded-full blur-2xl pointer-events-none" />
-
+      {/* Hero Header Card (yangi dizayn) */}
+      <div className="relative overflow-hidden rounded-[32px] bg-[#14121C] text-white px-6 py-10 sm:px-12 sm:py-14 mb-10">
+        <div className="absolute -right-20 -top-24 w-80 h-80 rounded-full bg-[#5B3DF5] opacity-80 pointer-events-none" aria-hidden="true" />
+        <div className="absolute right-32 -bottom-24 w-52 h-52 rounded-full bg-[#C8F169] opacity-90 pointer-events-none" aria-hidden="true" />
         <div className="relative z-10 max-w-2xl">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-xs font-heading font-bold text-pink-300 mb-4 shadow-2xs">
-            <Gift className="w-4 h-4 text-pink-400" />
-            <span>Tavsiya (Referral) Dasturi</span>
-            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-          </div>
-
-          <h1 className="font-heading font-extrabold text-2xl sm:text-4xl md:text-5xl text-white tracking-tight leading-tight">
-            Doʻstlaringizni taklif qiling —{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-purple-300 to-indigo-300">
-              har bir bloger uchun 29 000 soʻm
-            </span>{' '}
-            mukofot oling
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 text-[13px] font-bold tracking-[1px] text-[#C8F169]">🎁 DO'STLARNI TAKLIF QILISH</div>
+          <h1 className="v2-display mt-5 mb-0 font-extrabold text-[36px] sm:text-[54px] leading-[1.02] tracking-[-1.8px]">
+            Har bir do'stingiz uchun <span className="text-[#C8F169]">29 000 so'm</span>
           </h1>
-
-          <p className="mt-4 text-[15px] sm:text-base text-slate-300 font-body leading-relaxed">
-            Collabix platformasini kengaytirishga hissa qoʻshing va har bir yangi faol obunachidan daromad oling.
-            Dastur Pro rejimi faol blogerlar va brendlar uchun.
+          <p className="mt-4 mb-0 text-[16px] sm:text-[18px] leading-[1.55] text-[#BDB8CC]">
+            Shaxsiy havolangizni blogerlarga yuboring. Do'stingiz Pro olsa, 29 000 so'm balansingizga tushadi va uni kartangizga yechib olasiz. Cheklov yo'q.
           </p>
-
-          <div className="mt-6 flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3">
-            <button
-              type="button"
-              id="btn-referral-hero-start"
-              onClick={scrollToDashboard}
-              className="w-full sm:w-auto min-h-[48px] inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-400 hover:to-pink-400 text-white font-heading font-bold text-sm shadow-lg shadow-indigo-500/25 active:scale-98 transition-all cursor-pointer"
-            >
-              <span>Dasturda ishtirok etish</span>
-              <ArrowRight className="w-4 h-4" />
+          <div className="mt-7 flex flex-wrap gap-2.5">
+            <button type="button" id="btn-referral-hero-start" onClick={scrollToDashboard} className="min-h-[52px] px-6 rounded-xl bg-[#C8F169] text-[#14121C] font-bold inline-flex items-center gap-2 cursor-pointer">
+              Havolamni olish <ArrowRight className="w-4 h-4" />
             </button>
-            <button
-              type="button"
-              onClick={onBackToHome}
-              className="w-full sm:w-auto min-h-[48px] inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-2xl bg-white/10 hover:bg-white/15 text-white font-heading font-semibold text-sm border border-white/15 backdrop-blur-xs transition-colors cursor-pointer"
-            >
-              <span>Katalogni koʻrish</span>
-            </button>
+          </div>
+          <div className="mt-8 grid grid-cols-3 gap-3 max-w-[480px]">
+            {[['10 do\'st', '290 000'], ['25 do\'st', '725 000'], ['50 do\'st', '1 450 000']].map(([a, b]) => (
+              <div key={a}>
+                <div className="v2-display font-extrabold text-[20px] sm:text-[26px] leading-none">{b}</div>
+                <div className="mt-1 text-[12px] text-[#BDB8CC]">{a} = so'm</div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
