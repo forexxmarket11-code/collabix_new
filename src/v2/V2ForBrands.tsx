@@ -4,7 +4,7 @@ import { fetchCreatorPoolStats, CreatorPoolStats } from '../firebase';
 import { Icon, btn, go } from './ui';
 
 /** Brendlar yozishi mumkin bo'lgan Telegram (masalan 'collabix_help'). Bo'sh bo'lsa tugma ko'rinmaydi. */
-export const SUPPORT_TELEGRAM = '';
+export const SUPPORT_TELEGRAM = 'gonzo_usaa';
 
 const fmt = (n: number) => n.toLocaleString('ru-RU').replace(/,/g, ' ');
 
