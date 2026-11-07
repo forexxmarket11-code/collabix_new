@@ -4576,6 +4576,7 @@ export interface CreatorPoolStats {
 function parseFollowersApprox(raw: unknown): number {
   const s = String(raw ?? '').toLowerCase().replace(/\s+/g, ' ').trim();
   if (!s) return 0;
+  if (/kam|меньше|до 1/.test(s)) return 0;
   const m = s.match(/(\d+(?:[.,]\d+)?)/);
   if (!m) return 0;
   let n = parseFloat(m[1].replace(',', '.'));

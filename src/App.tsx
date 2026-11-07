@@ -48,6 +48,7 @@ import type { WorkflowAction } from './firebase';
 import { checkProUserAndProceed, isUserPro } from './utils/subscription';
 import { V2Navbar, V2BottomNav, V2Footer } from './v2/V2Shell';
 import { V2ForBrands } from './v2/V2ForBrands';
+import { V2EditProfile } from './v2/V2EditProfile';
 import { V2Home } from './v2/V2Home';
 import { V2BriefPage, V2BrandPage } from './v2/V2BriefPage';
 import { V2Register } from './v2/V2Register';
@@ -143,6 +144,7 @@ export default function App() {
 
   const [authUid, setAuthUid] = useState<string | null>(null);
   // ===== Yangi sayt (v2) holati =====
+  const [fullEditor, setFullEditor] = useState(false);
   const [v2Hash, setV2Hash] = useState<string>(() => (typeof window !== 'undefined' ? window.location.hash : ''));
   const [publicBriefs, setPublicBriefs] = useState<BriefData[]>([]);
   const [publicBriefsLoading, setPublicBriefsLoading] = useState(true);
@@ -459,6 +461,7 @@ export default function App() {
   };
 
   const handleOpenEditProfile = () => {
+    setFullEditor(false);
     handlePageChange('edit-profile');
   };
 
@@ -833,7 +836,18 @@ export default function App() {
         )}
 
 
-        {currentPage === 'edit-profile' && (
+        {currentPage === 'edit-profile' && !fullEditor && (
+          <V2EditProfile
+            user={currentUser}
+            onSave={(updated) => {
+              handleUpdateUser(updated);
+            }}
+            onBack={() => handlePageChange(isUserRestricted ? 'pending-approval' : 'profile')}
+            onOpenFullEditor={() => setFullEditor(true)}
+          />
+        )}
+
+        {currentPage === 'edit-profile' && fullEditor && (
           <EditProfilePage
             user={currentUser}
             catalogProOnly={catalogProOnly}
@@ -845,7 +859,7 @@ export default function App() {
                 handlePageChange('pending-approval');
               }
             }}
-            onBack={() => handlePageChange(isUserRestricted ? 'pending-approval' : 'profile')}
+            onBack={() => setFullEditor(false)}
             onOpenRegister={handleStart}
           />
         )}
