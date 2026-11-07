@@ -1,6 +1,9 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { BriefData, UserSession } from '../types';
 import { Avatar, Pill, Icon, budgetText, timeAgo, btn, go, isBriefOpen } from './ui';
+import { fetchHomeShowcase } from '../firebase';
+import type { ShowcaseCreator } from '../firebase';
+import { Reveal, CountUp, PhoneMockup, CreatorMarquee } from './HomeExtras';
 
 export const CATEGORY_LIST = ["Go'zallik", 'Kiyim', 'Kafe va restoran', 'Texnika', "Ta'lim", 'Sayohat', 'Sport', 'Lifestyle', 'Food'];
 
@@ -84,6 +87,13 @@ export const V2Home: React.FC<Props> = ({ briefs, loading, currentUser }) => {
   const [cat, setCat] = useState('Hammasi');
   const [sort, setSort] = useState<'new' | 'budget' | 'apps'>('new');
   const [showAll, setShowAll] = useState(false);
+  const [aud, setAud] = useState<'bloger' | 'brend'>(currentUser?.role === 'brend' ? 'brend' : 'bloger');
+  const [showcase, setShowcase] = useState<{ count: number; creators: ShowcaseCreator[] }>({ count: 0, creators: [] });
+  useEffect(() => {
+    let alive = true;
+    fetchHomeShowcase().then((r) => alive && setShowcase(r)).catch(() => {});
+    return () => { alive = false; };
+  }, []);
 
   const openBriefs = useMemo(() => briefs.filter(isBriefOpen), [briefs]);
   const brands = useMemo(() => brandsFromBriefs(briefs), [briefs]);
@@ -105,94 +115,85 @@ export const V2Home: React.FC<Props> = ({ briefs, loading, currentUser }) => {
   }, [openBriefs, query, cat, sort]);
 
   const visible = showAll ? filtered : filtered.slice(0, 9);
-  const latest = openBriefs[0];
 
   return (
     <div>
       {/* HERO */}
-      <section className="max-w-[1240px] mx-auto px-4 sm:px-6 pt-10 sm:pt-16 pb-10 flex flex-wrap gap-12 items-center">
+      <section className="max-w-[1240px] mx-auto px-4 sm:px-6 pt-8 sm:pt-14 pb-8 flex flex-wrap gap-10 lg:gap-14 items-center">
         <div className="flex-[999_1_520px] min-w-0">
-          <div className="inline-flex items-center gap-2.5 pl-2 pr-3.5 py-2 rounded-full bg-white border border-[#E6E3DC] text-[14px] font-semibold">
-            <span className="px-2.5 py-0.5 rounded-full bg-[#C8F169] text-[12px] font-bold">YANGI</span>
-            150+ bloger allaqachon Collabix'da
+          <div role="tablist" aria-label="Kim uchun" className="inline-flex p-1.5 rounded-2xl bg-white border border-[#E6E3DC] shadow-sm">
+            {([['bloger', 'Men blogerman'], ['brend', 'Men brendman']] as const).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                aria-selected={aud === id}
+                onClick={() => setAud(id)}
+                className={`min-h-[42px] px-4 rounded-xl text-[15px] font-bold cursor-pointer transition-colors ${aud === id ? 'bg-[#14121C] text-white' : 'text-[#5E5A6B] hover:text-[#14121C]'}`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
-          <h1 className="v2-display mt-6 mb-0 font-extrabold text-[44px] sm:text-[64px] lg:text-[76px] leading-[0.98] tracking-[-2px] sm:tracking-[-3px]">
-            Brendlar e'lon beradi.
-            <br />
-            <span className="text-[#5B3DF5]">Siz ariza yuborasiz.</span>
+          <h1 className="v2-display mt-6 mb-0 font-extrabold text-[42px] sm:text-[64px] lg:text-[74px] leading-[0.98] tracking-[-2px] sm:tracking-[-3px]">
+            {aud === 'brend' ? (
+              <>Mahsulotingizni <span className="relative inline-block text-[#5B3DF5]">blogerlar<svg className="absolute left-0 -bottom-2 w-full" height="12" viewBox="0 0 200 12" preserveAspectRatio="none" aria-hidden="true"><path d="M2 9 Q 100 -2 198 8" stroke="#C8F169" strokeWidth="6" fill="none" strokeLinecap="round" /></svg></span> tanitsin.</>
+            ) : (
+              <>Brendlar e'lon beradi.<br /><span className="relative inline-block text-[#5B3DF5]">Siz pul ishlaysiz.<svg className="absolute left-0 -bottom-2 w-full" height="12" viewBox="0 0 200 12" preserveAspectRatio="none" aria-hidden="true"><path d="M2 9 Q 100 -2 198 8" stroke="#C8F169" strokeWidth="6" fill="none" strokeLinecap="round" /></svg></span></>
+            )}
           </h1>
           <p className="mt-6 mb-0 max-w-[560px] text-[17px] sm:text-[19px] leading-[1.55] text-[#5E5A6B]">
-            O'zbekistondagi brendlarning ochiq reklama e'lonlari bir joyda. Profil oching, mos e'longa ariza yuboring va javobni shu yerda kuzating.
+            {aud === 'brend'
+              ? "Bitta e'lon joylang — tekshirilgan blogerlar o'zi ariza yuboradi. Ssenariy, video va Reels'ni tasdiqlaysiz, natijani kabinetda ko'rasiz. Brendlar uchun tekin."
+              : "O'zbekistondagi brendlarning ochiq reklama e'lonlari bir joyda. Profil oching, mos e'longa ariza yuboring va javobni shu yerda kuzating."}
           </p>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              document.getElementById('elonlar')?.scrollIntoView({ behavior: 'smooth' });
-            }}
-            className="hidden md:flex mt-8 max-w-[640px] flex-wrap gap-2 p-2 rounded-[20px] bg-white border border-[#E6E3DC] shadow-[0_20px_50px_-24px_rgba(20,18,28,0.25)]"
-          >
-            <label className="flex-[999_1_240px] min-w-0 flex items-center gap-2.5 px-3.5 min-h-[52px] text-[#5E5A6B]">
-              {Icon.search(20)}
-              <span className="v2-sr">E'lon yoki brend qidirish</span>
-              <input
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="E'lon yoki brend qidiring"
-                className="flex-1 min-w-0 border-0 outline-none bg-transparent text-[16px] text-[#14121C]"
-              />
-            </label>
-            <button type="submit" className="flex-[1_0_auto] min-h-[52px] px-7 rounded-[14px] bg-[#5B3DF5] hover:bg-[#4A2EE0] text-white font-bold text-[16px] cursor-pointer">
-              Qidirish
-            </button>
-          </form>
-          {!currentUser && (
-            <div className="mt-5 flex flex-wrap gap-2.5">
-              <a href="#royxat" className={btn.dark}>Bloger sifatida boshlash {Icon.arrow(15)}</a>
-              <a href="#brendlar-uchun" className={btn.ghost}>Men brendman</a>
+          <div className="mt-7 flex flex-wrap gap-2.5">
+            {aud === 'brend' ? (
+              <>
+                <a href={currentUser?.role === 'brend' ? '#yangi-elon' : '#royxat'} className={`${btn.violet} min-h-[54px] px-6 text-[16px]`}>Tekin e'lon joylash {Icon.arrow(16)}</a>
+                <a href="#brendlar-uchun" className={`${btn.ghost} min-h-[54px] px-6 text-[16px]`}>Qanday ishlaydi</a>
+              </>
+            ) : (
+              <>
+                <a href={currentUser ? '#elonlar' : '#royxat'} className={`${btn.dark} min-h-[54px] px-6 text-[16px]`}>{currentUser ? "E'lonlarni ko'rish" : "Bloger sifatida boshlash"} {Icon.arrow(16)}</a>
+                <a href="#elonlar" className={`${btn.ghost} min-h-[54px] px-6 text-[16px]`}>Ochiq e'lonlar ({openBriefs.length})</a>
+              </>
+            )}
+          </div>
+          <div className="mt-7 flex items-center gap-3">
+            <div className="flex -space-x-2.5">
+              {showcase.creators.slice(0, 5).map((c) => (
+                <img key={c.id} src={c.avatar} alt="" className="w-10 h-10 rounded-full object-cover border-2 border-[#F6F5F1]" />
+              ))}
             </div>
-          )}
+            <div className="text-[14px] leading-tight">
+              <div className="font-extrabold">{showcase.count ? `${showcase.count}+ bloger` : '150+ bloger'}</div>
+              <div className="text-[#5E5A6B]">allaqachon Collabix'da</div>
+            </div>
+          </div>
         </div>
 
-        {/* hero visual */}
-        <div className="hidden md:block flex-[1_1_400px] min-w-0 relative h-[500px]" aria-hidden="true">
-          <div className="absolute inset-[30px_0_0_40px] rounded-[36px] bg-[#14121C] overflow-hidden">
-            <div className="absolute -right-20 -top-20 w-80 h-80 rounded-full bg-[#5B3DF5] opacity-85" />
-            <div className="absolute -left-16 -bottom-24 w-64 h-64 rounded-full bg-[#C8F169] opacity-90" />
-          </div>
-          {latest && (
-            <div className="absolute left-0 top-[90px] w-[350px] rounded-3xl bg-white p-5 shadow-[0_30px_60px_-20px_rgba(20,18,28,0.45)]">
-              <div className="flex items-center gap-3">
-                <Avatar name={latest.brandName} src={latest.brandAvatar} size={44} />
-                <div className="min-w-0">
-                  <div className="font-bold truncate">{latest.brandName || 'Brend'}</div>
-                  <div className="text-[13px] text-[#5E5A6B]">{timeAgo(latest)}</div>
-                </div>
-              </div>
-              <div className="v2-display mt-4 font-bold text-[22px] leading-[1.15] line-clamp-2">{latest.taskTitle}</div>
-              <div className="mt-4 pt-4 border-t border-[#EEECE6] flex items-end justify-between">
-                <div>
-                  <div className="text-[12px] text-[#5E5A6B]">Byudjet</div>
-                  <div className="v2-display font-extrabold text-[22px]">{budgetText(latest)}</div>
-                </div>
-                <div className="text-[13px] text-[#5E5A6B] font-semibold">{latest.applications?.length || 0} ta ariza</div>
-              </div>
-            </div>
-          )}
-          <div className="absolute right-2 top-10 w-[270px] rounded-[18px] bg-white px-4 py-3.5 flex gap-3 items-center shadow-[0_24px_50px_-20px_rgba(20,18,28,0.5)]">
-            <span className="w-10 h-10 shrink-0 rounded-full bg-[#DCFCE7] text-[#15803D] flex items-center justify-center">{Icon.check(20)}</span>
-            <div>
-              <div className="font-bold text-[15px]">Arizangiz qabul qilindi</div>
-              <div className="text-[13px] text-[#5E5A6B]">Brenddan javob keldi</div>
-            </div>
-          </div>
-          <div className="absolute right-8 bottom-12 w-[250px] rounded-[18px] bg-[#C8F169] px-4 py-4 shadow-[0_24px_50px_-20px_rgba(20,18,28,0.5)]">
-            <div className="text-[12px] font-bold tracking-[1px]">OCHIQ E'LONLAR</div>
-            <div className="v2-display mt-1 font-extrabold text-[30px] leading-none">{openBriefs.length}</div>
-            <div className="mt-1 text-[13px] font-semibold">ta e'lon ariza kutmoqda</div>
-          </div>
+        <div className="hidden md:flex flex-[1_1_340px] min-w-0 justify-center">
+          <div className="hidden md:block"><PhoneMockup /></div>
         </div>
       </section>
+
+      {/* RAQAMLAR */}
+      <Reveal className="max-w-[1240px] mx-auto px-4 sm:px-6 pb-4">
+        <div className="rounded-[28px] bg-[#14121C] text-white grid grid-cols-2 md:grid-cols-4 overflow-hidden">
+          {[
+            [showcase.count || 0, '+', "ro'yxatdan o'tgan bloger"],
+            [openBriefs.length, '', "ochiq e'lon"],
+            [brands.length, '', 'brend'],
+            [0, '', "so'm — brend uchun narx"],
+          ].map(([n, suf, l], i) => (
+            <div key={String(l)} className={`p-5 sm:p-7 ${i % 2 === 1 ? 'border-l border-white/10' : ''} ${i > 1 ? 'border-t md:border-t-0 border-white/10' : ''} ${i === 2 ? 'md:border-l' : ''}`}>
+              <div className="v2-display font-extrabold text-[34px] sm:text-[46px] leading-none text-[#C8F169]">{Number(n) > 0 ? <CountUp to={Number(n)} suffix={String(suf)} /> : '0'}</div>
+              <div className="mt-2 text-[13px] sm:text-[15px] text-[#BDB8CC]">{String(l)}</div>
+            </div>
+          ))}
+        </div>
+      </Reveal>
 
       {/* CATEGORIES */}
       <section aria-label="Kategoriyalar" className="hidden md:block max-w-[1240px] mx-auto px-4 sm:px-6">
@@ -260,7 +261,22 @@ export const V2Home: React.FC<Props> = ({ briefs, loading, currentUser }) => {
         )}
       </section>
 
+      {/* BLOGERLAR VITRINASI */}
+      {showcase.creators.length >= 4 && (
+        <Reveal className="max-w-[1240px] mx-auto px-4 sm:px-6 pt-10 pb-2">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <div className="text-[13px] font-bold tracking-[2px] text-[#5B3DF5]">BLOGERLAR</div>
+              <h2 className="v2-display mt-2 mb-0 font-extrabold text-[30px] sm:text-[44px] tracking-[-1.5px] leading-[1.05]">Haqiqiy odamlar, haqiqiy auditoriya</h2>
+            </div>
+            <a href="#brendlar-uchun" className="font-bold text-[#4329D9] inline-flex items-center gap-1.5">Bloger bazasi statistikasi {Icon.arrow(14)}</a>
+          </div>
+          <div className="mt-6 -mx-4 sm:mx-0"><CreatorMarquee creators={showcase.creators} /></div>
+        </Reveal>
+      )}
+
       {/* BRANDS */}
+      <Reveal>
       <section id="brendlar" className="max-w-[1240px] mx-auto px-4 sm:px-6 pt-14 pb-6 scroll-mt-24">
         <div className="text-[10px] md:text-[13px] font-bold tracking-[1px] md:tracking-[2px] text-[#5B3DF5]">BRENDLAR</div>
         <h2 className="v2-display mt-2 mb-0 font-extrabold text-[32px] sm:text-[44px] tracking-[-1.5px] leading-[1.05]">Collabix'dagi brendlar</h2>
@@ -282,7 +298,10 @@ export const V2Home: React.FC<Props> = ({ briefs, loading, currentUser }) => {
         )}
       </section>
 
+      </Reveal>
+
       {/* HOW IT WORKS */}
+      <Reveal>
       <section id="qanday" className="max-w-[1240px] mx-auto px-4 sm:px-6 pt-16 pb-6">
         <div className="rounded-[36px] bg-[#14121C] text-white px-6 sm:px-12 py-12 sm:py-14">
           <div className="text-[10px] md:text-[13px] font-bold tracking-[1px] md:tracking-[2px] text-[#C8F169]">QANDAY ISHLAYDI</div>
@@ -302,6 +321,8 @@ export const V2Home: React.FC<Props> = ({ briefs, loading, currentUser }) => {
           </div>
         </div>
       </section>
+
+      </Reveal>
 
       {/* PRICING */}
       <section id="narxlar" className="max-w-[1240px] mx-auto px-4 sm:px-6 pt-10 md:pt-16 pb-4 grid gap-3 md:gap-5 grid-cols-2 scroll-mt-24">

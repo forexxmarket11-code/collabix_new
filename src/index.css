@@ -183,3 +183,18 @@
 .v2 { font-family: 'Inter', system-ui, sans-serif; color: #14121C; background: #F6F5F1; }
 .v2-display { font-family: 'Bricolage Grotesque', 'Inter', sans-serif; }
 .v2-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ===== v2 animatsiyalar ===== */
+@keyframes v2-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.v2-marquee { display: flex; width: max-content; animation: v2-marquee 40s linear infinite; }
+.v2-marquee:hover { animation-play-state: paused; }
+@keyframes v2-pop { 0% { opacity: 0; transform: translateY(14px) scale(.96); } 100% { opacity: 1; transform: none; } }
+@keyframes v2-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+.v2-float { animation: v2-float 6s ease-in-out infinite; }
+@keyframes v2-fill { from { width: 0; } }
+.v2-reveal { opacity: 0; transform: translateY(18px); transition: opacity .7s ease, transform .7s ease; }
+.v2-reveal.v2-in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  .v2-marquee, .v2-float { animation: none !important; }
+  .v2-reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+}

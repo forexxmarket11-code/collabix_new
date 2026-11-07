@@ -34,6 +34,8 @@ import {
   Timestamp,
   runTransaction,
   arrayUnion,
+  limit,
+  getCountFromServer,
 } from 'firebase/firestore';
 import {
   getStorage,
@@ -4729,4 +4731,43 @@ export async function backfillAcceptedCreatorIds(brief: BriefData): Promise<void
   const missing = ids.filter((id) => !have.has(id));
   if (missing.length === 0) return;
   await updateDoc(doc(db, 'briefs', brief.id), { acceptedCreatorIds: arrayUnion(...missing) });
+}
+
+/* =========================================================================
+ * Bosh sahifa: blogerlar soni va vitrina (yengil so'rov)
+ * ========================================================================= */
+export interface ShowcaseCreator { id: string; name: string; avatar: string; category: string; city: string; followers: string }
+
+export async function fetchHomeShowcase(): Promise<{ count: number; creators: ShowcaseCreator[] }> {
+  const usersCol = collection(db, 'users');
+  let count = 0;
+  try {
+    const c = await getCountFromServer(query(usersCol, where('role', '==', 'bloger')));
+    count = c.data().count;
+  } catch {}
+  const pick = (docs: any[]): ShowcaseCreator[] =>
+    docs
+      .map((d) => ({ id: d.id, u: d.data() as UserSession }))
+      .filter(({ id, u }) => id !== ADMIN_UID && u.accountStatus !== 'rejected' && u.catalogApproved !== false && typeof u.avatar === 'string' && u.avatar.length > 20 && (u.name || '').trim())
+      .map(({ id, u }) => ({
+        id,
+        name: (u.name || '').trim(),
+        avatar: u.avatar as string,
+        category: (u.categories || [])[0] || 'Bloger',
+        city: u.city || '',
+        followers: String((u as any).socialLinks?.instagramFollowers || (u as any).followers || ''),
+      }));
+  let creators: ShowcaseCreator[] = [];
+  try {
+    const snap = await getDocs(query(usersCol, where('role', '==', 'bloger'), where('catalogApproved', '==', true), limit(24)));
+    creators = pick(snap.docs);
+  } catch {}
+  if (creators.length < 8) {
+    try {
+      const snap = await getDocs(query(usersCol, where('role', '==', 'bloger'), limit(40)));
+      const seen = new Set(creators.map((c) => c.id));
+      creators = [...creators, ...pick(snap.docs).filter((c) => !seen.has(c.id))].slice(0, 24);
+    } catch {}
+  }
+  return { count, creators };
 }
