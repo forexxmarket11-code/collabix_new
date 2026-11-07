@@ -267,7 +267,7 @@ export const V2Home: React.FC<Props> = ({ briefs, loading, currentUser }) => {
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
               <div className="text-[13px] font-bold tracking-[2px] text-[#5B3DF5]">BLOGERLAR</div>
-              <h2 className="v2-display mt-2 mb-0 font-extrabold text-[26px] sm:text-[44px] tracking-[-1.5px] leading-[1.05]">Collabix tanlagan blogerlar</h2>
+              <h2 className="v2-display mt-2 mb-0 font-extrabold text-[26px] sm:text-[44px] tracking-[-1.5px] leading-[1.05]">Ular allaqachon biz bilan. Siz-chi?</h2>
             </div>
             <a href="#brendlar-uchun" className="font-bold text-[#4329D9] inline-flex items-center gap-1.5">Bloger bazasi statistikasi {Icon.arrow(14)}</a>
           </div>
