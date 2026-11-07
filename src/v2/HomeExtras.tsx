@@ -136,15 +136,15 @@ export const CreatorMarquee: React.FC<{ creators: ShowcaseCreator[] }> = ({ crea
   const row = [...creators, ...creators];
   return (
     <div className="relative overflow-hidden py-2 [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)]">
-      <div className="v2-marquee gap-3.5">
+      <div className="v2-marquee">
         {row.map((c, i) => (
-          <div key={`${c.id}-${i}`} className="w-[200px] shrink-0 rounded-3xl bg-white border border-[#E6E3DC] p-3.5 mr-3.5">
-            <div className="aspect-square rounded-2xl overflow-hidden bg-[#ECEAE4]">
+          <div key={`${c.id}-${i}`} className="w-[128px] md:w-[200px] shrink-0 rounded-2xl md:rounded-3xl bg-white border border-[#E6E3DC] p-2 md:p-3.5 mr-2.5 md:mr-3.5">
+            <div className="aspect-square rounded-xl md:rounded-2xl overflow-hidden bg-[#ECEAE4]">
               <img src={c.avatar} alt="" loading="lazy" className="w-full h-full object-cover" />
             </div>
-            <div className="mt-2.5 font-bold truncate">{c.name}</div>
-            <div className="text-[13px] text-[#5E5A6B] truncate">{[c.category, c.city].filter(Boolean).join(' · ')}</div>
-            {c.followers && <div className="mt-1.5 inline-flex px-2 py-0.5 rounded-full bg-[#F1EEFF] text-[#4329D9] text-[12px] font-bold">{c.followers} obunachi</div>}
+            <div className="mt-1.5 md:mt-2.5 font-bold text-[13px] md:text-[16px] truncate">{c.name}</div>
+            <div className="text-[11px] md:text-[13px] text-[#5E5A6B] truncate">{[c.category, c.city].filter(Boolean).join(' · ')}</div>
+            {c.followers && <div className="mt-1 md:mt-1.5 inline-flex max-w-full truncate px-1.5 md:px-2 py-0.5 rounded-full bg-[#F1EEFF] text-[#4329D9] text-[10px] md:text-[12px] font-bold">{c.followers} obunachi</div>}
           </div>
         ))}
       </div>
