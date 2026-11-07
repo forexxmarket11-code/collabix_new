@@ -4749,6 +4749,8 @@ export async function fetchHomeShowcase(): Promise<{ count: number; creators: Sh
     docs
       .map((d) => ({ id: d.id, u: d.data() as UserSession }))
       .filter(({ id, u }) => id !== ADMIN_UID && u.accountStatus !== 'rejected' && u.catalogApproved !== false && typeof u.avatar === 'string' && u.avatar.length > 20 && (u.name || '').trim())
+      // Instagram'da 1 000 dan kam (yoki noma'lum) obunachisi borlar vitrinaga chiqmaydi
+      .filter(({ u }) => parseFollowersApprox((u as any).socialLinks?.instagramFollowers ?? (u as any).followers) >= 1000)
       .map(({ id, u }) => ({
         id,
         name: (u.name || '').trim(),
@@ -4759,12 +4761,12 @@ export async function fetchHomeShowcase(): Promise<{ count: number; creators: Sh
       }));
   let creators: ShowcaseCreator[] = [];
   try {
-    const snap = await getDocs(query(usersCol, where('role', '==', 'bloger'), where('catalogApproved', '==', true), limit(24)));
+    const snap = await getDocs(query(usersCol, where('role', '==', 'bloger'), where('catalogApproved', '==', true), limit(60)));
     creators = pick(snap.docs);
   } catch {}
   if (creators.length < 8) {
     try {
-      const snap = await getDocs(query(usersCol, where('role', '==', 'bloger'), limit(40)));
+      const snap = await getDocs(query(usersCol, where('role', '==', 'bloger'), limit(100)));
       const seen = new Set(creators.map((c) => c.id));
       creators = [...creators, ...pick(snap.docs).filter((c) => !seen.has(c.id))].slice(0, 24);
     } catch {}
