@@ -65,7 +65,7 @@ interface AdminDashboardPageProps {
 }
 
 export function AdminDashboardPage({ onLogout, onGoToSite, onUnauthorized }: AdminDashboardPageProps) {
-  const [activeTab, setActiveTab] = useState<'approvals' | 'catalog_review' | 'payment_requests' | 'briefs' | 'referral_payouts' | 'reports' | 'cancellations' | 'agency_applications'>('approvals');
+  const [activeTab, setActiveTab] = useState<'approvals' | 'catalog_review' | 'payment_requests' | 'briefs' | 'referral_payouts' | 'reports' | 'cancellations' | 'agency_applications'>('catalog_review');
   const [briefsCount, setBriefsCount] = useState<number>(0);
   const [payoutsCount, setPayoutsCount] = useState<number>(0);
   const [pendingCount, setPendingCount] = useState<number>(0);
@@ -269,6 +269,25 @@ export function AdminDashboardPage({ onLogout, onGoToSite, onUnauthorized }: Adm
           <div className="flex items-center gap-1.5 p-1 bg-slate-200/70 dark:bg-slate-800/80 rounded-2xl shrink-0 self-start lg:self-auto overflow-x-auto max-w-full no-scrollbar flex-nowrap w-full lg:w-auto touch-pan-x">
             <button
               type="button"
+              id="tab-btn-catalog-review"
+              onClick={() => setActiveTab('catalog_review')}
+              className={`min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-heading font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 whitespace-nowrap ${
+                activeTab === 'catalog_review'
+                  ? 'bg-white dark:bg-[#1A1A24] text-slate-900 dark:text-white shadow-xs'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/50'
+              }`}
+            >
+              <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <span>✅ Profil tekshiruvi (yangi ro'yxatdan o'tganlar)</span>
+              {catalogReviewCount > 0 && (
+                <span className="px-1.5 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-mono font-bold leading-none animate-pulse">
+                  {catalogReviewCount}
+                </span>
+              )}
+            </button>
+
+            <button
+              type="button"
               id="tab-btn-approvals"
               onClick={() => setActiveTab('approvals')}
               className={`min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-heading font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 whitespace-nowrap ${
@@ -286,24 +305,6 @@ export function AdminDashboardPage({ onLogout, onGoToSite, onUnauthorized }: Adm
               )}
             </button>
 
-            <button
-              type="button"
-              id="tab-btn-catalog-review"
-              onClick={() => setActiveTab('catalog_review')}
-              className={`min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-heading font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 whitespace-nowrap ${
-                activeTab === 'catalog_review'
-                  ? 'bg-white dark:bg-[#1A1A24] text-slate-900 dark:text-white shadow-xs'
-                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/50'
-              }`}
-            >
-              <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-              <span>Profil tekshiruvi</span>
-              {catalogReviewCount > 0 && (
-                <span className="px-1.5 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-mono font-bold leading-none animate-pulse">
-                  {catalogReviewCount}
-                </span>
-              )}
-            </button>
 
             <button
               type="button"
