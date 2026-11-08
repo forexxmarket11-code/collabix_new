@@ -1617,8 +1617,15 @@ export async function updateUserAccountStatus(
   };
   if (status === 'rejected') {
     data.rejectionReason = rejectionReason ? rejectionReason.trim() : '';
+    // Yangi sayt: profil tekshiruvi bilan bir xil holat
+    data.catalogApproved = false;
+    data.catalogRejectReason = data.rejectionReason;
+    data.catalogReviewedAtMillis = Date.now();
   } else if (status === 'approved') {
     data.rejectionReason = '';
+    data.catalogApproved = true;
+    data.catalogRejectReason = '';
+    data.catalogReviewedAtMillis = Date.now();
   }
   await setDoc(docRef, data, { merge: true });
 }
@@ -4022,14 +4029,28 @@ export async function approvePaymentRequest(
     } else if (purpose === 'top') {
       await activateTopPlacement(targetUid, Math.max(1, Math.round(reqData.topDays || 7)));
     } else {
+      // Pro hali tugamagan bo'lsa — 30 kun qolgan kunlar ustiga qo'shiladi, aks holda bugundan 30 kun
+      let base = now.getTime();
+      let keepStart = false;
+      try {
+        const uSnap = await getDoc(userRef);
+        const cur = (uSnap.exists() ? uSnap.data() : {}) as UserSession;
+        const curEnd =
+          (typeof cur.proExpiresAtMillis === 'number' && cur.proExpiresAtMillis) ||
+          (cur.trialEndDate ? new Date(cur.trialEndDate).getTime() : 0);
+        if (cur.subscriptionStatus === 'active' && curEnd && !Number.isNaN(curEnd) && curEnd > base) {
+          base = curEnd;
+          keepStart = Boolean(cur.trialStartDate);
+        }
+      } catch {}
       const trialStartDate = now.toISOString();
-      const endMs = now.getTime() + 30 * 24 * 60 * 60 * 1000;
+      const endMs = base + 30 * 24 * 60 * 60 * 1000;
       const trialEndDate = new Date(endMs).toISOString();
       await setDoc(
         userRef,
         {
           subscriptionStatus: 'active',
-          trialStartDate,
+          ...(keepStart ? {} : { trialStartDate }),
           trialEndDate,
           proExpiresAtMillis: endMs,
           subscriptionPlanPrice:
