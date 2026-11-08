@@ -13,6 +13,8 @@ interface Props {
   onContactBrand: (brief: BriefData) => void;
   onResubmit: () => Promise<void>;
   onWorkflow: (brief: BriefData, app: BriefApplication, action: WorkflowAction) => Promise<void>;
+  /** Ish stoli ichida: chap profil kartasisiz */
+  embedded?: boolean;
 }
 
 export const ReviewBanner: React.FC<{ user: UserSession; onEdit: () => void; onResubmit: () => Promise<void> }> = ({ user, onEdit, onResubmit }) => {
@@ -52,7 +54,7 @@ export const ReviewBanner: React.FC<{ user: UserSession; onEdit: () => void; onR
   );
 };
 
-export const V2Applications: React.FC<Props> = ({ currentUser, briefs, onOpenEditProfile, onOpenPro, onContactBrand, onResubmit, onWorkflow }) => {
+export const V2Applications: React.FC<Props> = ({ currentUser, briefs, onOpenEditProfile, onOpenPro, onContactBrand, onResubmit, onWorkflow, embedded }) => {
   const [tab, setTab] = useState<'all' | 'wait' | 'ok' | 'no'>('all');
   const uid = currentUser.uid;
 
@@ -76,8 +78,8 @@ export const V2Applications: React.FC<Props> = ({ currentUser, briefs, onOpenEdi
     s === 'ok' ? <Pill tone="green">{Icon.check(13)} Qabul qilindi</Pill> : s === 'no' ? <Pill tone="red">Rad etildi</Pill> : <Pill tone="amber">Kutilmoqda</Pill>;
 
   return (
-    <main className="max-w-[1240px] mx-auto px-4 sm:px-6 pt-8 pb-16 flex flex-wrap gap-7 items-start">
-      <aside className="flex-[1_1_300px] min-w-0 rounded-[28px] bg-white border border-[#E6E3DC] p-7">
+    <main className={embedded ? '' : "max-w-[1240px] mx-auto px-4 sm:px-6 pt-8 pb-16 flex flex-wrap gap-7 items-start"}>
+      {!embedded && (<aside className="flex-[1_1_300px] min-w-0 rounded-[28px] bg-white border border-[#E6E3DC] p-7">
         <Avatar name={currentUser.name} src={currentUser.avatar} size={76} round />
         <div className="v2-display mt-3.5 font-extrabold text-[24px] leading-tight">{currentUser.name}</div>
         <div className="text-[14px] text-[#5E5A6B]">{[...(currentUser.categories || []).slice(0, 2), currentUser.city].filter(Boolean).join(' · ') || 'Bloger'}</div>
@@ -92,10 +94,10 @@ export const V2Applications: React.FC<Props> = ({ currentUser, briefs, onOpenEdi
         </div>
         <button type="button" onClick={onOpenEditProfile} className={`${btn.ghost} mt-5 w-full`}>Profilni tahrirlash</button>
         {!pro && <button type="button" onClick={onOpenPro} className={`${btn.violet} mt-2.5 w-full`}>Pro'ni yoqish — 59 000 so'm</button>}
-      </aside>
+      </aside>)}
 
       <section className="flex-[999_1_600px] min-w-0">
-        <h1 className="v2-display m-0 font-extrabold text-[34px] sm:text-[44px] tracking-[-1.5px] leading-[1.05]">Mening arizalarim</h1>
+        {!embedded && <h1 className="v2-display m-0 font-extrabold text-[34px] sm:text-[44px] tracking-[-1.5px] leading-[1.05]">Mening arizalarim</h1>}
         <p className="mt-2 mb-0 text-[#5E5A6B]">Brend javob berishi bilan holat shu yerda o'zgaradi va sizga bildirishnoma keladi.</p>
         <div className="mt-5"><ReviewBanner user={currentUser} onEdit={onOpenEditProfile} onResubmit={onResubmit} /></div>
 

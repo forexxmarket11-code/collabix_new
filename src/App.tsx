@@ -43,7 +43,9 @@ import { V2BriefPage, V2BrandPage } from './v2/V2BriefPage';
 import { V2Register } from './v2/V2Register';
 import { V2Applications } from './v2/V2Applications';
 import { V2Cabinet, V2NewBrief } from './v2/V2Cabinet';
-import { parseV2Hash, go } from './v2/ui';
+import { parseV2Hash, go, reviewState } from './v2/ui';
+import { V2CreatorDesk } from './v2/V2CreatorDesk';
+import type { DeskTab } from './v2/V2CreatorDesk';
 import {
   subscribeToOpenBriefsPublic,
   respondToBriefApplicationInFirestore,
@@ -709,7 +711,8 @@ export default function App() {
 
   const v2Active =
     currentPage === 'home'
-      ? v2Route?.name === 'applications' ? 'applications'
+      ? v2Route?.name === 'desk' ? (v2Route.tab === 'catalog' ? 'catalog' : v2Route.tab === 'wallet' ? 'wallet' : v2Route.tab)
+        : v2Route?.name === 'applications' ? 'applications'
         : v2Route?.name === 'cabinet' || v2Route?.name === 'new-brief' ? 'cabinet'
         : v2Hash === '#brendlar' || v2Route?.name === 'brand' ? 'brands'
         : v2Hash === '#narxlar' ? 'pricing'
@@ -717,9 +720,32 @@ export default function App() {
         : 'home'
       : currentPage === 'profile' || currentPage === 'edit-profile' ? 'profile' : '';
 
+  const renderDesk = (tab: DeskTab) =>
+    currentUser ? (
+      <V2CreatorDesk
+        tab={tab}
+        currentUser={currentUser}
+        briefs={allBriefs}
+        notifications={notifications}
+        onOpenEditProfile={handleOpenEditProfile}
+        onOpenProfile={() => handlePageChange('profile')}
+        onOpenPro={() => setIsProModalOpen(true)}
+        onOpenRegister={handleStart}
+        onContactBrand={(b) => v2OpenChatWith({ uid: b.brandId || b.ownerId || '', name: b.brandName || 'Brend', avatar: b.brandAvatar, handle: '', role: 'Brend' })}
+        onResubmit={v2Resubmit}
+        onWorkflow={v2Workflow}
+      />
+    ) : null;
+
   const renderV2 = () => {
     const r = v2Route;
+    // Tasdiqlangan bloger saytga kirganda — o'z ish stoli
+    if (!r && currentUser?.role === 'bloger' && reviewState(currentUser) === 'approved') return renderDesk('home');
     if (!r) return <V2Home briefs={allBriefs} loading={publicBriefsLoading} currentUser={currentUser} />;
+    if (r.name === 'desk') {
+      if (!currentUser) return <V2Register mode="login" onDone={(u) => handleUpdateUser(u)} />;
+      if (currentUser.role !== 'brend') return renderDesk(r.tab);
+    }
     if (r.name === 'brief') {
       return (
         <V2BriefPage
@@ -745,6 +771,7 @@ export default function App() {
       );
     }
     if (!currentUser) return <V2Register mode="login" onDone={(u) => handleUpdateUser(u)} />;
+    if (r.name === 'applications' && currentUser.role !== 'brend') return renderDesk('applications');
     if (r.name === 'applications') {
       if (currentUser.role === 'brend') {
         return <V2Cabinet currentUser={currentUser} briefs={allBriefs} onRespond={v2Respond} onContactCreator={(a) => v2OpenChatWith({ uid: a.creatorId, name: a.creatorName, avatar: a.creatorAvatar, handle: a.creatorHandle, role: 'Bloger' })} onOpenCreator={(id) => { window.location.hash = `#kreator-${id}`; }} onWorkflow={v2Workflow} notifications={notifications} onOpenPro={() => setIsProModalOpen(true)} onOpenEditProfile={handleOpenEditProfile} onResubmit={v2Resubmit} onCloseBrief={async (b) => { try { await closeBriefInFirestore(b.id); } catch (e) { console.error(e); } }} />;
@@ -762,9 +789,7 @@ export default function App() {
       );
     }
     if (r.name === 'cabinet') {
-      if (currentUser.role !== 'brend') {
-        return <V2Applications currentUser={currentUser} briefs={allBriefs} onOpenEditProfile={handleOpenEditProfile} onOpenPro={() => setIsProModalOpen(true)} onContactBrand={(b) => v2OpenChatWith({ uid: b.brandId || b.ownerId || '', name: b.brandName || 'Brend', avatar: b.brandAvatar, handle: '', role: 'Brend' })} onResubmit={v2Resubmit} onWorkflow={v2Workflow} />;
-      }
+      if (currentUser.role !== 'brend') return renderDesk('home');
       return (
         <V2Cabinet
           currentUser={currentUser}
@@ -1037,7 +1062,7 @@ export default function App() {
         </React.Suspense>
       </main>
 
-      {!isUserRestricted && currentPage !== 'messages' && currentPage !== 'edit-profile' && !(currentPage === 'home' && (v2Route?.name === 'register' || v2Route?.name === 'cabinet')) && <V2Footer />}
+      {!isUserRestricted && currentPage !== 'messages' && currentPage !== 'edit-profile' && !(currentPage === 'home' && (v2Route?.name === 'register' || v2Route?.name === 'cabinet' || v2Route?.name === 'desk' || (currentUser?.role === 'bloger' && (v2Route?.name === 'applications' || (!v2Route && reviewState(currentUser) === 'approved'))))) && <V2Footer />}
 
       {!isUserRestricted && currentPage !== 'edit-profile' && currentPage !== 'create-brief' && !(currentPage === 'home' && v2Route?.name === 'register') && (
         <V2BottomNav currentUser={currentUser} active={v2Active} onOpenProfile={() => handlePageChange('profile')} />

@@ -117,6 +117,14 @@ export const V2BottomNav: React.FC<{ currentUser: UserSession | null; active?: s
   const s = { width: 22, height: 22, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, 'aria-hidden': true };
   return (
     <nav aria-label="Pastki menyu" className="md:hidden fixed left-3 right-3 z-40 rounded-[22px] bg-[#14121C] grid grid-cols-4 shadow-2xl" style={{ bottom: 'calc(12px + env(safe-area-inset-bottom, 0px))' }}>
+      {currentUser && !isBrand ? (
+        <>
+          {item('home', 'Asosiy', '#kabinet', <svg {...s}><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" /></svg>)}
+          {item('catalog', "E'lonlar", '#kabinet-elonlar', <svg {...s}><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M3 9h18M8 4v5" /></svg>)}
+          {item('applications', 'Arizalarim', '#arizalarim', <svg {...s}><path d="M8 4h8l1 3H7z" /><rect x="4" y="7" width="16" height="14" rx="2" /><path d="M9 13l2 2 4-4" /></svg>)}
+          {item('wallet', 'Hamyon', '#hamyon', <svg {...s}><path d="M3 7a2 2 0 0 1 2-2h13v4" /><path d="M3 7v11a2 2 0 0 0 2 2h15V9H5a2 2 0 0 1-2-2z" /><circle cx="16" cy="14.5" r="1.4" /></svg>)}
+        </>
+      ) : (<>
       {item('home', "E'lonlar", '#', <svg {...s}><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" /></svg>)}
       {item('brands', 'Brendlar', '#brendlar', <svg {...s}><path d="M4 21V8l8-5 8 5v13" /><path d="M9 21v-6h6v6" /></svg>)}
       {isBrand
@@ -125,6 +133,7 @@ export const V2BottomNav: React.FC<{ currentUser: UserSession | null; active?: s
       {currentUser
         ? item('profile', 'Profil', null, <svg {...s}><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7" /></svg>, onOpenProfile)
         : item('profile', 'Kirish', '#kirish', <svg {...s}><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7" /></svg>)}
+      </>)}
     </nav>
   );
 };
