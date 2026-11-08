@@ -47,7 +47,15 @@ export const V2BriefPage: React.FC<BriefProps> = ({ brief, loading, currentUser,
       setMessage('');
       setPrice('');
     } catch (e: any) {
-      setError(e?.message === 'ALREADY_APPLIED' ? 'Siz bu e\'longa allaqachon ariza yuborgansiz.' : "Ariza yuborilmadi. Internetni tekshirib, qayta urinib ko'ring.");
+      const m = String(e?.message || '');
+      const code = String(e?.code || '');
+      console.error('Ariza xatosi:', code, m);
+      setError(
+        m === 'ALREADY_APPLIED' ? "Siz bu e'longa allaqachon ariza yuborgansiz."
+        : m === 'PROFILE_INCOMPLETE' ? "Profilingiz 100% to'ldirilmagan. Profilni yangilab, qayta urinib ko'ring."
+        : code.includes('permission') || /permission/i.test(m) ? `Ruxsat berilmadi (Pro faol emas yoki profil to'liq emas). Kod: ${code || m}`
+        : `Ariza yuborilmadi. Qayta urinib ko'ring. (${code || m || 'xato'})`
+      );
     } finally {
       setSending(false);
     }
