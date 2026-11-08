@@ -357,7 +357,7 @@ service cloud.firestore {
             && request.resource.data.applications is list
             && request.resource.data.applications.size() <= 200
             && request.resource.data.applications.size() == resource.data.get('applications', []).size() + 1
-            && request.resource.data.applications[0:resource.data.get('applications', []).size()] == resource.data.get('applications', [])
+            && request.resource.data.applications.hasAll(resource.data.get('applications', []))
             && request.resource.data.applications[request.resource.data.applications.size() - 1].creatorId == request.auth.uid
           )
         )
