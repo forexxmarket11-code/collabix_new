@@ -45,6 +45,8 @@ import { V2Applications } from './v2/V2Applications';
 import { V2Cabinet, V2NewBrief } from './v2/V2Cabinet';
 import { parseV2Hash, go, reviewState } from './v2/ui';
 import { V2CreatorDesk } from './v2/V2CreatorDesk';
+import { V2CreatorProfile } from './v2/V2CreatorProfile';
+import { V2ErrorBoundary } from './v2/ErrorBoundary';
 import type { DeskTab } from './v2/V2CreatorDesk';
 import {
   subscribeToOpenBriefsPublic,
@@ -882,6 +884,7 @@ export default function App() {
 
       {/* Main Content Areas */}
       <main className={`flex-1 min-w-0 ${currentPage === 'messages' ? 'pb-[calc(88px+env(safe-area-inset-bottom,0px))] sm:pb-24 flex flex-col' : isUserRestricted ? 'pb-12' : 'pb-12 sm:pb-16'}`}>
+        <V2ErrorBoundary resetKey={`${currentPage}|${v2Hash}`}>
         <React.Suspense fallback={<PageSpinner />}>
         {/* If user is restricted (pending approval or rejected), strictly show PendingApprovalPage or EditProfilePage */}
         {isUserRestricted && currentPage !== 'edit-profile' && currentUser && (
@@ -939,6 +942,15 @@ export default function App() {
         )}
 
         {!isUserRestricted && currentPage === 'creator-profile' && (
+          <V2CreatorProfile
+            creatorId={selectedCreatorForProfile?.id || window.location.hash.replace(/^#(kreator|creator)-/, '').trim() || ''}
+            currentUser={currentUser}
+            briefs={allBriefs}
+            onChat={(c) => v2OpenChatWith({ uid: c.uid || '', name: c.name || 'Bloger', avatar: c.avatar, handle: c.instagramHandle || '', role: 'Bloger' })}
+          />
+        )}
+
+        {false && (
           <CreatorPublicProfilePage
             creatorId={
               selectedCreatorForProfile?.id ||
@@ -1060,6 +1072,7 @@ export default function App() {
 
         {!isUserRestricted && currentPage === 'home' && renderV2()}
         </React.Suspense>
+        </V2ErrorBoundary>
       </main>
 
       {!isUserRestricted && currentPage !== 'messages' && currentPage !== 'edit-profile' && !(currentPage === 'home' && (v2Route?.name === 'register' || v2Route?.name === 'cabinet' || v2Route?.name === 'desk' || (currentUser?.role === 'bloger' && (v2Route?.name === 'applications' || (!v2Route && reviewState(currentUser) === 'approved'))))) && <V2Footer />}
