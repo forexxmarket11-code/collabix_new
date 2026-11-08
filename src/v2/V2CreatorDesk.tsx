@@ -399,9 +399,6 @@ export const V2CreatorDesk: React.FC<Props> = (p) => {
           ) : (
             <h1 className="v2-display m-0 font-extrabold text-[28px] sm:text-[40px] tracking-[-1.4px] leading-[1.05]">{TITLES[tab]}</h1>
           )}
-          {tab === 'home' && (
-            <button type="button" onClick={() => go(DESK_HASH.catalog)} className={`${btn.dark} hidden sm:inline-flex min-h-[48px]`}>{Icon.search(16)} E'lon qidirish</button>
-          )}
         </div>
 
         {/* Telefon: bo'limlar */}
