@@ -121,7 +121,7 @@ export const V2Register: React.FC<Props> = ({ mode, onDone }) => {
       const full: UserSession = { ...user, ...extra, name, role };
       if (uid) {
         try {
-          await saveUserProfile(uid, { ...extra, name, role });
+          await saveUserProfile(uid, { ...extra, name, role, catalogResubmittedAtMillis: Date.now() } as any);
         } catch (e) {
           console.warn('Profil javoblarini saqlashda xato:', e);
         }

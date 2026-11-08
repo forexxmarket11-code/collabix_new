@@ -122,8 +122,13 @@ export const AdminCatalogReview: React.FC<AdminCatalogReviewProps> = ({
         if (u.uid) currentlyVisible.push(u.uid);
       }
     });
-    const byNewest = (a: UserSession, b: UserSession) =>
-      Number(b.catalogResubmittedAtMillis || 0) - Number(a.catalogResubmittedAtMillis || 0);
+    // Eng yangi ro'yxatdan o'tganlar / qayta yuborganlar eng tepada
+    const ts = (u: UserSession) => {
+      const c: any = (u as any).createdAt;
+      const created = c && typeof c.toMillis === 'function' ? c.toMillis() : typeof c?.seconds === 'number' ? c.seconds * 1000 : Number(c) || 0;
+      return Math.max(Number(u.catalogResubmittedAtMillis || 0), created || 0);
+    };
+    const byNewest = (a: UserSession, b: UserSession) => ts(b) - ts(a);
     pending.sort(byNewest);
     return { pending, approved, rejected, currentlyVisible };
   }, [creators, catalogProOnly]);
@@ -336,6 +341,11 @@ export const AdminCatalogReview: React.FC<AdminCatalogReviewProps> = ({
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-heading font-extrabold text-slate-900 dark:text-white truncate">{u.name || 'Ismsiz'}</span>
+                        {(() => {
+                          const c: any = (u as any).createdAt;
+                          const ms = Math.max(Number(u.catalogResubmittedAtMillis || 0), c && typeof c.toMillis === 'function' ? c.toMillis() : typeof c?.seconds === 'number' ? c.seconds * 1000 : 0);
+                          return ms && Date.now() - ms < 3 * 86400000 ? <span className="shrink-0 px-2 py-0.5 rounded-full bg-emerald-500 text-white text-[10px] font-bold">YANGI</span> : null;
+                        })()}
                         <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${u.role === 'brend' ? 'bg-emerald-100 text-emerald-800' : 'bg-indigo-100 text-indigo-800'}`}>{u.role === 'brend' ? 'Brend' : 'Bloger'}</span>
                         {pro && (
                           <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300 text-[10px] font-bold">
