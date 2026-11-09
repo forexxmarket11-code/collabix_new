@@ -46,6 +46,13 @@ function buildTelegramMessage(type, data) {
 }
 
 export default async function handler(req, res) {
+  // Faqat o'z saytimizdan kelgan so'rovlar (begona saytlar botga spam yubora olmasin)
+  const origin = String((req.headers && (req.headers.origin || req.headers.referer)) || '');
+  const okOrigin = /^https:\/\/(www\.)?collabix\.uz(\/|$)/i.test(origin) || /^https:\/\/collabix-uzbbbb[a-z0-9-]*\.vercel\.app(\/|$)/i.test(origin);
+  if (!okOrigin) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+
   if (req.method !== 'POST') {
     if (typeof res.setHeader === 'function') {
       res.setHeader('Allow', 'POST');
