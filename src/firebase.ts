@@ -34,6 +34,7 @@ import {
   Timestamp,
   runTransaction,
   arrayUnion,
+  arrayRemove,
   limit,
   getCountFromServer,
   persistentLocalCache,
@@ -4864,17 +4865,36 @@ export async function fetchHomeShowcase(): Promise<{ count: number; creators: Sh
         city: u.city || '',
         followers: String((u as any).socialLinks?.instagramFollowers || (u as any).followers || ''),
       }));
+  // Vitrinada faqat admin tanlagan blogerlar (settings/showcase.uids) — yangi kelganlar o'zi qo'shilmaydi
   let creators: ShowcaseCreator[] = [];
   try {
-    const snap = await getDocs(query(usersCol, where('role', '==', 'bloger'), where('catalogApproved', '==', true), limit(30)));
-    creators = pick(snap.docs);
+    const uids = await fetchShowcaseUids();
+    const docs = await Promise.all(uids.slice(0, 30).map((id) => getDoc(doc(db, 'users', id)).catch(() => null)));
+    const order = new Map(uids.map((id, i) => [id, i]));
+    creators = pick(docs.filter((d): d is any => Boolean(d && d.exists()))).sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
   } catch {}
-  if (creators.length < 8) {
-    try {
-      const snap = await getDocs(query(usersCol, where('role', '==', 'bloger'), limit(50)));
-      const seen = new Set(creators.map((c) => c.id));
-      creators = [...creators, ...pick(snap.docs).filter((c) => !seen.has(c.id))].slice(0, 24);
-    } catch {}
-  }
   return { count, creators };
+}
+
+/** Admin tanlagan vitrina blogerlari */
+export async function fetchShowcaseUids(): Promise<string[]> {
+  const snap = await getDoc(doc(db, 'settings', 'showcase'));
+  const uids = snap.exists() ? (snap.data() as any).uids : [];
+  return Array.isArray(uids) ? uids.filter((x: unknown) => typeof x === 'string') : [];
+}
+
+export function subscribeShowcaseUids(cb: (uids: string[]) => void): () => void {
+  return onSnapshot(
+    doc(db, 'settings', 'showcase'),
+    (snap) => {
+      const uids = snap.exists() ? (snap.data() as any).uids : [];
+      cb(Array.isArray(uids) ? uids : []);
+    },
+    () => cb([])
+  );
+}
+
+/** Admin: blogerni vitrinaga qo'shish / olib tashlash */
+export async function setShowcaseUidAdmin(uid: string, on: boolean): Promise<void> {
+  await setDoc(doc(db, 'settings', 'showcase'), { uids: on ? arrayUnion(uid) : arrayRemove(uid), updatedAtMillis: Date.now() }, { merge: true });
 }

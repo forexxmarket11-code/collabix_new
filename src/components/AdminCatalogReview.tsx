@@ -23,7 +23,7 @@ import {
   enableCatalogReviewAdmin,
   approveAllExistingProfilesAdmin,
   ADMIN_UID,
-  disableCatalogReviewAdmin, slimAllBriefsAdmin } from '../firebase';
+  disableCatalogReviewAdmin, slimAllBriefsAdmin, subscribeShowcaseUids, setShowcaseUidAdmin } from '../firebase';
 import { getBloggerCatalogReadiness, isUserPro } from '../utils/subscription';
 import { isVideoLikeItem, GalleryVideoThumb } from './GalleryMedia';
 
@@ -90,6 +90,8 @@ export const AdminCatalogReview: React.FC<AdminCatalogReviewProps> = ({
   const [toggleBusy, setToggleBusy] = useState(false);
   const [confirmEnable, setConfirmEnable] = useState(false);
   const [slimBusy, setSlimBusy] = useState(false);
+  const [showcase, setShowcase] = useState<string[]>([]);
+  useEffect(() => subscribeShowcaseUids(setShowcase), []);
   const [slimMsg, setSlimMsg] = useState('');
   const [error, setError] = useState('');
 
@@ -247,6 +249,11 @@ export const AdminCatalogReview: React.FC<AdminCatalogReviewProps> = ({
         )}
       </div>
 
+      <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-slate-800">
+        <b>★ Bosh sahifa vitrinasi:</b> {showcase.length} ta bloger tanlangan.{' '}
+        {showcase.length < 4 ? 'Vitrina bosh sahifada kamida 4 ta bloger tanlanganda chiqadi (rasmi bor va 1 000+ obunachili).' : "Bosh sahifada shu blogerlar aylanib turadi."} Bloger yonidagi "☆ Vitrinaga" tugmasi bilan qo'shing yoki olib tashlang.
+      </div>
+
       <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 flex flex-wrap items-center justify-between gap-3">
         <div className="text-sm text-slate-700 dark:text-slate-300">
           <b>Sayt tezligi:</b> eski arizalardagi katta rasmlarni kichraytirish (e'lonlar tezroq yuklanadi).
@@ -364,7 +371,18 @@ export const AdminCatalogReview: React.FC<AdminCatalogReviewProps> = ({
                     )}
                   </button>
 
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+                    {u.role !== 'brend' && (
+                      <button
+                        type="button"
+                        aria-pressed={showcase.includes(uid)}
+                        title="Bosh sahifadagi blogerlar vitrinasi"
+                        onClick={() => { setShowcaseUidAdmin(uid, !showcase.includes(uid)).catch((e) => setError(String(e?.message || e))); }}
+                        className={`min-h-[44px] px-3 rounded-xl text-xs font-heading font-bold cursor-pointer inline-flex items-center gap-1.5 border ${showcase.includes(uid) ? 'bg-amber-400 border-amber-400 text-slate-900' : 'border-slate-300 text-slate-700 hover:bg-slate-50'}`}
+                      >
+                        {showcase.includes(uid) ? '★ Vitrinada' : '☆ Vitrinaga'}
+                      </button>
+                    )}
                     {filter !== 'approved' && (
                       <button
                         type="button"
