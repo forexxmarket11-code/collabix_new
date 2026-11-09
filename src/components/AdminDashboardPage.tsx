@@ -228,7 +228,7 @@ export function AdminDashboardPage({ onLogout, onGoToSite, onUnauthorized }: Adm
       {/* Main Content Dashboard */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-8">
         {/* Navigation Tabs */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-200/80 dark:border-slate-800 pb-4">
+        <div className="flex flex-col gap-4 border-b border-slate-200/80 dark:border-slate-800 pb-4">
           <div className="min-w-0">
             <h1 className="text-xl sm:text-2xl font-heading font-extrabold text-slate-900 dark:text-white tracking-tight">
               {activeTab === 'approvals'
@@ -266,7 +266,7 @@ export function AdminDashboardPage({ onLogout, onGoToSite, onUnauthorized }: Adm
             </p>
           </div>
 
-          <div className="flex items-center gap-1.5 p-1 bg-slate-200/70 dark:bg-slate-800/80 rounded-2xl shrink-0 self-start lg:self-auto overflow-x-auto max-w-full no-scrollbar flex-nowrap w-full lg:w-auto touch-pan-x">
+          <nav aria-label="Admin bo'limlari" className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full [&>button]:w-full [&>button]:min-h-[56px] [&>button]:whitespace-normal [&>button]:text-left [&>button]:justify-start [&>button]:leading-tight [&>button]:border [&>button]:border-slate-200 [&>button]:bg-white/60">
             <button
               type="button"
               id="tab-btn-catalog-review"
@@ -278,7 +278,7 @@ export function AdminDashboardPage({ onLogout, onGoToSite, onUnauthorized }: Adm
               }`}
             >
               <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-              <span>✅ Profil tekshiruvi (yangi ro'yxatdan o'tganlar)</span>
+              <span>Profil tekshiruvi</span>
               {catalogReviewCount > 0 && (
                 <span className="px-1.5 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-mono font-bold leading-none animate-pulse">
                   {catalogReviewCount}
@@ -414,13 +414,14 @@ export function AdminDashboardPage({ onLogout, onGoToSite, onUnauthorized }: Adm
                 </span>
               )}
             </button>
-          </div>
+          </nav>
         </div>
 
         {/* Catalog Pro-Only Admin Setting Card */}
         <div
           id="admin-catalog-pro-setting-card"
-          className="bg-white dark:bg-[#1A1A24] rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+          style={{ display: 'none' }}
+          className="bg-white dark:bg-[#1A1A24] rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-slate-200/80 dark:border-slate-800 shadow-xs"
         >
           <div className="flex items-start sm:items-center gap-3.5 min-w-0">
             <div

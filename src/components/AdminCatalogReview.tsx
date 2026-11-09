@@ -371,7 +371,7 @@ export const AdminCatalogReview: React.FC<AdminCatalogReviewProps> = ({
                     )}
                   </button>
 
-                  <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+                  <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 sm:shrink-0 sm:justify-end [&>button]:justify-center">
                     {u.role !== 'brend' && (
                       <button
                         type="button"
@@ -406,7 +406,7 @@ export const AdminCatalogReview: React.FC<AdminCatalogReviewProps> = ({
                         className="min-h-[44px] px-4 rounded-xl border border-rose-300 dark:border-rose-800 text-rose-700 dark:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-heading font-bold cursor-pointer inline-flex items-center gap-1.5"
                       >
                         <XCircle className="w-4 h-4" />
-                        {filter === 'approved' ? 'Katalogdan olish' : 'Rad etish'}
+                        {filter === 'approved' ? 'Tasdiqni bekor qilish' : 'Rad etish'}
                       </button>
                     )}
                   </div>
