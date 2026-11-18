@@ -663,6 +663,7 @@ export default function App() {
       creatorName: currentUser.name || 'Bloger',
       creatorHandle: currentUser.instagramHandle || currentUser.socialLinks?.instagram || currentUser.handle || '',
       creatorAvatar: currentUser.avatar || undefined,
+      ...(currentUser.city ? { creatorCity: currentUser.city } : {}),
       message: message.trim(),
       proposedPrice: price.trim() || undefined,
       appliedAt: new Date().toISOString(),

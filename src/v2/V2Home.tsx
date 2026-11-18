@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { BriefData, UserSession } from '../types';
-import { Avatar, Pill, Icon, budgetText, timeAgo, btn, go, isBriefOpen } from './ui';
+import { Avatar, Pill, Icon, budgetText, timeAgo, btn, go, isBriefOpen, briefCities, citiesText } from './ui';
 import { fetchHomeShowcase } from '../firebase';
 import type { ShowcaseCreator } from '../firebase';
 import { Reveal, CountUp, PhoneMockup, CreatorMarquee } from './HomeExtras';
@@ -28,6 +28,10 @@ export const BriefCard: React.FC<{ brief: BriefData }> = ({ brief }) => {
         <a href={`#elon-${encodeURIComponent(brief.id)}`} className="hover:text-[#5B3DF5]">{brief.taskTitle}</a>
       </h3>
       <div className="flex flex-wrap gap-1.5 text-[13px] font-semibold text-[#3E3A4A]">
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#EDE9FE] text-[#3B1FB8]" title={briefCities(brief).join(', ')}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z" /><circle cx="12" cy="10" r="2.5" /></svg>
+          {citiesText(brief)}
+        </span>
         {brief.deadline && (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#F6F5F1]">{Icon.clock(14)}{brief.deadline}</span>
         )}

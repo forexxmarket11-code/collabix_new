@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { BriefData, UserSession } from '../types';
 import { fetchUserProfile } from '../firebase';
-import { Avatar, Pill, Icon, budgetText, timeAgo, btn, canApply, appStatus, isBriefOpen } from './ui';
+import { Avatar, Pill, Icon, budgetText, timeAgo, btn, canApply, appStatus, isBriefOpen, briefCities, citiesText } from './ui';
 import { BriefCard } from './V2Home';
 
 interface BriefProps {
@@ -148,6 +148,7 @@ export const V2BriefPage: React.FC<BriefProps> = ({ brief, loading, currentUser,
             </div>
             <h1 className="v2-display mt-6 mb-0 font-extrabold text-[32px] sm:text-[46px] leading-[1.05] tracking-[-1.5px]">{brief.taskTitle}</h1>
             <div className="mt-4 flex flex-wrap gap-2">
+              <Pill tone="lime">📍 {citiesText(brief, 3)}</Pill>
               {(brief.formats || []).map((f) => <Pill key={f} tone="violet">{f}</Pill>)}
               {(brief.categories || []).map((c) => <Pill key={c}>{c}</Pill>)}
             </div>
@@ -178,6 +179,7 @@ export const V2BriefPage: React.FC<BriefProps> = ({ brief, loading, currentUser,
               <div className="rounded-2xl bg-[#1F1C29] p-3.5"><div className="text-[12px] text-[#BDB8CC]">Muddat</div><div className="font-bold text-[16px]">{brief.deadline || 'Kelishiladi'}</div></div>
               <div className="rounded-2xl bg-[#1F1C29] p-3.5"><div className="text-[12px] text-[#BDB8CC]">Arizalar</div><div className="font-bold text-[16px]">{apps} ta</div></div>
               <div className="rounded-2xl bg-[#1F1C29] p-3.5 col-span-2"><div className="text-[12px] text-[#BDB8CC]">Format</div><div className="font-bold text-[16px]">{(brief.formats || []).join(', ') || '—'}</div></div>
+              <div className="rounded-2xl bg-[#5B3DF5] p-3.5 col-span-2"><div className="text-[12px] text-[#E4DEFF]">Shahar(lar)</div><div className="font-bold text-[16px] break-words">{briefCities(brief).join(', ')}</div></div>
             </div>
             {applyArea}
           </div>

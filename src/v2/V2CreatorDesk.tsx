@@ -4,7 +4,7 @@ import type { WorkflowAction } from '../firebase';
 import { markAllNotificationsAsReadInFirestore } from '../firebase';
 import { isUserPro } from '../utils/subscription';
 import { ReferralDashboard } from '../components/ReferralDashboard';
-import { Avatar, Pill, Icon, btn, go, appStatus, isBriefOpen, reviewState, budgetText } from './ui';
+import { Avatar, Pill, Icon, btn, go, appStatus, isBriefOpen, reviewState, budgetText, cityMatches, CITY_LIST } from './ui';
 import { BriefCard, brandsFromBriefs, CATEGORY_LIST } from './V2Home';
 import { V2Applications, ReviewBanner } from './V2Applications';
 import { wfStage, WF_STAGE_LABEL } from './Workflow';
@@ -54,9 +54,7 @@ function matchScore(b: BriefData, u: UserSession): number {
   const cats = (u.categories || []).map(low);
   const bcats = [b.category, ...((b as any).categories || [])].map(low).filter(Boolean);
   if (bcats.some((c) => cats.some((x) => x && (c.includes(x) || x.includes(c))))) score += 40;
-  const city = low(u.city);
-  const bcity = low((b as any).city || (b as any).location);
-  if (!bcity || bcity.includes('butun') || (city && bcity.includes(city))) score += 18;
+  if (cityMatches(b, u.city)) score += 18;
   const myPrice = num(u.priceRange?.min);
   const top = num(b.budgetMax || b.budgetMin);
   if (!myPrice || !top || top >= myPrice) score += 10;
@@ -227,21 +225,30 @@ export const V2CreatorDesk: React.FC<Props> = (p) => {
   const [cat, setCat] = useState('');
   const [onlyMatch, setOnlyMatch] = useState(false);
   const [sort, setSort] = useState<'match' | 'new' | 'budget'>('match');
+  const [cityF, setCityF] = useState('');
   const catalogList = useMemo(() => {
     let list = openBriefs.filter((b) => (b.brandId || b.ownerId) !== uid).map((b) => ({ b, score: matchScore(b, u) }));
     const qq = low(q);
     if (qq) list = list.filter(({ b }) => [b.taskTitle, b.brandName, b.description, b.category].some((x) => low(x).includes(qq)));
     if (cat) list = list.filter(({ b }) => low(b.category).includes(low(cat)) || (b.formats || []).some((f) => low(f).includes(low(cat))));
+    if (cityF) list = list.filter(({ b }) => cityMatches(b, cityF));
     if (onlyMatch) list = list.filter(({ score }) => score >= 70);
     list.sort((a, b) => sort === 'match' ? b.score - a.score : sort === 'budget' ? num(b.b.budgetMax || b.b.budgetMin) - num(a.b.budgetMax || a.b.budgetMin) : Number(b.b.createdAtMillis || 0) - Number(a.b.createdAtMillis || 0));
     return list;
-  }, [openBriefs, q, cat, onlyMatch, sort, uid, u]);
+  }, [openBriefs, q, cat, cityF, onlyMatch, sort, uid, u]);
   const catalogView = (
     <>
       <div className="flex flex-wrap gap-2.5 items-center">
         <label className="flex-[999_1_240px]">
           <span className="v2-sr">E'lon qidirish</span>
           <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="E'lon yoki brend qidirish" className="w-full box-border min-h-[48px] px-4 rounded-2xl border-[1.5px] border-[#E6E3DC] bg-white text-[15px] outline-none focus:border-[#5B3DF5]" />
+        </label>
+        <label className="flex-[1_1_160px]">
+          <span className="v2-sr">Shahar</span>
+          <select value={cityF} onChange={(e) => setCityF(e.target.value)} className="w-full min-h-[48px] px-3 rounded-2xl border-[1.5px] border-[#E6E3DC] bg-white text-[15px] font-semibold">
+            <option value="">Barcha shaharlar</option>
+            {CITY_LIST.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
         </label>
         <label className="flex-[1_1_160px]">
           <span className="v2-sr">Saralash</span>

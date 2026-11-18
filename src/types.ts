@@ -120,6 +120,7 @@ export interface BriefApplication {
   creatorName: string;
   creatorAvatar?: string;
   creatorHandle?: string;
+  creatorCity?: string;
   creatorPhoneNumber?: string;
   creatorTelegramUsername?: string;
   brandPhoneNumber?: string;
@@ -152,6 +153,8 @@ export interface BriefData {
   paymentType?: 'money' | 'barter';
   /** Narx butun ish uchunmi yoki har bir Reels uchunmi */
   priceUnit?: 'total' | 'per_reels';
+  /** Reklama qaysi shahar(lar) uchun; bo'sh = Butun O'zbekiston */
+  cities?: string[];
   /** Ishga qabul qilingan blogerlar (Firestore qoidasi uchun) */
   acceptedCreatorIds?: string[];
   barterDescription?: string;

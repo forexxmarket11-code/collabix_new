@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { BriefData, BriefApplication, UserSession, NotificationItem } from '../types';
 import { backfillAcceptedCreatorIds, markAllNotificationsAsReadInFirestore } from '../firebase';
 import type { WorkflowAction } from '../firebase';
-import { Avatar, Pill, Icon, budgetText, btn, appStatus, isBriefOpen, reviewState, timeAgo, go } from './ui';
+import { Avatar, Pill, Icon, budgetText, btn, appStatus, isBriefOpen, reviewState, timeAgo, go, ALL_UZ, CITY_LIST } from './ui';
 import { ReviewBanner } from './V2Applications';
 import { CATEGORY_LIST } from './V2Home';
 import { WorkflowPanel, WorkflowSteps, wfStage, wfNeedsBrand, WF_STAGE_LABEL } from './Workflow';
@@ -237,7 +237,7 @@ export const V2Cabinet: React.FC<CabinetProps> = ({ currentUser, briefs, onRespo
                     <Avatar name={a.creatorName} src={a.creatorAvatar} size={56} round />
                     <div className="flex-[999_1_260px] min-w-0">
                       <div className="font-bold text-[17px]">{a.creatorName}</div>
-                      <div className="text-[14px] text-[#5E5A6B]">{a.creatorHandle || ''}{a.proposedPrice ? ` · Taklif: ${a.proposedPrice} so'm` : ''}</div>
+                      <div className="text-[14px] text-[#5E5A6B]">{[a.creatorCity ? `📍 ${a.creatorCity}` : '', a.creatorHandle || '', a.proposedPrice ? `Taklif: ${a.proposedPrice} so'm` : ''].filter(Boolean).join(' · ')}</div>
                       {st !== 'ok' && a.message && <div className="mt-1.5 text-[14px] text-[#3E3A4A] whitespace-pre-line break-words">"{a.message}"</div>}
                       {st === 'no' && a.rejectionReason && <div className="mt-1.5 text-[13px] text-[#991B1B]">Rad etish sababi: {a.rejectionReason}</div>}
                     </div>
@@ -367,6 +367,7 @@ export const V2NewBrief: React.FC<NewBriefProps> = ({ currentUser, onCreate, onO
   const [formats, setFormats] = useState<string[]>([]);
   const [cats, setCats] = useState<string[]>([]);
   const [payment, setPayment] = useState<'money' | 'barter'>('money');
+  const [cities, setCities] = useState<string[]>([]);
   const [unit, setUnit] = useState<'total' | 'per_reels'>('per_reels');
   const [min, setMin] = useState('');
   const [max, setMax] = useState('');
@@ -394,6 +395,7 @@ export const V2NewBrief: React.FC<NewBriefProps> = ({ currentUser, onCreate, onO
     if (title.trim().length < 5) return setError("Sarlavhani yozing (kamida 5 belgi)");
     if (desc.trim().length < 20) return setError('Vazifani batafsilroq yozing (kamida 20 belgi)');
     if (formats.length === 0) return setError('Kamida bitta formatni tanlang');
+    if (cities.length === 0) return setError("Reklama qaysi shahar(lar) uchun ekanini tanlang");
     if (payment === 'money' && !min.replace(/[^\d]/g, '')) return setError('Byudjetni yozing');
     if (payment === 'barter' && barter.trim().length < 3) return setError('Barterda nima berishingizni yozing');
     setBusy(true);
@@ -407,6 +409,7 @@ export const V2NewBrief: React.FC<NewBriefProps> = ({ currentUser, onCreate, onO
         categories: cats,
         recipientType: 'open',
         paymentType: payment,
+        cities,
         ...(payment === 'money' ? { priceUnit: unit } : {}),
         budgetMin: payment === 'money' ? min.replace(/[^\d]/g, '') : '',
         budgetMax: payment === 'money' ? max.replace(/[^\d]/g, '') : '',
@@ -453,6 +456,27 @@ export const V2NewBrief: React.FC<NewBriefProps> = ({ currentUser, onCreate, onO
         <div>
           <div className="font-bold">Kategoriya</div>
           <div className="mt-2.5 flex flex-wrap gap-2">{CATEGORY_LIST.map((c) => <button key={c} type="button" aria-pressed={cats.includes(c)} onClick={() => toggle(cats, setCats, c)} className={chip(cats.includes(c))}>{c}</button>)}</div>
+        </div>
+        <div>
+          <div className="font-bold">Qaysi shahar(lar) uchun?</div>
+          <div className="text-[14px] text-[#5E5A6B]">Filiallaringiz bor shaharlarni tanlang — bir nechtasini belgilash mumkin. Blogerlar shuni ko'radi.</div>
+          <div className="mt-2.5 flex flex-wrap gap-2">
+            <button type="button" aria-pressed={cities.includes(ALL_UZ)} onClick={() => setCities(cities.includes(ALL_UZ) ? [] : [ALL_UZ])} className={chip(cities.includes(ALL_UZ))}>{ALL_UZ}</button>
+            {CITY_LIST.map((c) => (
+              <button
+                key={c}
+                type="button"
+                aria-pressed={cities.includes(c)}
+                onClick={() => {
+                  const cur = cities.filter((x) => x !== ALL_UZ);
+                  setCities(cur.includes(c) ? cur.filter((x) => x !== c) : [...cur, c]);
+                }}
+                className={chip(cities.includes(c))}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
         </div>
         <div>
           <div className="font-bold">To'lov turi</div>

@@ -232,3 +232,23 @@ export const btn = {
   lime: 'inline-flex items-center justify-center gap-2 min-h-[44px] px-5 rounded-xl bg-[#C8F169] text-[#14121C] font-extrabold text-[15px] hover:bg-[#B8E651] transition-colors cursor-pointer disabled:opacity-60',
   ghost: 'inline-flex items-center justify-center gap-2 min-h-[44px] px-5 rounded-xl border border-[#E6E3DC] bg-white text-[#14121C] font-semibold text-[15px] hover:border-[#14121C] transition-colors cursor-pointer disabled:opacity-60',
 };
+
+/* Shaharlar */
+export const ALL_UZ = "Butun O'zbekiston";
+export const CITY_LIST = ['Toshkent', 'Samarqand', 'Jizzax', 'Buxoro', 'Andijon', "Farg'ona", 'Namangan', 'Qarshi', 'Nukus', 'Termiz', 'Urganch', 'Navoiy', 'Guliston'];
+/** E'lon shaharlari; ko'rsatilmagan bo'lsa — Butun O'zbekiston */
+export function briefCities(b: { cities?: string[] } | null | undefined): string[] {
+  const c = (b?.cities || []).filter(Boolean);
+  return c.length ? c : [ALL_UZ];
+}
+export function citiesText(b: { cities?: string[] } | null | undefined, max = 2): string {
+  const c = briefCities(b);
+  return c.length > max ? `${c.slice(0, max).join(', ')} +${c.length - max}` : c.join(', ');
+}
+/** Bloger shahri e'longa mosmi */
+export function cityMatches(b: { cities?: string[] } | null | undefined, city?: string): boolean {
+  const c = briefCities(b);
+  if (c.includes(ALL_UZ)) return true;
+  const x = String(city || '').toLowerCase().trim();
+  return Boolean(x) && c.some((y) => y.toLowerCase() === x);
+}
