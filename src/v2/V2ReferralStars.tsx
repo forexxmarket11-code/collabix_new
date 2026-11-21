@@ -51,6 +51,61 @@ const VideoBox: React.FC<{ star: ReferralStar; i: number }> = ({ star, i }) => {
   );
 };
 
+export const StarCard: React.FC<{ s: ReferralStar; i: number }> = ({ s, i }) => {
+  const paid = Math.max(0, s.earned - s.balance);
+  return (
+    <article className="rounded-[26px] bg-white border border-[#E6E3DC] overflow-hidden text-[#14121C]">
+      {s.video ? <VideoBox star={s} i={i} /> : <div className="h-2" style={{ background: 'linear-gradient(90deg,#5B3DF5,#C8F169)' }} aria-hidden="true" />}
+      <div className="p-4">
+        <div className="flex items-center gap-2.5">
+          <Avatar name={s.name} src={s.avatar} size={40} round />
+          <div className="min-w-0">
+            <div className="font-bold truncate">{s.name}</div>
+            <div className="text-[13px] text-[#5E5A6B] truncate">{[s.handle ? (s.handle.startsWith('@') || s.handle.startsWith('http') ? s.handle : `@${s.handle}`) : '', s.city].filter(Boolean).join(' · ')}</div>
+          </div>
+        </div>
+        <div className="mt-3.5 rounded-2xl bg-[#C8F169] p-3.5">
+          <div className="text-[12px] font-bold">Topishi mumkin</div>
+          <div className="v2-display font-extrabold text-[30px] leading-[1.05] tracking-[-1px]">{fmt(s.invited * REWARD)} <span className="text-[15px]">so'm</span></div>
+          <div className="text-[12px] font-semibold text-[#2E3A12]">{s.invited} kishi uning havolasi orqali keldi</div>
+        </div>
+        <div className="mt-2 flex items-center justify-between gap-2 rounded-2xl bg-[#F6F5F1] px-3.5 py-2.5">
+          <span className="text-[13px] text-[#5E5A6B] font-semibold">Topgan ({s.pros} Pro)</span>
+          <span className="v2-display font-extrabold text-[18px]">{fmt(s.earned)} so'm</span>
+        </div>
+        {paid > 0 && <div className="mt-2.5 text-[13px] text-[#166534] font-bold">✓ {fmt(paid)} so'm kartaga to'langan</div>}
+      </div>
+    </article>
+  );
+};
+
+/** Do'stlarni taklif qilish oynasi uchun: reklama qilgan blogerlar (qisqa) */
+export const ReferralStarsStrip: React.FC = () => {
+  const [stars, setStars] = useState<ReferralStar[] | null>(null);
+  const [totalInvited, setTotalInvited] = useState(0);
+  useEffect(() => {
+    let alive = true;
+    fetchReferralStarsPage().then((d) => { if (alive) { setStars(d.stars.slice(0, 6)); setTotalInvited(d.totalInvited); } }).catch(() => alive && setStars([]));
+    return () => { alive = false; };
+  }, []);
+  if (stars === null) return <div className="h-40 rounded-[24px] bg-[#F6F5F1] animate-pulse" />;
+  if (stars.length === 0) return null;
+  return (
+    <section className="rounded-[24px] sm:rounded-[28px] bg-[#F6F5F1] border border-[#E6E3DC] p-4 sm:p-6 text-[#14121C]">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <div className="text-[12px] font-bold tracking-[1.5px] text-[#5B3DF5]">COLLABIX'NI REKLAMA QILGAN BLOGERLAR</div>
+          <h2 className="v2-display m-0 mt-1 font-extrabold text-[22px] sm:text-[26px] leading-tight">Ular <span className="text-[#5B3DF5]">{fmt(totalInvited * REWARD)} so'm</span> topishi mumkin</h2>
+        </div>
+        <a href="#referal-blogerlar" className={`${btn.dark} min-h-[44px]`}>Hammasini ko'rish →</a>
+      </div>
+      <div className="mt-4 -mx-4 sm:mx-0 px-4 sm:px-0 flex sm:grid gap-3 sm:gap-4 overflow-x-auto sm:overflow-visible snap-x sm:grid-cols-[repeat(auto-fill,minmax(240px,1fr))] pb-1">
+        {stars.map((s, i) => <div key={s.uid} className="snap-start shrink-0 w-[78%] sm:w-auto"><StarCard s={s} i={i} /></div>)}
+      </div>
+    </section>
+  );
+};
+
 export const V2ReferralStars: React.FC<{ currentUser: UserSession | null }> = ({ currentUser }) => {
   const [data, setData] = useState<{ stars: ReferralStar[]; totalPaid: number; totalPros: number; referrers: number; totalInvited: number } | null>(null);
   const [friends, setFriends] = useState(20);
@@ -123,33 +178,7 @@ export const V2ReferralStars: React.FC<{ currentUser: UserSession | null }> = ({
           </div>
         ) : (
           <div className="mt-5 grid gap-4 grid-cols-1 sm:grid-cols-[repeat(auto-fill,minmax(250px,1fr))]">
-            {stars.map((s, i) => {
-              const paid = Math.max(0, s.earned - s.balance);
-              return (
-                <article key={s.uid} className="rounded-[26px] bg-white border border-[#E6E3DC] overflow-hidden">
-                  {s.video ? <VideoBox star={s} i={i} /> : <div className="h-2" style={{ background: 'linear-gradient(90deg,#5B3DF5,#C8F169)' }} aria-hidden="true" />}
-                  <div className="p-4">
-                    <div className="flex items-center gap-2.5">
-                      <Avatar name={s.name} src={s.avatar} size={40} round />
-                      <div className="min-w-0">
-                        <div className="font-bold truncate">{s.name}</div>
-                        <div className="text-[13px] text-[#5E5A6B] truncate">{[s.handle ? (s.handle.startsWith('@') || s.handle.startsWith('http') ? s.handle : `@${s.handle}`) : '', s.city].filter(Boolean).join(' · ')}</div>
-                      </div>
-                    </div>
-                    <div className="mt-3.5 rounded-2xl bg-[#C8F169] p-3.5">
-                      <div className="text-[12px] font-bold">Topishi mumkin</div>
-                      <div className="v2-display font-extrabold text-[30px] leading-[1.05] tracking-[-1px]">{fmt(s.invited * REWARD)} <span className="text-[15px]">so'm</span></div>
-                      <div className="text-[12px] font-semibold text-[#2E3A12]">{s.invited} kishi uning havolasi orqali keldi</div>
-                    </div>
-                    <div className="mt-2 flex items-center justify-between gap-2 rounded-2xl bg-[#F6F5F1] px-3.5 py-2.5">
-                      <span className="text-[13px] text-[#5E5A6B] font-semibold">Topgan ({s.pros} Pro)</span>
-                      <span className="v2-display font-extrabold text-[18px]">{fmt(s.earned)} so'm</span>
-                    </div>
-                    {paid > 0 && <div className="mt-2.5 text-[13px] text-[#166534] font-bold">✓ {fmt(paid)} so'm kartaga to'langan</div>}
-                  </div>
-                </article>
-              );
-            })}
+            {stars.map((s, i) => <StarCard key={s.uid} s={s} i={i} />)}
           </div>
         )}
       </section>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { UserSession } from '../types';
+import { ReferralStarsStrip } from '../v2/V2ReferralStars';
 import { ReferralDashboard } from './ReferralDashboard';
 import {
   Gift,
@@ -121,6 +122,8 @@ export const ReferralPage: React.FC<ReferralPageProps> = ({
           </div>
         </div>
       </div>
+
+      <div className="mb-10"><ReferralStarsStrip /></div>
 
       <ReferralDashboard
         currentUser={currentUser}
