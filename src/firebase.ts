@@ -4939,10 +4939,10 @@ export async function fetchMyProfileViews(uid: string): Promise<ProfileView[]> {
 }
 
 /* =========================================================================
- * Referal sahifasi: Collabix'ni reklama qilgan blogerlar (admin tanlaydi)
- * settings/referralStars = { items: [{ uid, video }] }
+ * Referal sahifasi: Collabix'ni reklama qilgan blogerlar
+ * Bloger avtomatik chiqadi (havolasi orqali kimdir kelgan bo'lsa).
+ * settings/referralStars = { videos: { [uid]: url }, hidden: [uid] } — admin boshqaradi
  * ========================================================================= */
-export interface ReferralStarItem { uid: string; video: string }
 export interface ReferralStar {
   uid: string;
   video: string;
@@ -4955,88 +4955,116 @@ export interface ReferralStar {
   pros: number;
   /** Havolasi orqali ro'yxatdan o'tganlar (Pro olmaganlari ham) */
   invited: number;
+  hidden?: boolean;
+}
+export interface ReferralStarsSettings { videos: Record<string, string>; hidden: string[] }
+
+function parseStarsSettings(data: any): ReferralStarsSettings {
+  const videos: Record<string, string> = {};
+  if (data && data.videos && typeof data.videos === 'object') {
+    Object.entries(data.videos).forEach(([k, v]) => { if (typeof v === 'string' && v.trim()) videos[k] = v; });
+  }
+  // eski format: items: [{uid, video}]
+  if (data && Array.isArray(data.items)) {
+    data.items.forEach((x: any) => { if (x && typeof x.uid === 'string' && typeof x.video === 'string' && x.video.trim() && !videos[x.uid]) videos[x.uid] = x.video; });
+  }
+  const hidden = data && Array.isArray(data.hidden) ? data.hidden.filter((x: unknown) => typeof x === 'string') : [];
+  return { videos, hidden };
 }
 
-export async function fetchReferralStarItems(): Promise<ReferralStarItem[]> {
-  const snap = await getDoc(doc(db, 'settings', 'referralStars'));
-  const items = snap.exists() ? (snap.data() as any).items : [];
-  return Array.isArray(items) ? items.filter((x: any) => x && typeof x.uid === 'string') : [];
-}
-
-export function subscribeReferralStarItems(cb: (items: ReferralStarItem[]) => void): () => void {
+export function subscribeReferralStarsSettings(cb: (s: ReferralStarsSettings) => void): () => void {
   return onSnapshot(
     doc(db, 'settings', 'referralStars'),
-    (snap) => {
-      const items = snap.exists() ? (snap.data() as any).items : [];
-      cb(Array.isArray(items) ? items.filter((x: any) => x && typeof x.uid === 'string') : []);
-    },
-    () => cb([])
+    (snap) => cb(parseStarsSettings(snap.exists() ? snap.data() : null)),
+    () => cb({ videos: {}, hidden: [] })
   );
 }
 
-/** Admin: ro'yxatni to'liq saqlash */
-export async function saveReferralStarItemsAdmin(items: ReferralStarItem[]): Promise<void> {
-  const clean = items
-    .filter((x) => x.uid)
-    .slice(0, 40)
-    .map((x) => ({ uid: String(x.uid), video: String(x.video || '').trim().slice(0, 500) }));
-  await setDoc(doc(db, 'settings', 'referralStars'), { items: clean, updatedAtMillis: Date.now() }, { merge: true });
+/** Admin: blogerning videosini saqlash (bo'sh — o'chirish) */
+export async function setReferralStarVideoAdmin(uid: string, url: string): Promise<void> {
+  const v = String(url || '').trim().slice(0, 500);
+  await setDoc(doc(db, 'settings', 'referralStars'), { videos: { [uid]: v ? v : deleteField() }, updatedAtMillis: Date.now() }, { merge: true });
 }
 
-/** Sahifa uchun: tanlangan blogerlar (rozilik bilan) + umumiy raqamlar */
-export async function fetchReferralStarsPage(): Promise<{ stars: ReferralStar[]; totalPaid: number; totalPros: number; referrers: number; totalInvited: number }> {
-  const items = await fetchReferralStarItems();
-  const docs = await Promise.all(items.map((it) => getDoc(doc(db, 'users', it.uid)).catch(() => null)));
+/** Admin: blogerni sahifada yashirish / ko'rsatish */
+export async function setReferralStarHiddenAdmin(uid: string, hidden: boolean): Promise<void> {
+  await setDoc(doc(db, 'settings', 'referralStars'), { hidden: hidden ? arrayUnion(uid) : arrayRemove(uid), updatedAtMillis: Date.now() }, { merge: true });
+}
+
+/** Referal reytingi: har bir bloger bitta qatorda, jami summasi bilan */
+export async function fetchReferralStarsPage(opts: { includeHidden?: boolean } = {}): Promise<{ stars: ReferralStar[]; totalPaid: number; totalPros: number; referrers: number; totalInvited: number }> {
+  const usersCol = collection(db, 'users');
+  let settings: ReferralStarsSettings = { videos: {}, hidden: [] };
+  try {
+    const s = await getDoc(doc(db, 'settings', 'referralStars'));
+    settings = parseStarsSettings(s.exists() ? s.data() : null);
+  } catch {}
+
+  // 1) Kim kimni taklif qilgan — havola orqali kelganlar soni
+  const invitedBy = new Map<string, number>();
+  let totalInvited = 0;
+  try {
+    const snap = await getDocs(query(usersCol, where('referredBy', '>', '')));
+    snap.forEach((d) => {
+      const r = String((d.data() as any).referredBy || '').trim();
+      if (!r) return;
+      totalInvited += 1;
+      invitedBy.set(r, (invitedBy.get(r) || 0) + 1);
+    });
+  } catch {}
+
+  // 2) Referaldan pul topganlar
+  const userDocs = new Map<string, UserSession>();
+  let totalPaid = 0;
+  try {
+    const snap = await getDocs(query(usersCol, where('referralEarnedTotal', '>', 0), limit(500)));
+    snap.forEach((d) => {
+      const u = d.data() as UserSession;
+      userDocs.set(d.id, u);
+      totalPaid += Number(u.referralEarnedTotal || 0) || 0;
+    });
+  } catch {}
+
+  // 3) Qolgan taklif qiluvchilarning profillari
+  const ids = Array.from(new Set([...invitedBy.keys(), ...userDocs.keys(), ...Object.keys(settings.videos)])).filter((id) => id && id !== ADMIN_UID);
+  const missing = ids.filter((id) => !userDocs.has(id)).slice(0, 200);
+  await Promise.all(missing.map(async (id) => {
+    try {
+      const d = await getDoc(doc(db, 'users', id));
+      if (d.exists()) userDocs.set(id, d.data() as UserSession);
+    } catch {}
+  }));
+
+  const hiddenSet = new Set(settings.hidden);
   const stars: ReferralStar[] = [];
-  docs.forEach((d, i) => {
-    if (!d || !d.exists()) return;
-    const u = d.data() as UserSession;
+  ids.forEach((id) => {
+    const u = userDocs.get(id);
+    if (!u) return;
     const earned = Number(u.referralEarnedTotal || 0) || 0;
+    const pros = Math.round(earned / REFERRAL_REWARD);
+    const invited = Math.max(invitedBy.get(id) || 0, pros);
+    if (invited <= 0 && !settings.videos[id]) return;
+    const isHidden = hiddenSet.has(id);
+    if (isHidden && !opts.includeHidden) return;
     const sl: any = u.socialLinks || {};
     stars.push({
-      uid: items[i].uid,
-      video: items[i].video,
+      uid: id,
+      video: settings.videos[id] || '',
       name: (u.name || 'Bloger').trim(),
       avatar: typeof u.avatar === 'string' ? u.avatar : undefined,
       city: u.city || '',
       handle: String(sl.instagram || u.instagramHandle || '').trim(),
       earned,
       balance: Number(u.referralBalance || 0) || 0,
-      pros: Math.round(earned / REFERRAL_REWARD),
-      invited: 0,
+      pros,
+      invited,
+      hidden: isHidden,
     });
   });
-  // Har bir blogerning havolasi orqali kelganlar soni (Pro olmaganlari ham)
-  await Promise.all(stars.map(async (st) => {
-    try {
-      const c = await getCountFromServer(query(collection(db, 'users'), where('referredBy', '==', st.uid)));
-      st.invited = Math.max(c.data().count, st.pros);
-    } catch {
-      st.invited = st.pros;
-    }
-  }));
   stars.sort((a, b) => b.invited - a.invited || b.earned - a.earned);
-  let totalInvited = 0;
-  try {
-    const c = await getCountFromServer(query(collection(db, 'users'), where('referredBy', '>', '')));
-    totalInvited = c.data().count;
-  } catch {
-    totalInvited = stars.reduce((s, x) => s + x.invited, 0);
-  }
-  let totalPaid = 0, totalPros = 0, referrers = 0;
-  try {
-    const snap = await getDocs(query(collection(db, 'users'), where('referralEarnedTotal', '>', 0), limit(500)));
-    snap.forEach((d) => {
-      const e = Number((d.data() as any).referralEarnedTotal || 0) || 0;
-      totalPaid += e;
-      referrers += 1;
-    });
-    totalPros = Math.round(totalPaid / REFERRAL_REWARD);
-  } catch {
-    totalPaid = stars.reduce((s, x) => s + x.earned, 0);
-    totalPros = stars.reduce((s, x) => s + x.pros, 0);
-    referrers = stars.length;
-  }
+
+  const totalPros = Math.round(totalPaid / REFERRAL_REWARD);
+  const referrers = Array.from(userDocs.values()).filter((u) => Number(u.referralEarnedTotal || 0) > 0).length;
   totalInvited = Math.max(totalInvited, totalPros);
-  return { stars, totalPaid, totalPros, referrers, totalInvited };
+  return { stars: opts.includeHidden ? stars : stars.slice(0, 60), totalPaid, totalPros, referrers, totalInvited };
 }

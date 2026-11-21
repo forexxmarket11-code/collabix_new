@@ -127,7 +127,7 @@ export const V2ReferralStars: React.FC<{ currentUser: UserSession | null }> = ({
               const paid = Math.max(0, s.earned - s.balance);
               return (
                 <article key={s.uid} className="rounded-[26px] bg-white border border-[#E6E3DC] overflow-hidden">
-                  <VideoBox star={s} i={i} />
+                  {s.video ? <VideoBox star={s} i={i} /> : <div className="h-2" style={{ background: 'linear-gradient(90deg,#5B3DF5,#C8F169)' }} aria-hidden="true" />}
                   <div className="p-4">
                     <div className="flex items-center gap-2.5">
                       <Avatar name={s.name} src={s.avatar} size={40} round />
@@ -180,7 +180,7 @@ export const V2ReferralStars: React.FC<{ currentUser: UserSession | null }> = ({
         <div className="rounded-[24px] bg-[#5B3DF5] text-white p-5"><div className="v2-display font-extrabold text-[36px] text-[#C8F169] leading-none">03</div><div className="mt-2 font-bold text-[18px]">Pul oling</div><div className="text-[15px] text-[#E4DEFF]">Do'stingiz Pro olsa — 29 000 so'm balansga, keyin kartaga.</div></div>
       </section>
 
-      <p className="mt-6 text-center text-[13px] text-[#5E5A6B]">Sahifada faqat roziligi bilan qo'shilgan blogerlar ko'rsatiladi. Raqamlar Collabix hisobidan olinadi.</p>
+      <p className="mt-6 text-center text-[13px] text-[#5E5A6B]">Raqamlar Collabix hisobidan avtomatik olinadi. "Topishi mumkin" — havola orqali kelganlarning hammasi Pro olsa to'lanadigan summa.</p>
     </main>
   );
 };
