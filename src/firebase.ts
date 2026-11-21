@@ -4953,6 +4953,8 @@ export interface ReferralStar {
   earned: number;
   balance: number;
   pros: number;
+  /** Havolasi orqali ro'yxatdan o'tganlar (Pro olmaganlari ham) */
+  invited: number;
 }
 
 export async function fetchReferralStarItems(): Promise<ReferralStarItem[]> {
@@ -4982,7 +4984,7 @@ export async function saveReferralStarItemsAdmin(items: ReferralStarItem[]): Pro
 }
 
 /** Sahifa uchun: tanlangan blogerlar (rozilik bilan) + umumiy raqamlar */
-export async function fetchReferralStarsPage(): Promise<{ stars: ReferralStar[]; totalPaid: number; totalPros: number; referrers: number }> {
+export async function fetchReferralStarsPage(): Promise<{ stars: ReferralStar[]; totalPaid: number; totalPros: number; referrers: number; totalInvited: number }> {
   const items = await fetchReferralStarItems();
   const docs = await Promise.all(items.map((it) => getDoc(doc(db, 'users', it.uid)).catch(() => null)));
   const stars: ReferralStar[] = [];
@@ -5001,9 +5003,26 @@ export async function fetchReferralStarsPage(): Promise<{ stars: ReferralStar[];
       earned,
       balance: Number(u.referralBalance || 0) || 0,
       pros: Math.round(earned / REFERRAL_REWARD),
+      invited: 0,
     });
   });
-  stars.sort((a, b) => b.earned - a.earned);
+  // Har bir blogerning havolasi orqali kelganlar soni (Pro olmaganlari ham)
+  await Promise.all(stars.map(async (st) => {
+    try {
+      const c = await getCountFromServer(query(collection(db, 'users'), where('referredBy', '==', st.uid)));
+      st.invited = Math.max(c.data().count, st.pros);
+    } catch {
+      st.invited = st.pros;
+    }
+  }));
+  stars.sort((a, b) => b.invited - a.invited || b.earned - a.earned);
+  let totalInvited = 0;
+  try {
+    const c = await getCountFromServer(query(collection(db, 'users'), where('referredBy', '>', '')));
+    totalInvited = c.data().count;
+  } catch {
+    totalInvited = stars.reduce((s, x) => s + x.invited, 0);
+  }
   let totalPaid = 0, totalPros = 0, referrers = 0;
   try {
     const snap = await getDocs(query(collection(db, 'users'), where('referralEarnedTotal', '>', 0), limit(500)));
@@ -5018,5 +5037,6 @@ export async function fetchReferralStarsPage(): Promise<{ stars: ReferralStar[];
     totalPros = stars.reduce((s, x) => s + x.pros, 0);
     referrers = stars.length;
   }
-  return { stars, totalPaid, totalPros, referrers };
+  totalInvited = Math.max(totalInvited, totalPros);
+  return { stars, totalPaid, totalPros, referrers, totalInvited };
 }

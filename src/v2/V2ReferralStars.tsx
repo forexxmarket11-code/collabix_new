@@ -52,12 +52,12 @@ const VideoBox: React.FC<{ star: ReferralStar; i: number }> = ({ star, i }) => {
 };
 
 export const V2ReferralStars: React.FC<{ currentUser: UserSession | null }> = ({ currentUser }) => {
-  const [data, setData] = useState<{ stars: ReferralStar[]; totalPaid: number; totalPros: number; referrers: number } | null>(null);
+  const [data, setData] = useState<{ stars: ReferralStar[]; totalPaid: number; totalPros: number; referrers: number; totalInvited: number } | null>(null);
   const [friends, setFriends] = useState(20);
 
   useEffect(() => {
     let alive = true;
-    fetchReferralStarsPage().then((d) => alive && setData(d)).catch(() => alive && setData({ stars: [], totalPaid: 0, totalPros: 0, referrers: 0 }));
+    fetchReferralStarsPage().then((d) => alive && setData(d)).catch(() => alive && setData({ stars: [], totalPaid: 0, totalPros: 0, referrers: 0, totalInvited: 0 }));
     return () => { alive = false; };
   }, []);
 
@@ -81,11 +81,16 @@ export const V2ReferralStars: React.FC<{ currentUser: UserSession | null }> = ({
       </section>
 
       {/* RAQAMLAR */}
-      <div className="mt-4 grid gap-2.5 sm:gap-3 grid-cols-1 sm:grid-cols-3">
-        <div className="rounded-[22px] bg-white border border-[#E6E3DC] p-5"><div className="text-[13px] text-[#5E5A6B] font-semibold">Blogerlar topgan jami</div><div className="v2-display font-extrabold text-[30px] sm:text-[36px]">{data ? `${fmt(data.totalPaid)} so'm` : '…'}</div></div>
-        <div className="rounded-[22px] bg-[#C8F169] p-5"><div className="text-[13px] font-bold">Referaldan topgan blogerlar</div><div className="v2-display font-extrabold text-[30px] sm:text-[36px]">{data ? `${data.referrers} ta` : '…'}</div></div>
-        <div className="rounded-[22px] bg-white border border-[#E6E3DC] p-5"><div className="text-[13px] text-[#5E5A6B] font-semibold">Ular olib kelgan Pro'lar</div><div className="v2-display font-extrabold text-[30px] sm:text-[36px]">{data ? `${data.totalPros} ta` : '…'}</div></div>
-      </div>
+      <section className="mt-4 rounded-[24px] sm:rounded-[28px] bg-[#C8F169] p-5 sm:p-7">
+        <div className="text-[12px] sm:text-[13px] font-bold tracking-[1.5px]">BLOGERLAR TOPISHI MUMKIN BO'LGAN SUMMA</div>
+        <div className="mt-1 v2-display font-extrabold text-[44px] sm:text-[72px] leading-none tracking-[-2px]">{data ? fmt(data.totalInvited * REWARD) : '…'} <span className="text-[20px] sm:text-[28px]">so'm</span></div>
+        <div className="mt-2 text-[14px] sm:text-[15px] font-semibold text-[#2E3A12]">Referal havolalar orqali {data ? data.totalInvited : '…'} kishi ro'yxatdan o'tdi — hammasi Pro olsa, shuncha to'lanadi.</div>
+        <div className="mt-4 pt-4 border-t border-[#14121C]/15 grid grid-cols-3 gap-2">
+          <div><div className="text-[12px] font-semibold text-[#3E4A1F]">Allaqachon topilgan</div><div className="v2-display font-extrabold text-[20px] sm:text-[26px]">{data ? `${fmt(data.totalPaid)} so'm` : '…'}</div></div>
+          <div><div className="text-[12px] font-semibold text-[#3E4A1F]">Pro olganlar</div><div className="v2-display font-extrabold text-[20px] sm:text-[26px]">{data ? `${data.totalPros} ta` : '…'}</div></div>
+          <div><div className="text-[12px] font-semibold text-[#3E4A1F]">Topgan blogerlar</div><div className="v2-display font-extrabold text-[20px] sm:text-[26px]">{data ? `${data.referrers} ta` : '…'}</div></div>
+        </div>
+      </section>
 
       {/* KALKULYATOR */}
       <section className="mt-4 rounded-[24px] sm:rounded-[28px] bg-white border border-[#E6E3DC] p-5 sm:p-7">
@@ -131,9 +136,14 @@ export const V2ReferralStars: React.FC<{ currentUser: UserSession | null }> = ({
                         <div className="text-[13px] text-[#5E5A6B] truncate">{[s.handle ? (s.handle.startsWith('@') || s.handle.startsWith('http') ? s.handle : `@${s.handle}`) : '', s.city].filter(Boolean).join(' · ')}</div>
                       </div>
                     </div>
-                    <div className="mt-3.5 grid grid-cols-2 gap-2">
-                      <div className="rounded-2xl bg-[#F6F5F1] p-2.5"><div className="text-[12px] text-[#5E5A6B]">Olib keldi</div><div className="v2-display font-extrabold text-[22px]">{s.pros} Pro</div></div>
-                      <div className="rounded-2xl bg-[#C8F169] p-2.5"><div className="text-[12px] font-bold">Topdi</div><div className="v2-display font-extrabold text-[22px]">{fmt(s.earned)}</div></div>
+                    <div className="mt-3.5 rounded-2xl bg-[#C8F169] p-3.5">
+                      <div className="text-[12px] font-bold">Topishi mumkin</div>
+                      <div className="v2-display font-extrabold text-[30px] leading-[1.05] tracking-[-1px]">{fmt(s.invited * REWARD)} <span className="text-[15px]">so'm</span></div>
+                      <div className="text-[12px] font-semibold text-[#2E3A12]">{s.invited} kishi uning havolasi orqali keldi</div>
+                    </div>
+                    <div className="mt-2 flex items-center justify-between gap-2 rounded-2xl bg-[#F6F5F1] px-3.5 py-2.5">
+                      <span className="text-[13px] text-[#5E5A6B] font-semibold">Topgan ({s.pros} Pro)</span>
+                      <span className="v2-display font-extrabold text-[18px]">{fmt(s.earned)} so'm</span>
                     </div>
                     {paid > 0 && <div className="mt-2.5 text-[13px] text-[#166534] font-bold">✓ {fmt(paid)} so'm kartaga to'langan</div>}
                   </div>
@@ -153,8 +163,10 @@ export const V2ReferralStars: React.FC<{ currentUser: UserSession | null }> = ({
               <li key={s.uid} className={`px-5 sm:px-6 py-3.5 border-b border-[#EEECE6] last:border-b-0 flex items-center gap-3 ${i === 0 ? 'bg-[#FFFBEB]' : ''}`}>
                 <span className="w-9 shrink-0 font-extrabold text-[16px]">{i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}</span>
                 <span className="flex-1 min-w-0 font-bold truncate">{s.name}</span>
-                <span className="hidden sm:inline text-[14px] text-[#5E5A6B]">{s.pros} Pro</span>
-                <span className="font-extrabold whitespace-nowrap">{fmt(s.earned)} so'm</span>
+                <span className="text-right leading-tight">
+                  <span className="block font-extrabold whitespace-nowrap">{fmt(s.invited * REWARD)} so'm</span>
+                  <span className="block text-[12px] text-[#5E5A6B] whitespace-nowrap">topgan: {fmt(s.earned)}</span>
+                </span>
               </li>
             ))}
           </ol>
