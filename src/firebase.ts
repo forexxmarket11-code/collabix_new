@@ -4334,6 +4334,20 @@ export async function requestReferralWithdrawal(params: {
   if (amount < REFERRAL_MIN_WITHDRAWAL) {
     throw new Error('Yechib olish uchun balans kamida 29 000 soʻm boʻlishi kerak.');
   }
+  // Oldingi so'rov admin tasdiqlamaguncha yangisi yuborilmaydi
+  let pendingExists = false;
+  try {
+    const prev = await getDocs(query(collection(db, 'referrals'), where('userId', '==', uid)));
+    pendingExists = prev.docs.some((d) => {
+      const w = d.data() as any;
+      return w.type === 'withdrawal' && w.status === 'pending';
+    });
+  } catch {
+    throw new Error("Tekshirib bo'lmadi. Internetni tekshirib, qayta urinib ko'ring.");
+  }
+  if (pendingExists) {
+    throw new Error("Oldingi so'rovingiz hali ko'rib chiqilmoqda. Admin tasdiqlagach, yangisini yuborishingiz mumkin.");
+  }
   const id = `wd_${uid.slice(0, 8)}_${Date.now()}`;
   const now = new Date();
   await setDoc(doc(db, 'referrals', id), {

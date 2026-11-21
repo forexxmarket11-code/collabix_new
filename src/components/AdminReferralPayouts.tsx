@@ -49,6 +49,15 @@ export const AdminReferralPayouts: React.FC<AdminReferralPayoutsProps> = ({ onCo
     load();
   }, [load]);
 
+  // Bitta blogerdan bir nechta kutilayotgan so'rov — eng eskisidan boshqalari takror
+  const dupIds = useMemo(() => {
+    const seen = new Set<string>();
+    const dups = new Set<string>();
+    [...items].filter((i) => i.status === 'pending').sort((a, b) => (a.createdAtMillis || 0) - (b.createdAtMillis || 0)).forEach((i) => {
+      if (seen.has(i.userId)) dups.add(i.id); else seen.add(i.userId);
+    });
+    return dups;
+  }, [items]);
   const pendingCount = useMemo(() => items.filter((i) => i.status === 'pending').length, [items]);
   useEffect(() => {
     onCountChange?.(pendingCount);
@@ -159,6 +168,9 @@ export const AdminReferralPayouts: React.FC<AdminReferralPayoutsProps> = ({ onCo
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="font-heading font-bold text-slate-900 dark:text-white break-words">{w.userName}</div>
+                    {dupIds.has(w.id) && (
+                      <div className="mt-1 inline-block px-2 py-0.5 rounded-md bg-rose-100 text-rose-700 text-[11px] font-bold">TAKROR so'rov — bu blogerning oldingi so'rovi bor, buni rad eting</div>
+                    )}
                     <div className="text-xs text-slate-500 dark:text-slate-400">
                       {new Date(w.createdAtMillis).toLocaleString('ru-RU')}
                     </div>

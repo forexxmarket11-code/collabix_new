@@ -78,7 +78,7 @@ export const ReferralDashboard: React.FC<ReferralDashboardProps> = ({
   }, [load]);
 
   const link = uid ? buildReferralLink(uid) : '';
-  const hasPending = withdrawals.some((w) => w.status === 'pending');
+  const hasPending = success || withdrawals.some((w) => w.status === 'pending');
   const canWithdraw = balance >= REFERRAL_MIN_WITHDRAWAL && !hasPending;
 
   const handleCopy = async () => {
@@ -255,7 +255,7 @@ export const ReferralDashboard: React.FC<ReferralDashboardProps> = ({
             Soʻrovingiz koʻrib chiqilmoqda. Toʻlangach, bildirishnoma keladi.
           </div>
         )}
-        {success && !hasPending && (
+        {success && (
           <div className="text-sm text-emerald-700 dark:text-emerald-300">Soʻrov yuborildi ✅</div>
         )}
         {!hasPending && balance < REFERRAL_MIN_WITHDRAWAL && (
