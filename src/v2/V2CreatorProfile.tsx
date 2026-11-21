@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { UserSession, BriefData } from '../types';
-import { fetchUserProfile } from '../firebase';
+import { fetchUserProfile, recordProfileView } from '../firebase';
 import { Avatar, Pill, Icon, btn, appStatus } from './ui';
 
 interface Props {
@@ -19,6 +19,12 @@ const fmtPrice = (v?: string) => {
 export const V2CreatorProfile: React.FC<Props> = ({ creatorId, currentUser, briefs, onChat }) => {
   const [c, setC] = useState<UserSession | null>(null);
   const [state, setState] = useState<'loading' | 'ok' | 'none'>('loading');
+
+  // Brend profilni ochdi — blogerning "kim ko'rdi" ro'yxatiga yoziladi
+  useEffect(() => {
+    if (state !== 'ok' || !c || !currentUser || currentUser.role !== 'brend') return;
+    recordProfileView(c.uid || creatorId, currentUser).catch(() => {});
+  }, [state, c, currentUser, creatorId]);
 
   useEffect(() => {
     let alive = true;

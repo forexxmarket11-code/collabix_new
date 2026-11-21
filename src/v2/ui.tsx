@@ -201,7 +201,7 @@ export type V2Route =
   | { name: 'cabinet' }
   | { name: 'new-brief' }
   | { name: 'for-brands' }
-  | { name: 'desk'; tab: 'home' | 'catalog' | 'applications' | 'wallet' | 'brands' | 'notif' };
+  | { name: 'desk'; tab: 'home' | 'catalog' | 'applications' | 'wallet' | 'brands' | 'notif' | 'pitch' };
 
 export function parseV2Hash(hash: string): V2Route | null {
   const h = (hash || '').replace(/^#\/?/, '');
@@ -217,6 +217,7 @@ export function parseV2Hash(hash: string): V2Route | null {
   if (h === 'hamyon') return { name: 'desk', tab: 'wallet' };
   if (h === 'kabinet-brendlar') return { name: 'desk', tab: 'brands' };
   if (h === 'bildirishnomalar') return { name: 'desk', tab: 'notif' };
+  if (h === 'taklif-xati') return { name: 'desk', tab: 'pitch' };
   return null;
 }
 

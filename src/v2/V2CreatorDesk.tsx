@@ -8,8 +8,9 @@ import { Avatar, Pill, Icon, btn, go, appStatus, isBriefOpen, reviewState, budge
 import { BriefCard, brandsFromBriefs, CATEGORY_LIST } from './V2Home';
 import { V2Applications, ReviewBanner } from './V2Applications';
 import { wfStage, WF_STAGE_LABEL } from './Workflow';
+import { ProfileViewsCard, PitchGenerator } from './CreatorTools';
 
-export type DeskTab = 'home' | 'catalog' | 'applications' | 'wallet' | 'brands' | 'notif';
+export type DeskTab = 'home' | 'catalog' | 'applications' | 'wallet' | 'brands' | 'notif' | 'pitch';
 export const DESK_HASH: Record<DeskTab, string> = {
   home: 'kabinet',
   catalog: 'kabinet-elonlar',
@@ -17,6 +18,7 @@ export const DESK_HASH: Record<DeskTab, string> = {
   wallet: 'hamyon',
   brands: 'kabinet-brendlar',
   notif: 'bildirishnomalar',
+  pitch: 'taklif-xati',
 };
 
 interface Props {
@@ -46,6 +48,7 @@ const ICONS: Record<DeskTab | 'profile', React.ReactNode> = {
   brands: <svg {...s}><path d="M4 21V8l8-5 8 5v13" /><path d="M9 21v-6h6v6" /></svg>,
   notif: <svg {...s}><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" /></svg>,
   profile: <svg {...s}><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 4-7 8-7s8 3 8 7" /></svg>,
+  pitch: <svg {...s}><path d="M4 4h16v12H8l-4 4z" /><path d="M8 9h8M8 12h5" /></svg>,
 };
 
 /** Bloger uchun e'lon qanchalik mos (0–100) */
@@ -101,12 +104,13 @@ export const V2CreatorDesk: React.FC<Props> = (p) => {
     ['catalog', "E'lonlar katalogi", matched.length || undefined],
     ['applications', 'Arizalarim', myTasks.length || undefined],
     ['wallet', 'Hamyon'],
+    ['pitch', 'Taklif xati'],
     ['brands', 'Brendlar katalogi'],
     ['notif', 'Bildirishnomalar', unread || undefined],
     ['profile', 'Profil'],
   ];
   const nav = (id: DeskTab | 'profile') => (id === 'profile' ? p.onOpenProfile() : go(DESK_HASH[id]));
-  const TITLES: Record<DeskTab, string> = { home: '', catalog: "E'lonlar katalogi", applications: 'Arizalarim', wallet: 'Hamyon', brands: 'Brendlar katalogi', notif: 'Bildirishnomalar' };
+  const TITLES: Record<DeskTab, string> = { home: '', catalog: "E'lonlar katalogi", applications: 'Arizalarim', wallet: 'Hamyon', brands: 'Brendlar katalogi', notif: 'Bildirishnomalar', pitch: 'Brendga taklif xati' };
 
   /* ------------------------------ ASOSIY ------------------------------ */
   const statCards = (
@@ -185,6 +189,9 @@ export const V2CreatorDesk: React.FC<Props> = (p) => {
       <div className="mt-4 sm:mt-5 flex flex-wrap gap-3 sm:gap-4 items-start">
         {taskBox}
         {walletMini}
+      </div>
+      <div className="mt-4 sm:mt-5">
+        <ProfileViewsCard user={u} onOpenPro={p.onOpenPro} onOpenPitch={() => go(DESK_HASH.pitch)} />
       </div>
       <section className="mt-7">
         <div className="flex flex-wrap items-end justify-between gap-2">
@@ -364,6 +371,7 @@ export const V2CreatorDesk: React.FC<Props> = (p) => {
     : tab === 'wallet' ? walletView
     : tab === 'brands' ? brandsView
     : tab === 'notif' ? notifView
+    : tab === 'pitch' ? <PitchGenerator user={u} onOpenPro={p.onOpenPro} />
     : homeView;
 
   return (

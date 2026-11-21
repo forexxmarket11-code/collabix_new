@@ -467,5 +467,20 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin();
     }
+
+    // Bloger profilini ko'rgan brendlar ("Profilingizni kim ko'rdi")
+    match /users/{userId}/profileViews/{viewerId} {
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow create, update: if isSignedIn()
+        && request.auth.uid == viewerId
+        && viewerId != userId
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'brend'
+        && request.resource.data.keys().hasOnly(['brandId', 'brandName', 'brandCategory', 'brandCity', 'count', 'lastAtMillis'])
+        && request.resource.data.brandId == request.auth.uid
+        && request.resource.data.count is int
+        && request.resource.data.count <= 100000
+        && request.resource.data.lastAtMillis is int;
+      allow delete: if isAdmin();
+    }
   }
 }

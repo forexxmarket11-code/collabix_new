@@ -4898,3 +4898,42 @@ export function subscribeShowcaseUids(cb: (uids: string[]) => void): () => void 
 export async function setShowcaseUidAdmin(uid: string, on: boolean): Promise<void> {
   await setDoc(doc(db, 'settings', 'showcase'), { uids: on ? arrayUnion(uid) : arrayRemove(uid), updatedAtMillis: Date.now() }, { merge: true });
 }
+
+/* =========================================================================
+ * "Profilingizni kim ko'rdi" — brend bloger profilini ochganda yoziladi
+ * ========================================================================= */
+export interface ProfileView {
+  brandId: string;
+  brandName: string;
+  brandCategory?: string;
+  brandCity?: string;
+  count: number;
+  lastAtMillis: number;
+}
+
+/** Brend bloger profilini ochdi — bir seansda bir marta yoziladi */
+export async function recordProfileView(creatorId: string, brand: UserSession): Promise<void> {
+  const me = auth.currentUser?.uid;
+  if (!me || !creatorId || me === creatorId || brand.role !== 'brend') return;
+  const key = `cbx_pv_${creatorId}`;
+  try { if (sessionStorage.getItem(key)) return; } catch {}
+  await setDoc(
+    doc(db, 'users', creatorId, 'profileViews', me),
+    {
+      brandId: me,
+      brandName: String(brand.name || 'Brend').slice(0, 120),
+      brandCategory: String((brand.categories || [])[0] || '').slice(0, 60),
+      brandCity: String(brand.city || '').slice(0, 60),
+      count: increment(1),
+      lastAtMillis: Date.now(),
+    },
+    { merge: true }
+  );
+  try { sessionStorage.setItem(key, '1'); } catch {}
+}
+
+/** Blogerning o'z profilini ko'rgan brendlar (eng yangisi birinchi) */
+export async function fetchMyProfileViews(uid: string): Promise<ProfileView[]> {
+  const snap = await getDocs(query(collection(db, 'users', uid, 'profileViews'), orderBy('lastAtMillis', 'desc'), limit(30)));
+  return snap.docs.map((d) => d.data() as ProfileView);
+}
