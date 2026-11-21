@@ -4937,3 +4937,86 @@ export async function fetchMyProfileViews(uid: string): Promise<ProfileView[]> {
   const snap = await getDocs(query(collection(db, 'users', uid, 'profileViews'), orderBy('lastAtMillis', 'desc'), limit(30)));
   return snap.docs.map((d) => d.data() as ProfileView);
 }
+
+/* =========================================================================
+ * Referal sahifasi: Collabix'ni reklama qilgan blogerlar (admin tanlaydi)
+ * settings/referralStars = { items: [{ uid, video }] }
+ * ========================================================================= */
+export interface ReferralStarItem { uid: string; video: string }
+export interface ReferralStar {
+  uid: string;
+  video: string;
+  name: string;
+  avatar?: string;
+  city?: string;
+  handle?: string;
+  earned: number;
+  balance: number;
+  pros: number;
+}
+
+export async function fetchReferralStarItems(): Promise<ReferralStarItem[]> {
+  const snap = await getDoc(doc(db, 'settings', 'referralStars'));
+  const items = snap.exists() ? (snap.data() as any).items : [];
+  return Array.isArray(items) ? items.filter((x: any) => x && typeof x.uid === 'string') : [];
+}
+
+export function subscribeReferralStarItems(cb: (items: ReferralStarItem[]) => void): () => void {
+  return onSnapshot(
+    doc(db, 'settings', 'referralStars'),
+    (snap) => {
+      const items = snap.exists() ? (snap.data() as any).items : [];
+      cb(Array.isArray(items) ? items.filter((x: any) => x && typeof x.uid === 'string') : []);
+    },
+    () => cb([])
+  );
+}
+
+/** Admin: ro'yxatni to'liq saqlash */
+export async function saveReferralStarItemsAdmin(items: ReferralStarItem[]): Promise<void> {
+  const clean = items
+    .filter((x) => x.uid)
+    .slice(0, 40)
+    .map((x) => ({ uid: String(x.uid), video: String(x.video || '').trim().slice(0, 500) }));
+  await setDoc(doc(db, 'settings', 'referralStars'), { items: clean, updatedAtMillis: Date.now() }, { merge: true });
+}
+
+/** Sahifa uchun: tanlangan blogerlar (rozilik bilan) + umumiy raqamlar */
+export async function fetchReferralStarsPage(): Promise<{ stars: ReferralStar[]; totalPaid: number; totalPros: number; referrers: number }> {
+  const items = await fetchReferralStarItems();
+  const docs = await Promise.all(items.map((it) => getDoc(doc(db, 'users', it.uid)).catch(() => null)));
+  const stars: ReferralStar[] = [];
+  docs.forEach((d, i) => {
+    if (!d || !d.exists()) return;
+    const u = d.data() as UserSession;
+    const earned = Number(u.referralEarnedTotal || 0) || 0;
+    const sl: any = u.socialLinks || {};
+    stars.push({
+      uid: items[i].uid,
+      video: items[i].video,
+      name: (u.name || 'Bloger').trim(),
+      avatar: typeof u.avatar === 'string' ? u.avatar : undefined,
+      city: u.city || '',
+      handle: String(sl.instagram || u.instagramHandle || '').trim(),
+      earned,
+      balance: Number(u.referralBalance || 0) || 0,
+      pros: Math.round(earned / REFERRAL_REWARD),
+    });
+  });
+  stars.sort((a, b) => b.earned - a.earned);
+  let totalPaid = 0, totalPros = 0, referrers = 0;
+  try {
+    const snap = await getDocs(query(collection(db, 'users'), where('referralEarnedTotal', '>', 0), limit(500)));
+    snap.forEach((d) => {
+      const e = Number((d.data() as any).referralEarnedTotal || 0) || 0;
+      totalPaid += e;
+      referrers += 1;
+    });
+    totalPros = Math.round(totalPaid / REFERRAL_REWARD);
+  } catch {
+    totalPaid = stars.reduce((s, x) => s + x.earned, 0);
+    totalPros = stars.reduce((s, x) => s + x.pros, 0);
+    referrers = stars.length;
+  }
+  return { stars, totalPaid, totalPros, referrers };
+}

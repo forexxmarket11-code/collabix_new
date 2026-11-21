@@ -311,6 +311,10 @@ export const V2CreatorDesk: React.FC<Props> = (p) => {
           {pro && <div className="mt-4 h-2.5 rounded-full bg-[#2A2636] overflow-hidden"><div className="h-full bg-[#C8F169] rounded-full" style={{ width: `${Math.max(4, Math.min(100, (daysLeft / 30) * 100))}%` }} /></div>}
         </section>
       </div>
+      <a href="#referal-blogerlar" className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-[24px] bg-[#14121C] text-white p-5 hover:bg-[#1F1C29]">
+        <span><span className="block font-extrabold text-[17px]">Collabix haqida video qiling — har do'st uchun 29 000 so'm</span><span className="block text-[14px] text-[#BDB8CC]">Video qilgan blogerlar qancha topganini ko'ring</span></span>
+        <span className={`${btn.lime} min-h-[44px]`}>Ko'rish {Icon.arrow(14)}</span>
+      </a>
       <div className="mt-6">
         <ReferralDashboard currentUser={u} onOpenRegister={p.onOpenRegister} onOpenProModal={p.onOpenPro} />
       </div>

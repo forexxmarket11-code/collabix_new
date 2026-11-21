@@ -145,6 +145,7 @@ export const V2Footer: React.FC = () => (
       <a href="#" className="hover:text-[#5B3DF5]">E'lonlar</a>
       <a href="#brendlar" className="hover:text-[#5B3DF5]">Brendlar</a>
       <a href="#brendlar-uchun" className="hover:text-[#5B3DF5]">Brendlar uchun</a>
+      <a href="#referal-blogerlar" className="hover:text-[#5B3DF5]">Referal: kim qancha topdi</a>
       <a href="#narxlar" className="hover:text-[#5B3DF5]">Narxlar</a>
       <a href="#referral" className="hover:text-[#5B3DF5]">Do'stlarni taklif qilish</a>
       <a href="/privacy.html" className="hover:text-[#5B3DF5]">Maxfiylik siyosati</a>

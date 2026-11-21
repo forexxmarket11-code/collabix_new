@@ -201,6 +201,7 @@ export type V2Route =
   | { name: 'cabinet' }
   | { name: 'new-brief' }
   | { name: 'for-brands' }
+  | { name: 'ref-stars' }
   | { name: 'desk'; tab: 'home' | 'catalog' | 'applications' | 'wallet' | 'brands' | 'notif' | 'pitch' };
 
 export function parseV2Hash(hash: string): V2Route | null {
@@ -213,6 +214,7 @@ export function parseV2Hash(hash: string): V2Route | null {
   if (h === 'kabinet') return { name: 'cabinet' };
   if (h === 'yangi-elon') return { name: 'new-brief' };
   if (h === 'brendlar-uchun' || h === 'for-brands') return { name: 'for-brands' };
+  if (h === 'referal-blogerlar') return { name: 'ref-stars' };
   if (h === 'kabinet-elonlar') return { name: 'desk', tab: 'catalog' };
   if (h === 'hamyon') return { name: 'desk', tab: 'wallet' };
   if (h === 'kabinet-brendlar') return { name: 'desk', tab: 'brands' };

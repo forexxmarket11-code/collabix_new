@@ -36,6 +36,7 @@ import type { WorkflowAction } from './firebase';
 import { checkProUserAndProceed, isUserPro } from './utils/subscription';
 import { V2Navbar, V2BottomNav, V2Footer } from './v2/V2Shell';
 import { V2ForBrands } from './v2/V2ForBrands';
+import { V2ReferralStars } from './v2/V2ReferralStars';
 import { V2EditProfile } from './v2/V2EditProfile';
 import { V2Profile } from './v2/V2Profile';
 import { V2Home } from './v2/V2Home';
@@ -763,6 +764,7 @@ export default function App() {
     }
     if (r.name === 'brand') return <V2BrandPage brandId={r.id} briefs={allBriefs} />;
     if (r.name === 'for-brands') return <V2ForBrands currentUser={currentUser} />;
+    if (r.name === 'ref-stars') return <V2ReferralStars currentUser={currentUser} />;
     if (r.name === 'register') {
       return (
         <V2Register

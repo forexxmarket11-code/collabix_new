@@ -50,6 +50,7 @@ import { AdminPaymentRequests } from './AdminPaymentRequests';
 import { AdminCancellationReasons } from './AdminCancellationReasons';
 import { AdminAgencyApplications } from './AdminAgencyApplications';
 import { AdminBriefs } from './AdminBriefs';
+import { AdminReferralStars } from './AdminReferralStars';
 import { AdminReferralPayouts } from './AdminReferralPayouts';
 import { AdminCatalogReview } from './AdminCatalogReview';
 import { ShieldCheck } from 'lucide-react';
@@ -1043,7 +1044,10 @@ export function AdminDashboardPage({ onLogout, onGoToSite, onUnauthorized }: Adm
         )}
 
         {activeTab === 'referral_payouts' && (
-          <AdminReferralPayouts onCountChange={setPayoutsCount} onUnauthorized={handleUnauthorized} />
+          <div className="space-y-6">
+            <AdminReferralStars />
+            <AdminReferralPayouts onCountChange={setPayoutsCount} onUnauthorized={handleUnauthorized} />
+          </div>
         )}
 
         {activeTab === 'briefs' && (

@@ -107,6 +107,9 @@ export const ReferralPage: React.FC<ReferralPageProps> = ({
             <button type="button" id="btn-referral-hero-start" onClick={scrollToDashboard} className="min-h-[52px] px-6 rounded-xl bg-[#C8F169] text-[#14121C] font-bold inline-flex items-center gap-2 cursor-pointer">
               Havolamni olish <ArrowRight className="w-4 h-4" />
             </button>
+            <a href="#referal-blogerlar" className="min-h-[52px] px-6 rounded-xl border border-white/25 text-white font-bold inline-flex items-center gap-2 hover:bg-white/10">
+              Kim qancha topdi →
+            </a>
           </div>
           <div className="mt-8 grid grid-cols-3 gap-3 max-w-[480px]">
             {[['10 do\'st', '290 000'], ['25 do\'st', '725 000'], ['50 do\'st', '1 450 000']].map(([a, b]) => (
