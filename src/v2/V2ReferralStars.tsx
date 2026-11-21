@@ -80,7 +80,7 @@ export const StarCard: React.FC<{ s: ReferralStar; i: number }> = ({ s, i }) => 
 };
 
 /** Do'stlarni taklif qilish oynasi uchun: reklama qilgan blogerlar (qisqa) */
-export const ReferralStarsStrip: React.FC = () => {
+export const ReferralStarsStrip: React.FC<{ showEmpty?: boolean }> = ({ showEmpty }) => {
   const [stars, setStars] = useState<ReferralStar[] | null>(null);
   const [totalInvited, setTotalInvited] = useState(0);
   useEffect(() => {
@@ -89,7 +89,19 @@ export const ReferralStarsStrip: React.FC = () => {
     return () => { alive = false; };
   }, []);
   if (stars === null) return <div className="h-40 rounded-[24px] bg-[#F6F5F1] animate-pulse" />;
-  if (stars.length === 0) return null;
+  if (stars.length === 0) {
+    if (!showEmpty) return null;
+    return (
+      <section className="rounded-[24px] sm:rounded-[28px] bg-[#14121C] text-white p-5 sm:p-7 flex flex-wrap items-center justify-between gap-4">
+        <div className="max-w-xl">
+          <div className="text-[12px] font-bold tracking-[1.5px] text-[#C8F169]">REFERAL DASTURI</div>
+          <h2 className="v2-display m-0 mt-1 font-extrabold text-[22px] sm:text-[28px] leading-tight">Collabix haqida video qiling — har do'st uchun <span className="text-[#C8F169]">29 000 so'm</span></h2>
+          <p className="m-0 mt-2 text-[14px] text-[#BDB8CC]">Birinchi bo'lib reklama qilgan blogerlar shu yerda chiqadi.</p>
+        </div>
+        <a href="#referal-blogerlar" className={`${btn.lime} min-h-[48px]`}>Batafsil →</a>
+      </section>
+    );
+  }
   return (
     <section className="rounded-[24px] sm:rounded-[28px] bg-[#F6F5F1] border border-[#E6E3DC] p-4 sm:p-6 text-[#14121C]">
       <div className="flex flex-wrap items-end justify-between gap-3">

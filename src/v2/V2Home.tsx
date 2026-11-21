@@ -3,6 +3,7 @@ import { BriefData, UserSession } from '../types';
 import { Avatar, Pill, Icon, budgetText, timeAgo, btn, go, isBriefOpen, briefCities, citiesText } from './ui';
 import { fetchHomeShowcase } from '../firebase';
 import type { ShowcaseCreator } from '../firebase';
+import { ReferralStarsStrip } from './V2ReferralStars';
 import { Reveal, CountUp, PhoneMockup, CreatorMarquee } from './HomeExtras';
 
 export const CATEGORY_LIST = ["Go'zallik", 'Kiyim', 'Kafe va restoran', 'Texnika', "Ta'lim", 'Sayohat', 'Sport', 'Lifestyle', 'Food'];
@@ -281,6 +282,9 @@ export const V2Home: React.FC<Props> = ({ briefs, loading, currentUser }) => {
           <div className="mt-6 -mx-4 sm:mx-0"><CreatorMarquee creators={showcase.creators} /></div>
         </Reveal>
       )}
+
+      {/* REFERAL: Collabix'ni reklama qilgan blogerlar */}
+      <div className="max-w-[1240px] mx-auto px-4 sm:px-6 pt-10"><ReferralStarsStrip showEmpty /></div>
 
       {/* BRANDS */}
       <Reveal>
